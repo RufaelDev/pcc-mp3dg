@@ -496,7 +496,7 @@ namespace pcl
          */
         virtual bool
         genOctreeKeyForDataT (const int& data_arg, OctreeKey & key_arg) const;
-
+		public:
         /** \brief Generate a point at center of leaf node voxel
          * \param[in] key_arg octree key addressing a leaf node.
          * \param[out] point_arg write leaf node voxel center to this point reference
@@ -504,7 +504,7 @@ namespace pcl
         void
         genLeafNodeCenterFromOctreeKey (const OctreeKey & key_arg,
             PointT& point_arg) const;
-
+		protected:
         /** \brief Generate a point at center of octree voxel at given tree level
          * \param[in] key_arg octree key addressing an octree node.
          * \param[in] tree_depth_arg octree depth of query voxel

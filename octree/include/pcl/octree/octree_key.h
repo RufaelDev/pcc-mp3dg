@@ -90,6 +90,26 @@ namespace pcl
         return ((b.x >= this->x) && (b.y >= this->y) && (b.z >= this->z));
       }
 
+	   /** \brief Operator<= for comparing octree keys with each other for a map.
+       * */
+	  bool
+      operator < (const OctreeKey& b) const
+      {
+		if(this->x < b.x)
+			return true;
+		if(this->x > b.x)
+			return false;
+		if(this->y < b.y)
+			return true;
+		if(this->y > b.y)
+			return false;
+		if(this->z < b.z)
+			return true;
+		if(this->z > b.z)
+			return false;
+		return false; // indices are equal
+      }
+
       /** \brief Operator>= for comparing octree keys with each other.
        *  \return "true" if key indices are not smaller than the key indices of b  ; "false" otherwise.
        * */
