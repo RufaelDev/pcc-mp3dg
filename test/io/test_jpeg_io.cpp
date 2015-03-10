@@ -65,20 +65,20 @@ TEST (PCL, JPEGReadAndWrite)
   for(str_it_t it = jpeg_files_.begin(); it != jpeg_files_.end(); ++it, ++im_it)
   {
     // load the image file
-    pcl::io::JPEGReader::readJPEG(*it, *im_it);
+    pcl::io::JPEGReader<uint8_t>::readJPEG(*it, *im_it);
 	
     EXPECT_GT(im_it->width , 0) << "incorrect image width given by jpegReader from file";
     EXPECT_GT(im_it->width , 0) << "incorrect image heigth given by jpegReader from file";
 
     // write to a compressed buffer
     std::vector<uint8_t> cdat;
-    pcl::io::JPEGWriter::writeJPEG(*im_it,cdat);
+    pcl::io::JPEGWriter<uint8_t>::writeJPEG(*im_it,cdat);
 
     EXPECT_GT(cdat.size() , 0) << " no compressed data written by JpegWriter to Buffer";
 
     // read from the compressed buffer
     pcl::PCLImage im_out;
-    pcl::io::JPEGReader::readJPEG(cdat, im_out);
+    pcl::io::JPEGReader<uint8_t>::readJPEG(cdat, im_out);
     
     EXPECT_GT(im_out.width , 0) << "incorrect image width jpegReader from buffer";
     EXPECT_GT(im_out.height , 0) << "incorrect image heigth jpegReader from buffer";
@@ -90,7 +90,7 @@ TEST (PCL, JPEGReadAndWrite)
     // write the output decoded file to the folder with jpeg files
     using boost::filesystem::path;
     std::string out_name = (path(*it).parent_path() /= path("decoded") /= path("decoded_" + path(*it).filename().string())).string(); 
-    bool res = pcl::io::JPEGWriter::writeJPEG(im_out, out_name );
+    bool res = pcl::io::JPEGWriter<uint8_t>::writeJPEG(im_out, out_name );
     
     EXPECT_EQ((int)res,1) << " writing JPEG to file (JPEG Writer) failed";
   }
@@ -100,13 +100,13 @@ TEST (PCL, JPEGReaderIncorrectArguments)
 {
    // opening an incorrect file
    pcl::PCLImage test_im;
-   bool res1 = pcl::io::JPEGReader::readJPEG("randomincorrect_file.jpg",test_im);
+   bool res1 = pcl::io::JPEGReader<uint8_t>::readJPEG("randomincorrect_file.jpg",test_im);
    EXPECT_EQ((int) res1,0) << " jpeg reader did not return false for an incorrect file name ";
 
    // read jpeg from empty filename
    pcl::PCLImage test_im2;
    std::string empty_string;
-   bool res2 = pcl::io::JPEGReader::readJPEG(empty_string,test_im2);
+   bool res2 = pcl::io::JPEGReader<uint8_t>::readJPEG(empty_string,test_im2);
    EXPECT_EQ((int) res2,0) << " jpeg reader did not return false for an empty file name ";
 
    // read jpeg from incorrect buffer data
@@ -116,7 +116,7 @@ TEST (PCL, JPEGReaderIncorrectArguments)
    {
      random_chars.push_back(l);
    }
-   bool res3 = pcl::io::JPEGReader::readJPEG(empty_string,test_im3);
+   bool res3 = pcl::io::JPEGReader<uint8_t>::readJPEG(empty_string,test_im3);
    EXPECT_EQ((int) res3,0) << " jpeg reader did not return false for a bogus input buffer ";
 }
 
@@ -124,7 +124,7 @@ TEST (PCL, JPEGWriterIncorrectArguments)
 {
    // opening an incorrect file
    pcl::PCLImage test_im1;
-   bool res1 = pcl::io::JPEGWriter::writeJPEG(test_im1, "some_out.jpg");
+   bool res1 = pcl::io::JPEGWriter<uint8_t>::writeJPEG(test_im1, "some_out.jpg");
    EXPECT_EQ((int) res1,0) << " jpeg writer did not return false for an incorrect input image (empy one) ";
 
    // empty filename, valid image
@@ -137,7 +137,7 @@ TEST (PCL, JPEGWriterIncorrectArguments)
    test_im2.step = 3;
    
    std::string empty_string;
-   bool res2 = pcl::io::JPEGWriter::writeJPEG(test_im2, empty_string);
+   bool res2 = pcl::io::JPEGWriter<uint8_t>::writeJPEG(test_im2, empty_string);
    EXPECT_EQ((int) res2,0) << " jpeg writer did not return false for an incorrect file name (empty one) ";
 }
 
