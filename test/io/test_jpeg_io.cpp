@@ -37,12 +37,14 @@
 #include <pcl/common/io.h>
 #include <pcl/PCLImage.h>
 #include <pcl/io/jpeg_io.h>
+#include <pcl/cloud_codec_v2/color_coding_jpeg.h>
 
 #include <boost/filesystem.hpp>
 #include <boost/algorithm/string.hpp>
 
 #include <string>
 #include <vector>
+#include <algorithm>
 
 using namespace std;
 
@@ -139,6 +141,113 @@ TEST (PCL, JPEGWriterIncorrectArguments)
    std::string empty_string;
    bool res2 = pcl::io::JPEGWriter<uint8_t>::writeJPEG(test_im2, empty_string);
    EXPECT_EQ((int) res2,0) << " jpeg writer did not return false for an incorrect file name (empty one) ";
+}
+
+//! test for the color coding via jpeg
+TEST(PCL, JPEGColorCodingLines){
+   
+  // load all the jpeg files
+  img_it_t im_it = ims_.begin();
+  std::cout << " number of jpeg files " << jpeg_files_.size() << std::endl;
+
+  for(str_it_t it = jpeg_files_.begin(); it != jpeg_files_.end(); ++it, ++im_it)
+  {
+    // load the image file
+    pcl::io::JPEGReader<uint8_t>::readJPEG(*it, *im_it);
+    std::vector<char> temp_buf(im_it->data.size());
+    std::copy(im_it->data.data(),im_it->data.data() + im_it->data.size() ,temp_buf.data());
+
+    // create a color coder
+    pcl::octree::ColorCodingJPEG<pcl::PointXYZRGB> jpeg_color_encoder(75,1);
+
+    // prepare as encoder
+    jpeg_color_encoder.initializeEncoding();
+
+    // set the vector of averages
+    jpeg_color_encoder.getAverageDataVectorB() = temp_buf; // assign the tempbuf
+
+    // create the compressed data
+    std::vector<char> cdat;
+    cdat = jpeg_color_encoder.getAverageDataVector();
+
+    // create a decoder unit
+    pcl::octree::ColorCodingJPEG<pcl::PointXYZRGB> jpeg_color_decoder(75,1);
+    jpeg_color_decoder.getAverageDataVectorB() = cdat;
+    
+    // does the actual decoding
+    jpeg_color_decoder.initializeDecoding();
+    std::vector<char> ddat = jpeg_color_decoder.getAverageDataVector();
+
+    EXPECT_EQ(ddat.size(),im_it->data.size()) << " image sizes ";
+    //EXPECT_GT(im_it->width , 0) << "incorrect image heigth given by jpegReader from file"; 
+
+    //! test mean square error
+    float mse = 0;
+    for(int i=0; i<temp_buf.size();i++)
+    {
+      int v1 = (int)temp_buf[i];
+      int v2 = (int)ddat[i];
+      int err = (v1 - v2) * ( v1 - v2);
+      mse+=err;
+    }
+    mse/=im_it->data.size();
+    EXPECT_GT(500,mse) << " mse too large!! ";
+
+    std::cout << "the mse is " << mse << " for line patterns " << std::endl;
+  }
+}
+
+//! test for the color coding via jpeg
+TEST(PCL, JPEGColorCodingSnake){
+   
+  // load all the jpeg files
+  img_it_t im_it = ims_.begin();
+  std::cout << " number of jpeg files " << jpeg_files_.size() << std::endl;
+
+  for(str_it_t it = jpeg_files_.begin(); it != jpeg_files_.end(); ++it, ++im_it)
+  {
+    // load the image file
+    pcl::io::JPEGReader<uint8_t>::readJPEG(*it, *im_it);
+    std::vector<char> temp_buf(im_it->data.size());
+    std::copy(im_it->data.data(),im_it->data.data() + im_it->data.size() ,temp_buf.data());
+
+    // create a color coder
+    pcl::octree::ColorCodingJPEG<pcl::PointXYZRGB> jpeg_color_encoder(75,0);
+
+    // prepare as encoder
+    jpeg_color_encoder.initializeEncoding();
+
+    // set the vector of averages
+    jpeg_color_encoder.getAverageDataVectorB() = temp_buf; // assign the tempbuf
+
+    // create the compressed data
+    std::vector<char> cdat;
+    cdat = jpeg_color_encoder.getAverageDataVector();
+
+    // create a decoder unit
+    pcl::octree::ColorCodingJPEG<pcl::PointXYZRGB> jpeg_color_decoder(75,0);
+    jpeg_color_decoder.getAverageDataVectorB() = cdat;
+    
+    // does the actual decoding
+    jpeg_color_decoder.initializeDecoding();
+    std::vector<char> ddat = jpeg_color_decoder.getAverageDataVector();
+
+    EXPECT_GT(ddat.size(),im_it->data.size()) << " image sizes ";
+    //EXPECT_GT(im_it->width , 0) << "incorrect image heigth given by jpegReader from file"; 
+    
+    //! test mean square error
+    double mse=0;
+    for(int i=0; i<temp_buf.size();i++)
+    {
+      int v1 = (int)temp_buf[i];
+      int v2 = (int)ddat[i];
+      int err = (v1 - v2) * ( v1 - v2);
+      mse+=err;
+    }
+    mse/=im_it->data.size();
+    EXPECT_GT(500,mse) << " mse too large!! ";
+    std::cout << "the mse is " << mse << " for snake patterns " << std::endl;
+  }
 }
 
 /* ---[ */

@@ -3,10 +3,10 @@ set(SUBSYS_DESC "Point cloud library global unit tests")
 
 if(BUILD_visualization)
   include("${VTK_USE_FILE}")
-  set(SUBSYS_DEPS 2d common sample_consensus io kdtree features filters geometry keypoints search surface registration segmentation octree recognition people outofcore visualization)
+  set(SUBSYS_DEPS 2d common sample_consensus io kdtree features filters geometry keypoints search surface registration segmentation octree recognition people outofcore visualization cloud_codec_v2)
   set(OPT_DEPS vtk)
 else()
-  set(SUBSYS_DEPS 2d common sample_consensus io kdtree features filters geometry keypoints search surface registration segmentation octree recognition people outofcore)
+  set(SUBSYS_DEPS 2d common sample_consensus io kdtree features filters geometry keypoints search surface registration segmentation octree recognition people outofcore cloud_codec_v2)
 endif()
 
 set(DEFAULT OFF)

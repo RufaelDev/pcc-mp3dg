@@ -71,24 +71,27 @@ namespace pcl{
         void 
         serialize(std::ostream &ss){
            // the size of the data will be 
-           ss << (unsigned int)line_count; 
+           ss.write((char *)&line_count,sizeof(line_count)); 
           
-           for(int i;i<line_count;i++){
-             ss << clines[i].size();
-             ss.write((char *) clines[i].data(),clines[i].size());
+           for(int i=0;i<line_count;i++){
+             uint32_t val = clines[i].size();
+             ss.write((char *)&val, sizeof(val)); 
+             if(val > 0)
+               ss.write((char *) clines[i].data(),clines[i].size());
            }
          }
         // read from stream
         void
         deserialize(std::istream &ss){
-          ss >> line_count;
+          ss.read( (char*) &line_count, sizeof(uint32_t));
           clines.resize(line_count);
           for(int i=0; i< line_count;i++)
           {
-            unsigned int line_size; 
-            ss >> line_size;
+            uint32_t line_size; 
+            ss.read( (char*) &line_size, sizeof(uint32_t));
             clines[i].resize(line_size);
-            ss.read((char *) clines[i].data(),line_size);
+            if(line_size > 0)
+              ss.read((char *) clines[i].data(),line_size);
           }
         }
       };
@@ -275,7 +278,7 @@ namespace pcl{
                       (char *)   line_dat.data());
 
             im_in.data = std::move(line_dat);
-            im_in.width = line_dat.size()/3;
+            im_in.width = im_in.data.size()/3;
             io::JPEGWriter<uint8_t>::writeJPEG(im_in,cdat.clines[i],jpeg_quality_);
           }
         }
@@ -283,8 +286,12 @@ namespace pcl{
         // copy the serialize buffer to the output vector
         stringstream l_outstr;
         cdat.serialize(l_outstr);
-        out_data.resize(l_outstr.str().size() + 1);
-        std::copy((char *)l_outstr.str().c_str(), (char *)l_outstr.str().c_str() + l_outstr.str().size() + 1 , (char *) out_data.data());
+        out_data.resize(l_outstr.str().size());
+        std::string s_dat = l_outstr.str();
+        for(int j=0; j < s_dat.size() ;j++)
+        {
+          out_data[j] = s_dat[j];
+        }
       }
 
       void
