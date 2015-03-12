@@ -60,7 +60,7 @@ namespace pcl{
     {
     public :
 
-      enum mappingTypes{SNAKE,LINES,GRID};
+      enum mappingTypes{ORIGINAL=0,SNAKE=1,LINES=2,GRID=3};
 
       //! JPEG lines data
       struct JPEGLineData

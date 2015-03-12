@@ -49,7 +49,7 @@ namespace pcl{
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	/**! 
 	* \brief 
-	*  struct to store achieved coding performance for official evaluation by MPEG committee
+	*  struct to store achieved coding performance for official evaluation by MPEG committee (3DG)
 	* \author Rufael Mekuria (rufael.mekuria@cwi.nl)
 	*/
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -58,12 +58,12 @@ namespace pcl{
 	std::size_t compressed_size;    //! store the compressed byte size
 
 	uint64_t in_point_count;
-    uint64_t out_point_count;
+  uint64_t out_point_count;
 	uint64_t byte_count_octree_layer;
 	uint64_t byte_count_centroid_layer;
 	uint64_t byte_count_color_layer;
 
-    float symm_rms;                             //! store symm rms metric
+  float symm_rms;                             //! store symm rms metric
 	float symm_hausdorff;                       //! store symm haussdorf
 	float left_hausdorff;                        //! store left haussdorf
 	float right_hausdorff;                      //! store right haussdorf

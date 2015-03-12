@@ -30,10 +30,10 @@ endif(Boost_SERIALIZATION_FOUND)
 
 # Required boost modules
 if(BUILD_OPENNI2)
-set(BOOST_REQUIRED_MODULES system filesystem thread date_time iostreams chrono)
+set(BOOST_REQUIRED_MODULES system filesystem thread date_time iostreams chrono program_options)
 find_package(Boost 1.47.0 REQUIRED COMPONENTS ${BOOST_REQUIRED_MODULES})
 else()
-set(BOOST_REQUIRED_MODULES system filesystem thread date_time iostreams)
+set(BOOST_REQUIRED_MODULES system filesystem thread date_time iostreams program_options)
 find_package(Boost 1.40.0 REQUIRED COMPONENTS ${BOOST_REQUIRED_MODULES})
 endif()
 

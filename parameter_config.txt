@@ -1,0 +1,8 @@
+#configuration file for testing the color encoding
+octree_bit_settings=9
+color_bit_settings=8 # values to test for the enhancement 
+color_coding_types= 1 # color coding types
+enh_bit_settings = 3
+keep_centroid=1 # option for keeping centroid instead of voxel centers only
+bb_expand_factor=0.15 #  expansion factor used to keep bounding box constant over time
+output_csv_file=test_predictive_coding.csv
