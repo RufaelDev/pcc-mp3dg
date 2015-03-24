@@ -1,2 +1,2 @@
 compression setting; in point count;out point count;compressed_byte_size;compressed_byte_size_per_output_point;octree_byte_size_per_voxel;centroid_byte_size_per_voxel;color_byte_size_per_voxel;symm_rms;symm_haussdorff;psnr_db;psnr_colors_y;psnr_colors_u;psnr_colors_v;encoding_time_ms;decoding_time_ms;
-9_8_colort-1_centroid-0;320933;211313;139743;0.661308;0.444227;0;0.216366;0.000976315;0.00169135;65.4383;30.2936;21.363;27.9625;10408;3440;
+9_8_colort-1_centroid-1;320933;211313;220876;1.04526;0.444227;0.383928;0.216366;0.000989627;0.00264117;65.3206;28.4503;21.3584;27.9359;134770;20411;

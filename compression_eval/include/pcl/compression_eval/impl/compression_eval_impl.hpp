@@ -63,7 +63,7 @@ namespace pcl{
         false,
         std::pow( 2.0, -1.0 *(nr_bits_base_layer + nr_bits_enh_layer) ),
         std::pow( 2.0, -1.0 *(nr_bits_base_layer)),
-        false /* no intra voxel coding in this first version of the codec ok */,
+        true /* no intra voxel coding in this first version of the codec ok */,
         i_frame_rate,
         nr_bits_colors ? true : false,
         nr_bits_colors,

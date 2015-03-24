@@ -457,12 +457,13 @@ main (int argc, char** argv)
           //////////////////////////////////////////////////////////////
 
           // start decoding and computing quality metrics
+          stringstream oc(l_output_base.str());
           colorOctreeCodec::PointCloudPtr decoded_cloud_base = colorOctreeCodec::PointCloudPtr(new colorOctreeCodec::PointCloud);
 
           // do the decoding base layer
           std::cout << "starting decoding the baselayer point cloud \n" << std::endl;
           tt.tic ();
-          l_codec_decoder_base->decodePointCloud(l_output_base,decoded_cloud_base);
+          l_codec_decoder_base->decodePointCloud(oc,decoded_cloud_base);
           achieved_quality.decoding_time_ms = tt.toc ();
           std::cout << "finished decoding the point cloud \n" << std::endl;
           // end do the decoding base layer
