@@ -97,14 +97,14 @@ double bb_expand_factor = 0.10;
 /////////////// END CODEC PARAMETER SETTINGS /////////////////////////
 
 void
-printHelp (int, char **argv)
+  printHelp (int, char **argv)
 {
   print_error ("Syntax is: %s input_dir1 input_dir2 ............ input_dirN\n put the parameter_config.txt", argv[0]);
 }
 
 //! function for loading a mesh file
 bool
-loadPLYMesh (const std::string &filename, pcl::PolygonMesh &mesh)
+  loadPLYMesh (const std::string &filename, pcl::PolygonMesh &mesh)
 {
   TicToc tt;
   print_highlight ("Loading "); 
@@ -128,7 +128,7 @@ loadPLYMesh (const std::string &filename, pcl::PolygonMesh &mesh)
 
 //! function for loading a mesh files in a folder
 bool
-loadPLYFolder(const std::string &folder_name, std::vector<pcl::PolygonMesh> &meshes, std::vector<compression_eval_mesh_meta_data> &meshes_meta_data){
+  loadPLYFolder(const std::string &folder_name, std::vector<pcl::PolygonMesh> &meshes, std::vector<compression_eval_mesh_meta_data> &meshes_meta_data){
 
     // check if folder is directory
     if(!boost::filesystem::is_directory(folder_name)){
@@ -201,7 +201,7 @@ script for point cloud codec evaluation by MPEG committee
 */
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 int
-main (int argc, char** argv)
+  main (int argc, char** argv)
 {
   print_info ("Load a Folder of Point Clouds\n ", argv[0]);
 
@@ -223,6 +223,7 @@ main (int argc, char** argv)
     ("keep_centroid", po::value<int>()->default_value(1), " for keeping centroid ")
     ("bb_expand_factor", po::value<double>()->default_value(0.15), " bounding box expansion to keep bounding box accross frames ")
     ("output_csv_file", po::value<std::string>()->default_value("bench_out.csv")," output .csv file ")
+    ("write_output_ply", po::value<int>()->default_value(0)," write output as .ply files")
     ;
 
   po::variables_map vm;
@@ -384,6 +385,7 @@ main (int argc, char** argv)
   std::vector<int> color_bit_settings =  vm["color_bit_settings"].as<std::vector<int>>();
   std::vector<int> color_coding_types =  vm["color_coding_types"].as<std::vector<int>>();
   bool keep_centroid = vm["keep_centroid"].as<int>();
+  int write_out_ply =  vm["write_output_ply"].as<int>();
 
   // base layer resolution
   for(int ct=0; ct < color_coding_types.size();ct++ ){
@@ -471,13 +473,23 @@ main (int argc, char** argv)
           // compute quality metric of the base layer
           computeQualityMetric<pcl::PointXYZRGB>(*fused_clouds[i],*decoded_cloud_base, achieved_quality);
 
-          // write the .ply file by converting to point cloud2 and then to polygon mesh
-          pcl::PCLPointCloud2::Ptr cloud2(new pcl::PCLPointCloud2());
-          pcl::toPCLPointCloud2( *decoded_cloud_base, *cloud2);
-          pcl::PLYWriter writer;
-          writer.write( boost::lexical_cast<std::string>(i) + "out.ply", cloud2);
-          // end writing .ply
-
+          if(write_out_ply ){
+            // write the .ply file by converting to point cloud2 and then to polygon mesh
+            pcl::PCLPointCloud2::Ptr cloud2(new pcl::PCLPointCloud2());
+            pcl::toPCLPointCloud2( *decoded_cloud_base, *cloud2);
+            pcl::PLYWriter writer;
+            writer.write("ct_" +
+              boost::lexical_cast<std::string>(ct) + 
+              "ob_" +
+              boost::lexical_cast<std::string>(ob) + 
+              "_cb_" +
+              boost::lexical_cast<std::string>(cb) + 
+              "_mesh_nr_" +
+              boost::lexical_cast<std::string>(i) +
+              "_out.ply", cloud2
+              );
+            // end writing .ply
+          }
           // print the evaluation results to the output .cs file
           achieved_quality.print_csv_line(compression_arg_ss.str(), res_base_ofstream);
         }
