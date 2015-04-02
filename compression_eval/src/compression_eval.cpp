@@ -49,6 +49,7 @@
 #include <utility>
 #include <pcl/conversions.h>
 #include <pcl/PCLPointCloud2.h>
+
 using namespace std;
 using namespace pcl;
 using namespace pcl::quality;
@@ -386,6 +387,7 @@ int
   std::vector<int> color_coding_types =  vm["color_coding_types"].as<std::vector<int>>();
   bool keep_centroid = vm["keep_centroid"].as<int>();
   int write_out_ply =  vm["write_output_ply"].as<int>();
+  //////////////////////////////////////////////////////////////////////////
 
   // base layer resolution
   for(int ct=0; ct < color_coding_types.size();ct++ ){
@@ -449,10 +451,7 @@ int
           achieved_quality.byte_count_octree_layer = c_sizes[0];
           achieved_quality.byte_count_centroid_layer = c_sizes[1];
           achieved_quality.byte_count_color_layer= c_sizes[2];
-          //
-          //enh_layer_q.byte_count_octree_layer = c_sizes[0];
-          //enh_layer_q.byte_count_centroid_layer= c_sizes[1];
-          //enh_layer_q.byte_count_color_layer= c_sizes[2];
+          
           ////////////////////////////////////////////////////////////////
 
           std::cout << " octreeCoding " << (achieved_quality.compressed_size=l_output_base.tellp()) << " bytes  base layer  " << std::endl;
@@ -463,7 +462,7 @@ int
           colorOctreeCodec::PointCloudPtr decoded_cloud_base = colorOctreeCodec::PointCloudPtr(new colorOctreeCodec::PointCloud);
 
           // do the decoding base layer
-          std::cout << "starting decoding the baselayer point cloud \n" << std::endl;
+          std::cout << "starting decoding the point cloud \n" << std::endl;
           tt.tic ();
           l_codec_decoder_base->decodePointCloud(oc,decoded_cloud_base);
           achieved_quality.decoding_time_ms = tt.toc ();
