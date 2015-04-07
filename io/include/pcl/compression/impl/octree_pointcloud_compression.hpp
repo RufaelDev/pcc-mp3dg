@@ -71,8 +71,6 @@ namespace pcl
 
       // make sure cloud contains points
       if (this->leaf_count_>0) {
-
-
         // color field analysis
         cloud_with_color_ = false;
         std::vector<pcl::PCLPointField> fields;

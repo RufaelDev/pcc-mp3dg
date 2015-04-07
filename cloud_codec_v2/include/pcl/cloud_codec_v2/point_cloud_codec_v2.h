@@ -149,21 +149,24 @@ namespace pcl{
         * \param compressed_tree_data_out_arg:  binary output stream containing compressed data
         */
         virtual void
-        encodePointCloudDeltaFrame (const PointCloudConstPtr &dcloud_arg, std::ostream& compressed_tree_data_out_arg1, std::ostream& compressed_tree_data_out_arg2);
+        encodePointCloudDeltaFrame (const PointCloudConstPtr &icloud_arg, const PointCloudConstPtr &pcloud_arg, 
+            std::ostream& i_coded_data, std::ostream& p_coded_data);
 
         /** \brief Decode point cloud Delta from input stream
         * \param compressed_tree_data_in_arg: binary input stream containing compressed data
         * \param cloud_arg: reference to decoded point cloud
         */
         virtual void
-        decodePointCloudDeltaFrame (const PointCloudConstPtr &icloud_arg,std::istream& compressed_tree_data_in_arg1, std::istream& compressed_tree_data_out_arg2 , PointCloudPtr &cloud_arg);
-
+        decodePointCloudDeltaFrame(const PointCloudConstPtr &icloud_arg, const PointCloudConstPtr &pcloud_arg, 
+            std::istream& i_coded_data, std::istream& p_coded_data);
         /*!
         \brief function to simplify the delta frame to do a prediction
         \author Rufael Mekuria rufael.mekuria@cwi.nl
         */
         virtual void
-        simplifyPCloud(const PointCloudConstPtr &pcloud_arg_in,PointCloudPtr & out_cloud );
+        simplifyPCloud(const PointCloudConstPtr &pcloud_arg_in, 
+          OctreePointCloudCompression<PointT,LeafT,BranchT,OctreeT> *octree_simplifier,
+          PointCloudPtr &out_cloud );
       
         uint64_t *
         getPerformanceMetrics()

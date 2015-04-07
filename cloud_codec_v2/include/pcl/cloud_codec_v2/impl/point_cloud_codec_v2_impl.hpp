@@ -58,7 +58,7 @@ namespace pcl{
 
   namespace io{
 
-    /// encoding routine, based on the PCL octree codec written by Julius kammerl
+    /// encoding routine, based on the PCL octree codec written by Julius Kammerl
     //////////////////////////////////////////////////////////////////////////////////////////////
     template<typename PointT, typename LeafT, typename BranchT, typename OctreeT> void OctreePointCloudCodecV2<
         PointT, LeafT, BranchT, OctreeT>::encodePointCloud (
@@ -194,7 +194,7 @@ namespace pcl{
       }
     }
 
-     /// decoding routine, based on the PCL octree codec written by Julius kammerl
+     /// decoding routine, based on the PCL octree codec written by Julius Kammerl
     //////////////////////////////////////////////////////////////////////////////////////////////
     template<typename PointT, typename LeafT, typename BranchT, typename OctreeT> void
     OctreePointCloudCodecV2<PointT, LeafT, BranchT, OctreeT>::decodePointCloud (
@@ -287,12 +287,89 @@ namespace pcl{
     }
 
     /*!
-    \brief function to compute the delta frame, under development will be added later on
+    \brief  helper function to compute the delta frames
     \author Rufael Mekuria rufael.mekuria@cwi.nl
+    \param  const PointCloudConstPtr &pcloud_arg_in  input argument, cloud to simplify
+    \param  OctreePointCloudCompression<PointT,LeafT,BranchT,OctreeT> *octree_simplifier, resulting octree datastructure that can be used for compression of the octree
+    \param  out_cloud  output simplified point cloud
     */
     template<typename PointT, typename LeafT, typename BranchT, typename OctreeT> void
-    OctreePointCloudCodecV2<PointT,LeafT,BranchT,OctreeT>::simplifyPCloud(const PointCloudConstPtr &pcloud_arg_in, PointCloudPtr &out_cloud )
+      OctreePointCloudCodecV2<PointT,LeafT,BranchT,OctreeT>::simplifyPCloud(const PointCloudConstPtr &pcloud_arg_in, 
+      OctreePointCloudCompression<PointT,LeafT,BranchT,OctreeT> *octree_simplifier,
+      PointCloudPtr &out_cloud )
     {
+      // this is the octree coding part of the predictive encoding
+      octree_simplifier = new OctreePointCloudCompression<PointT,LeafT,BranchT,OctreeT>
+      (
+        MANUAL_CONFIGURATION,
+        false,
+        point_resolution_,
+        octree_resolution_,
+        true,
+        0,
+        true,
+        color_bit_resolution_ /*,0,do_voxel_centroid_enDecoding_*/
+      );
+
+      // use bounding box and obtain the octree grid
+      octree_simplifier->defineBoundingBox(0.0, 0.0, 0.0, 1.0, 1.0, 1.0);
+      octree_simplifier->setInputCloud (pcloud_arg_in);
+      octree_simplifier->addPointsFromInputCloud ();
+
+      /////////////////////////////////////////////////////////////////////////
+      //! initialize output cloud
+      //PointCloudPtr out_cloud(new PointCloud( octree_simplifier.leaf_count_, 1));
+      out_cloud->width = octree_simplifier->getLeafCount();
+      out_cloud->height = 1;
+      out_cloud->points.reserve(octree_simplifier->getLeafCount());  
+      // cant get access to the number of leafs
+      ////////////////////////////////////////////////////////////////////////////
+
+      ///////////// compute the simplified cloud by iterating the octree ////////
+      auto it_ = octree_simplifier->leaf_begin();
+      auto it_end = octree_simplifier->leaf_end();
+
+      for(int l_index =0;it_ !=it_end; it_++, l_index++)
+      {
+        // new point for the simplified cloud
+        PointT l_new_point;
+        
+        //! centroid for storage
+        auto point_indices = it_.getLeafContainer().getPointIndicesVector();
+        
+        // if centroid coding, store centroid, otherwise add 
+        if(!do_voxel_centroid_enDecoding_)
+        {
+          octree_simplifier->genLeafNodeCenterFromOctreeKey(it_.getCurrentOctreeKey(),l_new_point);
+        }
+        else
+        {
+          Eigen::Vector4f cent;
+          pcl::compute3DCentroid<PointT>(*pcloud_arg_in, point_indices, cent);
+
+          l_new_point.x = cent[0];
+          l_new_point.y = cent[1];
+          l_new_point.z = cent[2];
+        }
+        long color_r=0;
+        long color_g=0;
+        long color_b=0;
+
+        //! compute average color
+        for(int i=0; i< point_indices.size();i++)
+        {
+          color_r+=pcloud_arg_in->points[point_indices[i]].r;
+          color_g+=pcloud_arg_in->points[point_indices[i]].g;
+          color_b+=pcloud_arg_in->points[point_indices[i]].b;
+        }
+
+        l_new_point.r = (char) (color_r / point_indices.size());
+        l_new_point.g = (char) (color_g / point_indices.size());
+        l_new_point.b = (char) (color_b / point_indices.size());
+     
+        out_cloud->points.push_back(l_new_point);
+      }
+      //////////////// done computing simplified cloud and octree structure //////////////////
     };
 
     /*!
@@ -300,17 +377,266 @@ namespace pcl{
     \author Rufael Mekuria rufael.mekuria@cwi.nl
     */
     template<typename PointT, typename LeafT, typename BranchT, typename OctreeT> void 
-      OctreePointCloudCodecV2<PointT,LeafT,BranchT,OctreeT>::encodePointCloudDeltaFrame (
-      const PointCloudConstPtr &dcloud_arg,
-      std::ostream& compressed_tree_data_out_arg1, std::ostream& compressed_tree_data_out_arg2 )
-    {}
+      OctreePointCloudCodecV2<PointT,LeafT,BranchT,OctreeT>::encodePointCloudDeltaFrame( 
+      const PointCloudConstPtr &icloud_arg /* icloud is already stored but can also be given as argument*/,
+      const PointCloudConstPtr &pcloud_arg,
+      std::ostream& i_coded_data, 
+      std::ostream& p_coded_data )
+    {
+      ///////////////////////////// IFRAME MACROBLOCKS I_M ////////////////////////////
+      // set boundingbox to normalized cube and compute macroblocks
+      // compute 16x16x16 octree 
+      // store the keys to macroblock map
+      OctreePointCloudCompression<PointT,LeafT,BranchT,OctreeT> i_coder
+      (
+        MANUAL_CONFIGURATION,
+        false,
+        point_resolution_,
+        octree_resolution_ * 16,
+        true,
+        0,
+        true,
+        color_bit_resolution_ 
+        /*,0,do_voxel_centroid_enDecoding_*/
+      );
+      i_coder.defineBoundingBox(0.0, 0.0, 0.0, 1.0, 1.0, 1.0);
+      i_coder.setInputCloud (output_);
+      i_coder.addPointsFromInputCloud ();
+
+      std::map<pcl::octree::OctreeKey,std::vector<int> *,std::less<pcl::octree::OctreeKey>> I_M;
+      auto it_i_frame = i_coder.leaf_begin();
+      auto it_i_end = i_coder.leaf_end();
+
+      for(;it_i_frame!=it_i_end;++it_i_frame)
+      {		
+        std::vector<int> &leaf_data = it_i_frame.getLeafContainer().getPointIndicesVector() ;
+        I_M[it_i_frame.getCurrentOctreeKey()] = &leaf_data;
+      }
+      ///////////////////////////// ~IFRAME MACROBLOCKS I_M ////////////////////////////
+
+
+      ///////////////////////////// PFRAME MACROBLOCKS P_M /////////////////////////////
+  
+      ////////// 1. fine grained octree and simplified cloud for P frame /////////////////
+      PointCloudPtr simp_pcloud(new PointCloud());
+      OctreePointCloudCompression<PointT,LeafT,BranchT,OctreeT> *octree_pcloud;
+      simplifyPCloud(pcloud_arg,octree_pcloud, simp_pcloud);
+      
+      ////////// 2. Compute Macroblocks fo P Frame //////////////////////////////////////////////////
+      // the macroblocks of the p_frame, this is done on top of the more finegrained intraframe octree of P
+      OctreePointCloudCompression<PointT,LeafT,BranchT,OctreeT> p_coder
+        (
+        MANUAL_CONFIGURATION,
+        false,
+        point_resolution_,
+        octree_resolution_ * 16,
+        true,
+        0,
+        true,
+        color_bit_resolution_
+        );
+
+      p_coder.defineBoundingBox(0.0, 0.0, 0.0, 1.0, 1.0, 1.0);
+      p_coder.setInputCloud (simp_pcloud);
+      p_coder.addPointsFromInputCloud ();
+
+      //! macroblocks that or non empty in both the I Frame and the P Frame
+      std::map<pcl::octree::OctreeKey,std::pair<std::vector<int> *
+        ,std::vector<int> *>,std::less<pcl::octree::OctreeKey>> S_M;
+
+      ////////////////// iterate the predictive frame and find common macro blocks /////////////
+      auto it_predictive = p_coder.leaf_begin();
+      auto it_predictive_end = p_coder.leaf_end();
+
+      for(;it_predictive!=it_predictive_end;++it_predictive)
+      {
+        if(I_M.count(it_predictive.getCurrentOctreeKey()))
+        {
+          // macroblocks in both frames, we will use ICP to do inter predictive coding
+          S_M[it_predictive.getCurrentOctreeKey()]=make_pair(I_M[it_predictive.getCurrentOctreeKey()],
+                                                             &(it_predictive.getLeafContainer().getPointIndicesVector())) ;
+        }
+      }
+      /////////////////////////////////////////////////////////////////////////////////////////
+
+      //////////////// ITERATE THE SHARED MACROBLOCKS AND DO ICP BASED PREDICTION //////////////
+      std::map<pcl::octree::OctreeKey,std::pair<std::vector<int> *
+        ,std::vector<int> *>,std::less<pcl::octree::OctreeKey>>::iterator sm_it;
+      // iterate the common macroblocks and do ICP
+      for(sm_it = S_M.begin(); sm_it != S_M.end(); ++sm_it)
+      { 
+        pcl::PointCloud<PointT>::Ptr cloud_in (new pcl::PointCloud<PointT>(*output_,  *(sm_it->second.first)));
+        pcl::PointCloud<PointT>::Ptr cloud_out (new pcl::PointCloud<PointT>(*simp_pcloud, *(sm_it->second.second)));
+
+        pcl::IterativeClosestPoint<PointT, PointT> icp;
+        icp.setInputCloud(cloud_in);
+        icp.setInputTarget(cloud_out);
+
+        pcl::PointCloud<PointT> Final;
+        icp.align(Final);
+        std::cout << "has converged:" << icp.hasConverged() << " score: " <<
+        icp.getFitnessScore() << std::endl;
+        std::cout << icp.getFinalTransformation() << std::endl;
+      }
+      //////////////////////////////////////////////////////////////////////////////////////////////
+    }
+
+  /*
+    if(icp.hasConverged() ){
+      quality::QualityMetric transformed_q;
+      quality::QualityMetric transformed_b;
+
+      quality::computeQualityMetric<PointT>( *cloud_out, Final, transformed_q);
+      std::cout << " results with transform " << std::endl;
+      std::cout << " psnr dB: " << transformed_q.psnr_db << std::endl;
+      std::cout << " mse error rms: " << transformed_q.symm_rms << std::endl;
+      std::cout << " mse error hauss: " << transformed_q.symm_hausdorff << std::endl;
+      std::cout << " psnr Color: " <<  transformed_q.psnr_yuv[0]<< std::endl;
+
+      quality::computeQualityMetric<PointT>( *cloud_out , *cloud_in, transformed_b);
+      std::cout << " results without transform " << std::endl;
+      std::cout << " psnr dB: " << transformed_b.psnr_db << std::endl;
+      std::cout << " mse error rms: " << transformed_b.symm_rms << std::endl;
+      std::cout << " mse error hauss: " << transformed_b.symm_hausdorff << std::endl;
+      std::cout << " psnr Color: " <<  transformed_b.psnr_yuv[0]<< std::endl;
+    }*/
 
     /////////////////////////////////////////////////////////////////////////////////////////////////
     template<typename PointT, typename LeafT, typename BranchT, typename OctreeT> void
-      OctreePointCloudCodecV2<PointT, LeafT, BranchT, OctreeT>::decodePointCloudDeltaFrame (
-      const PointCloudConstPtr &icloud_arg, std::istream& compressed_tree_data_in_arg1, 
-      std::istream& compressed_tree_data_in_arg2,PointCloudPtr &cloud_arg)
+      OctreePointCloudCodecV2<PointT, LeafT, BranchT, OctreeT>::decodePointCloudDeltaFrame( 
+          const PointCloudConstPtr &icloud_arg, const PointCloudConstPtr &pcloud_arg, 
+          std::istream& i_coded_data, std::istream& p_coded_data)
     {}
+
+    /*
+    std::vector<OctreeContainerPointIndices*> or_leaf_container_vector_arg;
+    std::vector<OctreeContainerPointIndices*> next_leaf_container_vector_arg;
+    std::vector<OctreeContainerPointIndices*> new_leaf_container_vector_arg;
+
+    serializeLeafs(or_leaf_container_vector_arg);
+
+    this->switchBuffers();
+    this->defineBoundingBox(0.0, 0.0, 0.0, 1.0, 1.0, 1.0);
+
+    // initialize octree
+    this->setInputCloud (dcloud_arg);
+    this->addPointsFromInputCloud ();
+
+    serializeLeafs(next_leaf_container_vector_arg);
+    serializeNewLeafs(new_leaf_container_vector_arg);
+
+    std::vector<OctreeContainerPointIndices*> new_leaf_container_vector_filtered;
+    new_leaf_container_vector_filtered.reserve(new_leaf_container_vector_arg.size());
+
+    //
+    for(int i=0; i< new_leaf_container_vector_arg.size(); i++)
+    {
+    if(new_leaf_container_vector_arg[i]->getSize() > 5)
+    new_leaf_container_vector_filtered.push_back(new_leaf_container_vector_arg[i]);
+    }
+
+    std::cout << next_leaf_container_vector_arg.size() - or_leaf_container_vector_arg.size() << std::endl;
+    std::cout << new_leaf_container_vector_filtered.size() << std::endl;
+    */
+
+    //////////////////// store keys of original frame //////////////////////////
+    /*
+    auto it_reference_frame = this->leaf_begin();
+    auto it_reference_end = this->leaf_end();
+
+    auto l_cnt = this->leaf_count_;
+
+    std::map<pcl::octree::OctreeKey,t_leaf_node_properties<PointT>,std::less<pcl::octree::OctreeKey>> keys_in_reference_frame;
+    std::map<pcl::octree::OctreeKey,t_leaf_node_properties<PointT>,std::less<pcl::octree::OctreeKey>> keys_in_delta_frame;
+    std::map<pcl::octree::OctreeKey,t_leaf_node_properties<PointT>,std::less<pcl::octree::OctreeKey>> keys_in_both_frame;
+
+    for(;it_reference_frame!=it_reference_end; ++it_reference_frame)
+    {
+    // properties of the leaf node
+    t_leaf_node_properties<PointT> lp;
+
+    // get point count and average
+    std::vector<int> l_v_points;
+    it_reference_frame.getLeafContainer().getPointIndices(l_v_points);
+    lp.point_count= l_v_points.size();
+
+    //! get the voxel center (not really needed)
+    this->genLeafNodeCenterFromOctreeKey(it_reference_frame.getCurrentOctreeKey(),lp.voxel_center);
+
+    pcl::compute3DCentroid<PointT>(*icloud_arg, l_v_points, lp.centroid);
+
+    pcl::NormalEstimation<PointT,pcl::Normal> ne;
+
+    ne.computePointNormal(*icloud_arg,l_v_points, lp.plane_params, lp.curvature);
+
+    keys_in_reference_frame[it_reference_frame.getCurrentOctreeKey()] = lp;	
+
+
+    }
+
+    //////////////////// store keys of new frame //////////////////////////
+
+    this->switchBuffers();
+    this->defineBoundingBox(0.0, 0.0, 0.0, 1.0, 1.0, 1.0);
+
+    // initialize octree
+    this->setInputCloud (dcloud_arg);
+    this->addPointsFromInputCloud ();
+
+    // get new voxels
+    std::vector<OctreeContainerPointIndices*> new_leaf_container_vector_arg;
+    this->serializeNewLeafs(new_leaf_container_vector_arg);
+
+    std::vector<OctreeContainerPointIndices*> obsolete_leaf_container_vector_arg;
+    this->serializeObsoleteLeafs(obsolete_leaf_container_vector_arg);
+
+    /*
+    auto it_new_frame = this->leaf_begin();
+    auto it_new_end = this->leaf_end();
+
+    for(;it_new_frame!=it_new_end; ++it_new_frame )
+    {
+    // properties of the leaf node
+    t_leaf_node_properties<PointT> lp;
+
+    // get point count and average
+    std::vector<int> l_v_points;
+    it_new_frame.getLeafContainer().getPointIndices(l_v_points);
+    lp.point_count= l_v_points.size();
+
+    //! get the voxel center (not really needed)
+    this->genLeafNodeCenterFromOctreeKey(it_new_frame.getCurrentOctreeKey(),lp.voxel_center);
+
+    //! centroid for storage
+    pcl::compute3DCentroid<PointT>(*dcloud_arg, l_v_points, lp.centroid);
+
+    //! compute normals 
+    pcl::NormalEstimation<PointT,pcl::Normal> ne; 
+    ne.computePointNormal(*dcloud_arg,l_v_points, lp.plane_params, lp.curvature);
+
+    //! 
+    keys_in_delta_frame[it_new_frame.getCurrentOctreeKey()] = lp;	
+    }
+
+    auto m_ref_it = keys_in_reference_frame.begin();
+    auto m_ref_it_end = keys_in_reference_frame.end();
+
+    // predictive frame for point cloud compression
+    for(;m_ref_it!=m_ref_it_end; ++m_ref_it )
+    {
+    if(keys_in_delta_frame.count(m_ref_it->first))
+    {
+
+    std::cout << " new frame point count: " <<
+    keys_in_delta_frame[m_ref_it->first].point_count <<  " ref. frame: " << m_ref_it->second.point_count << std::endl
+    <<  " centroid delta " << keys_in_delta_frame[m_ref_it->first].centroid - m_ref_it->second.centroid  << std::endl; 
+    std::cout << " plane params " <<
+    keys_in_delta_frame[m_ref_it->first].plane_params << std::endl <<  " ref. frame: " << m_ref_it->second.plane_params<< std::endl
+    <<  " curvature d" << keys_in_delta_frame[m_ref_it->first].curvature << "curvature r\n" << m_ref_it->second.curvature << std::endl; 
+
+    cin.get();
+    }
+    }*/
 
     /////////////////// CODE OVERWRITING CODEC V1 to become codec V2 ////////////////////////////////
 
@@ -412,7 +738,7 @@ namespace pcl{
 
           centroid_coder_.encodePoint(lowerVoxelCorner, centroid);
         }
-        // store the simplified cloud
+        // store the simplified cloud so that it can be used for predictive encoding
         output_->points.push_back(centroid);
       }
     }
