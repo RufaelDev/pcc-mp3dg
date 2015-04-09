@@ -437,7 +437,7 @@ namespace pcl{
         );
 
       p_coder.defineBoundingBox(0.0, 0.0, 0.0, 1.0, 1.0, 1.0);
-      p_coder.setInputCloud (simp_pcloud);
+      p_coder.setInputCloud(simp_pcloud);
       p_coder.addPointsFromInputCloud ();
 
       //! macroblocks that or non empty in both the I Frame and the P Frame
@@ -465,17 +465,22 @@ namespace pcl{
       // iterate the common macroblocks and do ICP
       for(sm_it = S_M.begin(); sm_it != S_M.end(); ++sm_it)
       { 
+        /* hard copy of the point clouds */
         pcl::PointCloud<PointT>::Ptr cloud_in (new pcl::PointCloud<PointT>(*output_,  *(sm_it->second.first)));
         pcl::PointCloud<PointT>::Ptr cloud_out (new pcl::PointCloud<PointT>(*simp_pcloud, *(sm_it->second.second)));
+
 
         pcl::IterativeClosestPoint<PointT, PointT> icp;
         icp.setInputCloud(cloud_in);
         icp.setInputTarget(cloud_out);
 
-        pcl::PointCloud<PointT> Final;
-        icp.align(Final);
-        std::cout << "has converged:" << icp.hasConverged() << " score: " <<
-        icp.getFitnessScore() << std::endl;
+        if(icp.hasConverged())
+        {
+          pcl::PointCloud<PointT> Final;
+          icp.align(Final);
+          std::cout << "has converged:" << icp.hasConverged() << " score: " <<
+          icp.getFitnessScore() << std::endl;
+        }
         std::cout << icp.getFinalTransformation() << std::endl;
       }
       //////////////////////////////////////////////////////////////////////////////////////////////
