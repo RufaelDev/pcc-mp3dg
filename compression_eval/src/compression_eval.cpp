@@ -225,6 +225,9 @@ int
     ("bb_expand_factor", po::value<double>()->default_value(0.15), " bounding box expansion to keep bounding box accross frames ")
     ("output_csv_file", po::value<std::string>()->default_value("bench_out.csv")," output .csv file ")
     ("write_output_ply", po::value<int>()->default_value(0)," write output as .ply files")
+    ("do_delta_frame_coding", po::value<int>()->default_value(0)," do_delta_frame_coding ")
+    ("icp_on_original", po::value<int>()->default_value(0)," icp_on_original ")
+    ("pframe_quality_log",po::value<std::string>()->default_value("pframe_log.csv"), " write the quality results of predictive coding of p frames")
     ;
 
   po::variables_map vm;
@@ -373,10 +376,14 @@ int
   /////////////// PREPARE OUTPUT CSV FILE AND CODEC PARAMTER SETTINGS /////////////////////////
   std::string o_log_csv = vm["output_csv_file"].as<std::string>();
   ofstream res_base_ofstream(o_log_csv);
+
+  std::string p_log_csv = vm["pframe_quality_log"].as<std::string>();
+  ofstream res_p_ofstream(p_log_csv);
   //ofstream res_enh_ofstream("results_enh.csv");
 
+  // print the headers
   QualityMetric::print_csv_header(res_base_ofstream);
-  //QualityMetric::print_csv_header(res_enh_ofstream);
+  QualityMetric::print_csv_header(res_p_ofstream);
 
   /////////////// END PREPARE OUTPUT CSV FILE AND CODEC PARAMTER SETTINGS /////////////////////////
 
@@ -387,6 +394,8 @@ int
   std::vector<int> color_coding_types =  vm["color_coding_types"].as<std::vector<int>>();
   bool keep_centroid = vm["keep_centroid"].as<int>();
   int write_out_ply =  vm["write_output_ply"].as<int>();
+  int do_delta_coding = vm["do_delta_frame_coding"].as<int>();
+  int icp_on_original = vm["icp_on_original"].as<int>();
   //////////////////////////////////////////////////////////////////////////
 
   // base layer resolution
@@ -433,6 +442,7 @@ int
           // structs for storing the achieved quality
           TicToc tt;
           pcl::quality::QualityMetric achieved_quality;
+          pcl::quality::QualityMetric pframe_quality;
 
           //! full compression into stringstreams, base and enhancement layers, with and without colors
           stringstream l_output_base;
@@ -447,15 +457,38 @@ int
           ////////////////////////////////////////////////////////////////
           // store and display the partial bytes sizes
           uint64_t *c_sizes = l_codec_encoder->getPerformanceMetrics();
-          //
           achieved_quality.byte_count_octree_layer = c_sizes[0];
           achieved_quality.byte_count_centroid_layer = c_sizes[1];
           achieved_quality.byte_count_color_layer= c_sizes[2];
-          
           ////////////////////////////////////////////////////////////////
 
           std::cout << " octreeCoding " << (achieved_quality.compressed_size=l_output_base.tellp()) << " bytes  base layer  " << std::endl;
           //////////////////////////////////////////////////////////////
+
+          //////////////////// octree delta frame encoding /////////////////////
+          // predicted frame, lossy prediction with artefacts that need to be assessed
+          boost::shared_ptr<pcl::PointCloud<PointXYZRGB>> out_d(new pcl::PointCloud<PointXYZRGB>()); 
+          if(do_delta_coding){
+            std::cout << " delta coding frame nr " << i << std::endl;
+            if(i < (fused_clouds.size() -1)) {
+              stringstream p_frame_pdat;
+              stringstream p_frame_idat;
+              // code a delta frame, either use original or simplified cloud for ICP
+              tt.tic();
+              l_codec_encoder->generatePointCloudDeltaFrame(icp_on_original ? fused_clouds[i] : l_codec_encoder->getOutputCloud(),fused_clouds[i+1],out_d, p_frame_idat, p_frame_pdat, (int) icp_on_original);
+              pframe_quality.encoding_time_ms = tt.toc();
+              pframe_quality.byte_count_octree_layer = p_frame_idat.tellp();
+              pframe_quality.byte_count_centroid_layer = p_frame_pdat.tellp();
+              pframe_quality.byte_count_color_layer= 0;
+              std::cout << " encoded a predictive frame: coded " << p_frame_idat.tellp() << " bytes intra and " << p_frame_pdat.tellp()  << " inter frame encoded " <<std::endl;
+              
+              // compute the quality of the resulting predictive frame
+              computeQualityMetric<pcl::PointXYZRGB>(*fused_clouds[i+1],*out_d, pframe_quality);
+              pframe_quality.print_csv_line(compression_arg_ss.str(), res_p_ofstream);
+            }
+            // store the quality metrics for the p cloud
+          }
+          ///////////////////////////////////////////////////////////////////////
 
           // start decoding and computing quality metrics
           stringstream oc(l_output_base.str());
@@ -472,7 +505,8 @@ int
           // compute quality metric of the base layer
           computeQualityMetric<pcl::PointXYZRGB>(*fused_clouds[i],*decoded_cloud_base, achieved_quality);
 
-          if(write_out_ply ){
+          if(write_out_ply )
+          {
             // write the .ply file by converting to point cloud2 and then to polygon mesh
             pcl::PCLPointCloud2::Ptr cloud2(new pcl::PCLPointCloud2());
             pcl::toPCLPointCloud2( *decoded_cloud_base, *cloud2);
@@ -488,6 +522,25 @@ int
               "_out.ply", cloud2
               );
             // end writing .ply
+
+            // write predictevely encoded frames
+            if(do_delta_coding)
+            {
+              pcl::PCLPointCloud2::Ptr cloud2d(new pcl::PCLPointCloud2());
+              pcl::toPCLPointCloud2( *out_d, *cloud2d);
+              pcl::PLYWriter writer;
+              writer.write("ct_" +
+              boost::lexical_cast<std::string>(ct) + 
+              "ob_" +
+              boost::lexical_cast<std::string>(ob) + 
+              "_cb_" +
+              boost::lexical_cast<std::string>(cb) + 
+              "_mesh_nr_" +
+              boost::lexical_cast<std::string>(i+1) +
+              "_out_predicted.ply", cloud2d
+              );
+            }
+            // ~ write predictively encoded frames
           }
           // print the evaluation results to the output .cs file
           achieved_quality.print_csv_line(compression_arg_ss.str(), res_base_ofstream);

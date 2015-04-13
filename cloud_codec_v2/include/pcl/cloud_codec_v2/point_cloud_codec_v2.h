@@ -144,13 +144,26 @@ namespace pcl{
         void
         decodePointCloud (std::istream& compressed_tree_data_in_arg, PointCloudPtr &cloud_arg);
 
+        /** \brief generate a point cloud Delta to output stream
+        * \param icloud_arg:  point cloud to be used a I frame
+        * \param pcloud_arg:  point cloud to be encoded
+        * \param PointCloudPtr &out_cloud_arg [out] the predicted frame 
+        * \param std::ostream& i_coded_data intra encoded data (not yet implemented)
+        * \param std::ostream& p_coded_data inter encoded data (not yet implemented)
+        * \param bool  icp_on_original 
+        * \param bool  write_out_cloud  flag to write the output cloud to out_cloud_arg
+        */
+        virtual void
+        generatePointCloudDeltaFrame (const PointCloudConstPtr &icloud_arg, const PointCloudConstPtr &pcloud_arg, PointCloudPtr &out_cloud_arg, 
+            std::ostream& i_coded_data, std::ostream& p_coded_data, bool icp_on_original = false,bool write_out_cloud = true );
+
         /** \brief Encode point cloud Delta to output stream
         * \param cloud_arg:  point cloud to be compressed
         * \param compressed_tree_data_out_arg:  binary output stream containing compressed data
         */
         virtual void
-        encodePointCloudDeltaFrame (const PointCloudConstPtr &icloud_arg, const PointCloudConstPtr &pcloud_arg, 
-            std::ostream& i_coded_data, std::ostream& p_coded_data);
+        encodePointCloudDeltaFrame (const PointCloudConstPtr &icloud_arg, const PointCloudConstPtr &pcloud_arg, PointCloudPtr &out_cloud_arg, 
+        std::ostream& i_coded_data, std::ostream& p_coded_data, bool icp_on_original = false,bool write_out_cloud = true ){};
 
         /** \brief Decode point cloud Delta from input stream
         * \param compressed_tree_data_in_arg: binary input stream containing compressed data

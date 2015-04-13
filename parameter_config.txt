@@ -1,19 +1,12 @@
 #configuration file for testing the color encoding
-octree_bit_settings=11
-octree_bit_settings=10
 octree_bit_settings=9
-octree_bit_settings=8
-octree_bit_settings=7
-octree_bit_settings=6
-octree_bit_settings=5
 color_bit_settings=8 # values to test for the enhancement 
-color_bit_settings=7 # values to test for the enhancement 
-color_bit_settings=6 # values to test for the enhancement 
-color_bit_settings=5 # values to test for the enhancement 
-color_bit_settings=4 # values to test for the enhancement 
 color_coding_types= 0 # color coding types 1=grid 2=lines
 enh_bit_settings = 3
 keep_centroid=0 # option for keeping centroid instead of voxel centers only
-bb_expand_factor=0.0 #  expansion factor used to keep bounding box constant over time
-output_csv_file=aski_test_colors.csv
+bb_expand_factor=0.2 #  expansion factor used to keep bounding box constant over time
+output_csv_file=qmul_test_colors.csv
 write_output_ply=0
+do_delta_frame_coding=1
+icp_on_original=1
+pframe_quality_log=predictive_quality.csv
