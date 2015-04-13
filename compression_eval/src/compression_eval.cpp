@@ -66,8 +66,8 @@ namespace po = boost::program_options;
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 struct compression_eval_mesh_meta_data
 {
-  std::string original_file_name;
-  std::size_t original_file_size;
+  string original_file_name;
+  size_t original_file_size;
   bool has_coords;
   bool has_normals;
   bool has_colors;
@@ -105,7 +105,7 @@ void
 
 //! function for loading a mesh file
 bool
-  loadPLYMesh (const std::string &filename, pcl::PolygonMesh &mesh)
+  loadPLYMesh (const string &filename, pcl::PolygonMesh &mesh)
 {
   TicToc tt;
   print_highlight ("Loading "); 
@@ -129,7 +129,7 @@ bool
 
 //! function for loading a mesh files in a folder
 bool
-  loadPLYFolder(const std::string &folder_name, std::vector<pcl::PolygonMesh> &meshes, std::vector<compression_eval_mesh_meta_data> &meshes_meta_data){
+  loadPLYFolder(const string &folder_name, vector<pcl::PolygonMesh> &meshes, vector<compression_eval_mesh_meta_data> &meshes_meta_data){
 
     // check if folder is directory
     if(!boost::filesystem::is_directory(folder_name)){
@@ -146,8 +146,8 @@ bool
     {
       if(boost::filesystem::is_regular_file(dir_iter->path()))
       {
-        std::string file_name = dir_iter->path().generic_string();
-        std::string file_ext = dir_iter->path().extension().generic_string();
+        string file_name = dir_iter->path().generic_string();
+        string file_ext = dir_iter->path().extension().generic_string();
 
         //! we only support .ply meshes
         if(file_ext ==".ply"){
@@ -216,22 +216,22 @@ int
   boost::program_options::options_description desc;
   desc.add_options()
     ("help", " produce help message ")
-    ("mesh_file_folders", po::value<vector<std::string>>(), " folder mesh files ")
+    ("mesh_file_folders", po::value<vector<string>>(), " folder mesh files ")
     ("octree_bit_settings", po::value<vector<int>>(), " quantization bit assignment octree ")
     ("color_bit_settings", po::value<vector<int>>(), "color bit assignment octree or jpeg quality values ")
     ("enh_bit_settings", po::value<int>(), " bits to code the points towards the center ")
     ("color_coding_types", po::value<vector<int>>(), "  pcl=0,jpeg=1 or graph transform ")
     ("keep_centroid", po::value<int>()->default_value(1), " for keeping centroid ")
     ("bb_expand_factor", po::value<double>()->default_value(0.15), " bounding box expansion to keep bounding box accross frames ")
-    ("output_csv_file", po::value<std::string>()->default_value("bench_out.csv")," output .csv file ")
+    ("output_csv_file", po::value<string>()->default_value("bench_out.csv")," output .csv file ")
     ("write_output_ply", po::value<int>()->default_value(0)," write output as .ply files")
     ("do_delta_frame_coding", po::value<int>()->default_value(0)," do_delta_frame_coding ")
     ("icp_on_original", po::value<int>()->default_value(0)," icp_on_original ")
-    ("pframe_quality_log",po::value<std::string>()->default_value("pframe_log.csv"), " write the quality results of predictive coding of p frames")
+    ("pframe_quality_log",po::value<string>()->default_value("pframe_log.csv"), " write the quality results of predictive coding of p frames")
     ;
 
   po::variables_map vm;
-  std::ifstream in_conf("..//parameter_config.txt");
+  ifstream in_conf("..//parameter_config.txt");
   po::store(po::parse_config_file(in_conf, desc), vm);
   po::notify(vm);  
   bb_expand_factor = vm["bb_expand_factor"].as<double>();
@@ -240,15 +240,15 @@ int
 
   ////////////////// LOADING CLOUDS INTO MEMORY /////////////////////////////////////
   // store folders to load in a vector
-  std::vector<int> ply_folder_indices = parse_file_extension_argument (argc, argv, "");
+  vector<int> ply_folder_indices = parse_file_extension_argument (argc, argv, "");
 
   // store all loaded meshes in a vector and store all metadata separately (optional)
-  std::vector<std::vector<pcl::PolygonMesh>> meshes;
-  std::vector<std::vector<compression_eval_mesh_meta_data>> meshes_meta_data;
+  vector<vector<pcl::PolygonMesh>> meshes;
+  vector<vector<compression_eval_mesh_meta_data>> meshes_meta_data;
 
   // data structures for storing the fused meshes
-  std::vector<boost::shared_ptr<pcl::PointCloud<PointXYZRGB>>> fused_clouds;
-  std::vector<compression_eval_mesh_meta_data> fused_clouds_meta_data;
+  vector<boost::shared_ptr<pcl::PointCloud<PointXYZRGB>>> fused_clouds;
+  vector<compression_eval_mesh_meta_data> fused_clouds_meta_data;
 
   meshes.resize(ply_folder_indices.size());
   meshes_meta_data.resize(ply_folder_indices.size());
@@ -308,7 +308,7 @@ int
 
     pcl::getMinMax3D<pcl::PointXYZRGB>(*(fused_clouds[k]),min_pt,max_pt);
 
-    bb_out << "[ " << min_pt.x() << "," << min_pt.y() << "," << min_pt.z() << "]    [" << max_pt.x() << "," << max_pt.y() << "," << max_pt.z() <<"]" << std::endl;
+    bb_out << "[ " << min_pt.x() << "," << min_pt.y() << "," << min_pt.z() << "]    [" << max_pt.x() << "," << max_pt.y() << "," << max_pt.z() <<"]" << endl;
 
     // check if min fits bounding box, otherwise adapt the bounding box
     if( !( (min_pt.x() > min_pt_bb.x()) && (min_pt.y() > min_pt_bb.y()) && (min_pt.z() > min_pt_bb.z())))
@@ -326,17 +326,17 @@ int
     if(!is_bb_init)
     {
       // initialize the bounding box, with bb_expand_factor extra
-      min_pt_bb[0] = min_pt[0] - bb_expand_factor*std::abs(max_pt[0] - min_pt[0]);
-      min_pt_bb[1] = min_pt[1] - bb_expand_factor*std::abs(max_pt[1] - min_pt[1]);
-      min_pt_bb[2] = min_pt[2] - bb_expand_factor*std::abs(max_pt[2] - min_pt[2]);
+      min_pt_bb[0] = min_pt[0] - bb_expand_factor*abs(max_pt[0] - min_pt[0]);
+      min_pt_bb[1] = min_pt[1] - bb_expand_factor*abs(max_pt[1] - min_pt[1]);
+      min_pt_bb[2] = min_pt[2] - bb_expand_factor*abs(max_pt[2] - min_pt[2]);
 
-      max_pt_bb[0] = max_pt[0] + bb_expand_factor*std::abs(max_pt[0] - min_pt[0]);
-      max_pt_bb[1] = max_pt[1] + bb_expand_factor*std::abs(max_pt[1] - min_pt[1]);
-      max_pt_bb[2] = max_pt[2] + bb_expand_factor*std::abs(max_pt[2] - min_pt[2]);
+      max_pt_bb[0] = max_pt[0] + bb_expand_factor*abs(max_pt[0] - min_pt[0]);
+      max_pt_bb[1] = max_pt[1] + bb_expand_factor*abs(max_pt[1] - min_pt[1]);
+      max_pt_bb[2] = max_pt[2] + bb_expand_factor*abs(max_pt[2] - min_pt[2]);
 
       is_bb_init = true;
 
-      std::cout << "re-intialized bounding box !!! " << std::endl;
+      cout << "re-intialized bounding box !!! " << endl;
     }
 
     auto dyn_range = max_pt_bb - min_pt_bb;
@@ -374,10 +374,10 @@ int
   /////////////// END NORMALIZE CLOUDS ///////////////////////////////////////////////////////
 
   /////////////// PREPARE OUTPUT CSV FILE AND CODEC PARAMTER SETTINGS /////////////////////////
-  std::string o_log_csv = vm["output_csv_file"].as<std::string>();
+  string o_log_csv = vm["output_csv_file"].as<string>();
   ofstream res_base_ofstream(o_log_csv);
 
-  std::string p_log_csv = vm["pframe_quality_log"].as<std::string>();
+  string p_log_csv = vm["pframe_quality_log"].as<string>();
   ofstream res_p_ofstream(p_log_csv);
   //ofstream res_enh_ofstream("results_enh.csv");
 
@@ -389,9 +389,9 @@ int
 
   ////////////// FOR EACH PARAMETER SETTING DO ASSESMENT //////////////////
   int enh_bit_settings = vm["enh_bit_settings"].as<int>();
-  std::vector<int> octree_bit_settings = vm["octree_bit_settings"].as<std::vector<int>>();
-  std::vector<int> color_bit_settings =  vm["color_bit_settings"].as<std::vector<int>>();
-  std::vector<int> color_coding_types =  vm["color_coding_types"].as<std::vector<int>>();
+  vector<int> octree_bit_settings = vm["octree_bit_settings"].as<vector<int>>();
+  vector<int> color_bit_settings =  vm["color_bit_settings"].as<vector<int>>();
+  vector<int> color_coding_types =  vm["color_coding_types"].as<vector<int>>();
   bool keep_centroid = vm["keep_centroid"].as<int>();
   int write_out_ply =  vm["write_output_ply"].as<int>();
   int do_delta_coding = vm["do_delta_frame_coding"].as<int>();
@@ -408,7 +408,7 @@ int
       for(int cb=0; cb < color_bit_settings.size(); cb++){
 
         // store the parameters in a string to store them in the .csv file
-        std::stringstream compression_arg_ss; 
+        stringstream compression_arg_ss; 
         compression_arg_ss << octree_bit_settings[ob] << "_"  
           <<  color_bit_settings[cb] 
         << "_colort-" << color_coding_types[ct] << "_centroid-" << keep_centroid ? "yes" : "no"  ;
@@ -462,14 +462,14 @@ int
           achieved_quality.byte_count_color_layer= c_sizes[2];
           ////////////////////////////////////////////////////////////////
 
-          std::cout << " octreeCoding " << (achieved_quality.compressed_size=l_output_base.tellp()) << " bytes  base layer  " << std::endl;
+          cout << " octreeCoding " << (achieved_quality.compressed_size=l_output_base.tellp()) << " bytes  base layer  " << endl;
           //////////////////////////////////////////////////////////////
 
           //////////////////// octree delta frame encoding /////////////////////
           // predicted frame, lossy prediction with artefacts that need to be assessed
           boost::shared_ptr<pcl::PointCloud<PointXYZRGB>> out_d(new pcl::PointCloud<PointXYZRGB>()); 
           if(do_delta_coding){
-            std::cout << " delta coding frame nr " << i << std::endl;
+            cout << " delta coding frame nr " << i << endl;
             if(i < (fused_clouds.size() -1)) {
               stringstream p_frame_pdat;
               stringstream p_frame_idat;
@@ -480,7 +480,7 @@ int
               pframe_quality.byte_count_octree_layer = p_frame_idat.tellp();
               pframe_quality.byte_count_centroid_layer = p_frame_pdat.tellp();
               pframe_quality.byte_count_color_layer= 0;
-              std::cout << " encoded a predictive frame: coded " << p_frame_idat.tellp() << " bytes intra and " << p_frame_pdat.tellp()  << " inter frame encoded " <<std::endl;
+              cout << " encoded a predictive frame: coded " << p_frame_idat.tellp() << " bytes intra and " << p_frame_pdat.tellp()  << " inter frame encoded " <<endl;
               
               // compute the quality of the resulting predictive frame
               computeQualityMetric<pcl::PointXYZRGB>(*fused_clouds[i+1],*out_d, pframe_quality);
@@ -495,11 +495,11 @@ int
           colorOctreeCodec::PointCloudPtr decoded_cloud_base = colorOctreeCodec::PointCloudPtr(new colorOctreeCodec::PointCloud);
 
           // do the decoding base layer
-          std::cout << "starting decoding the point cloud \n" << std::endl;
+          cout << "starting decoding the point cloud \n" << endl;
           tt.tic ();
           l_codec_decoder_base->decodePointCloud(oc,decoded_cloud_base);
           achieved_quality.decoding_time_ms = tt.toc ();
-          std::cout << "finished decoding the point cloud \n" << std::endl;
+          cout << "finished decoding the point cloud \n" << endl;
           // end do the decoding base layer
 
           // compute quality metric of the base layer
@@ -512,13 +512,13 @@ int
             pcl::toPCLPointCloud2( *decoded_cloud_base, *cloud2);
             pcl::PLYWriter writer;
             writer.write("ct_" +
-              boost::lexical_cast<std::string>(ct) + 
+              boost::lexical_cast<string>(ct) + 
               "ob_" +
-              boost::lexical_cast<std::string>(ob) + 
+              boost::lexical_cast<string>(ob) + 
               "_cb_" +
-              boost::lexical_cast<std::string>(cb) + 
+              boost::lexical_cast<string>(cb) + 
               "_mesh_nr_" +
-              boost::lexical_cast<std::string>(i) +
+              boost::lexical_cast<string>(i) +
               "_out.ply", cloud2
               );
             // end writing .ply
@@ -530,13 +530,13 @@ int
               pcl::toPCLPointCloud2( *out_d, *cloud2d);
               pcl::PLYWriter writer;
               writer.write("ct_" +
-              boost::lexical_cast<std::string>(ct) + 
+              boost::lexical_cast<string>(ct) + 
               "ob_" +
-              boost::lexical_cast<std::string>(ob) + 
+              boost::lexical_cast<string>(ob) + 
               "_cb_" +
-              boost::lexical_cast<std::string>(cb) + 
+              boost::lexical_cast<string>(cb) + 
               "_mesh_nr_" +
-              boost::lexical_cast<std::string>(i+1) +
+              boost::lexical_cast<string>(i+1) +
               "_out_predicted.ply", cloud2d
               );
             }
