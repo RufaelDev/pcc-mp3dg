@@ -395,7 +395,7 @@ namespace pcl{
         MANUAL_CONFIGURATION,
         false,
         point_resolution_,
-        octree_resolution_ * 16,
+        octree_resolution_ * macroblock_size,
         true,
         0,
         true,
@@ -437,7 +437,7 @@ namespace pcl{
         MANUAL_CONFIGURATION,
         false,
         point_resolution_,
-        octree_resolution_ * 16,
+        octree_resolution_ * macroblock_size,
         true,
         0,
         true,
@@ -447,12 +447,7 @@ namespace pcl{
       p_coder.defineBoundingBox(0.0, 0.0, 0.0, 1.0, 1.0, 1.0);
       
       // either do the icp on the original or simplified clouds
-      if(!icp_on_original){
-        p_coder.setInputCloud(simp_pcloud);
-      }
-      else{
-        p_coder.setInputCloud(pcloud_arg);
-      }
+      p_coder.setInputCloud(icp_on_original ? pcloud_arg:simp_pcloud);
       p_coder.addPointsFromInputCloud ();
 
       //! macroblocks that or non empty in both the I Frame and the P Frame
@@ -485,7 +480,7 @@ namespace pcl{
           // out_cloud_arg-> exclusively coded frame
           std::vector<int> &l_pts = * P_M[it_predictive.getCurrentOctreeKey()];
           for(int i=0; i < l_pts.size();i++ ){
-            out_cloud_arg->push_back((*icloud_arg)[l_pts[i]]);
+            out_cloud_arg->push_back( icp_on_original ? (*pcloud_arg)[l_pts[i]]: (*simp_pcloud)[l_pts[i]]);
           }
         }
       }
@@ -535,8 +530,8 @@ namespace pcl{
         else
         {
           // copy original points as the icp prediction has not converged
-          for(int i=0; i < cloud_in->size();i++ ){
-            out_cloud_arg->push_back((*cloud_in)[i]);
+          for(int i=0; i < cloud_out->size();i++ ){
+            out_cloud_arg->push_back((*cloud_out)[i]);
           }
         }
       }

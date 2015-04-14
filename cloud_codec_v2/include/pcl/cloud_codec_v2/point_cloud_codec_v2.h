@@ -122,6 +122,7 @@ namespace pcl{
           do_connectivity_encoding_(codeConnectivity_arg)
         {
           i_frame_rate_  = 0;
+          macroblock_size = 16; // default macroblock size is 16x16x16
         }
 
         /** \brief Initialization using the parent
@@ -130,6 +131,12 @@ namespace pcl{
         {
         }
 
+        /** \brief function for setting the macroblocksize
+          */
+        void setMacroblockSize(int size)
+        {
+          macroblock_size = size;
+        }
          /** \brief Encode point cloud to output stream
           * \param cloud_arg:  point cloud to be compressed
           * \param compressed_tree_data_out_arg:  binary output stream containing compressed data
@@ -157,21 +164,17 @@ namespace pcl{
         generatePointCloudDeltaFrame (const PointCloudConstPtr &icloud_arg, const PointCloudConstPtr &pcloud_arg, PointCloudPtr &out_cloud_arg, 
             std::ostream& i_coded_data, std::ostream& p_coded_data, bool icp_on_original = false,bool write_out_cloud = true );
 
-        /** \brief Encode point cloud Delta to output stream
-        * \param cloud_arg:  point cloud to be compressed
-        * \param compressed_tree_data_out_arg:  binary output stream containing compressed data
+        /** \brief Encode point cloud Delta to output stream (not yet implemented)
         */
         virtual void
         encodePointCloudDeltaFrame (const PointCloudConstPtr &icloud_arg, const PointCloudConstPtr &pcloud_arg, PointCloudPtr &out_cloud_arg, 
         std::ostream& i_coded_data, std::ostream& p_coded_data, bool icp_on_original = false,bool write_out_cloud = true ){};
 
-        /** \brief Decode point cloud Delta from input stream
-        * \param compressed_tree_data_in_arg: binary input stream containing compressed data
-        * \param cloud_arg: reference to decoded point cloud
+        /** \brief Decode point cloud Delta to output stream (not yet implemented)
         */
         virtual void
         decodePointCloudDeltaFrame(const PointCloudConstPtr &icloud_arg, const PointCloudConstPtr &pcloud_arg, 
-            std::istream& i_coded_data, std::istream& p_coded_data);
+        std::istream& i_coded_data, std::istream& p_coded_data);
         /*!
         \brief function to simplify the delta frame to do a prediction
         \author Rufael Mekuria rufael.mekuria@cwi.nl
@@ -249,6 +252,8 @@ namespace pcl{
         uint64_t compression_performance_metrics[3]; //! octree_bytes, centroid_bytes, color_bytes, monitor the buildup of compressed data
 
         static const char* frame_header_identifier_; //! new frame header identifier
+
+        int macroblock_size;  //! macroblock size for inter predictive frames
     };
 
     // define frame identifier for cloud codec v2

@@ -10,3 +10,4 @@ write_output_ply=0
 do_delta_frame_coding=1
 icp_on_original=1
 pframe_quality_log=predictive_quality.csv
+macroblocksize=16

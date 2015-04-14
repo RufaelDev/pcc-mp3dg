@@ -228,6 +228,7 @@ int
     ("do_delta_frame_coding", po::value<int>()->default_value(0)," do_delta_frame_coding ")
     ("icp_on_original", po::value<int>()->default_value(0)," icp_on_original ")
     ("pframe_quality_log",po::value<string>()->default_value("pframe_log.csv"), " write the quality results of predictive coding of p frames")
+    ("macroblocksize",po::value<int>()->default_value(16), " size of macroblocks used for predictive frame (has to be a power of 2)")
     ;
 
   po::variables_map vm;
@@ -396,6 +397,7 @@ int
   int write_out_ply =  vm["write_output_ply"].as<int>();
   int do_delta_coding = vm["do_delta_frame_coding"].as<int>();
   int icp_on_original = vm["icp_on_original"].as<int>();
+  int macroblocksize= vm["macroblocksize"].as<int>();
   //////////////////////////////////////////////////////////////////////////
 
   // base layer resolution
@@ -426,6 +428,9 @@ int
           color_coding_types[ct],
           keep_centroid
           );
+
+        // set the macroblocksize for inter prediction
+        l_codec_encoder->setMacroblockSize(macroblocksize);
 
         // initialize structures for decoding base and enhancement layers
         auto l_codec_decoder_base = generatePCLOctreeCodecV2<PointXYZRGB>(
