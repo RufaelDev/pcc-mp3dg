@@ -66,7 +66,8 @@ namespace pcl{
       struct JPEGLineData
       {
         uint32_t line_count;
-        std::vector<std::vector<uint8_t>> clines;
+		typedef std::vector<uint8_t> cline_t;
+        std::vector<cline_t> clines;
         // serialize to stream
         void 
         serialize(std::ostream &ss){
@@ -120,27 +121,27 @@ namespace pcl{
           switch(mapping_mode_)
           {
             case(mappingTypes::SNAKE):
-              encodeJPEGSnake(pointAvgColorDataVector_, out_data);
-              pointAvgColorDataVector_.resize(out_data.size());
-              std::copy((char *) out_data.data(),(char *) out_data.data() + out_data.size(),(char *) pointAvgColorDataVector_.data());
+              encodeJPEGSnake(this->pointAvgColorDataVector_, out_data);
+              this->pointAvgColorDataVector_.resize(out_data.size());
+              std::copy((char *) out_data.data(),(char *) out_data.data() + out_data.size(),(char *) this->pointAvgColorDataVector_.data());
             break;
             case(mappingTypes::LINES):
-              encodeJPEGLines(pointAvgColorDataVector_, out_data);
-              pointAvgColorDataVector_.resize(out_data.size());
-              std::copy((char *) out_data.data(),(char *) out_data.data() + out_data.size(), (char *) pointAvgColorDataVector_.data());
+              encodeJPEGLines(this->pointAvgColorDataVector_, out_data);
+              this->pointAvgColorDataVector_.resize(out_data.size());
+              std::copy((char *) out_data.data(),(char *) out_data.data() + out_data.size(), (char *) this->pointAvgColorDataVector_.data());
             break;
             case(mappingTypes::GRID):
             break;
           }
         }
-        return pointAvgColorDataVector_;
+        return this->pointAvgColorDataVector_;
       };
 
       // function to just get the pointAvgVector
       virtual std::vector<char>&
       getAverageDataVectorB()
       {
-        return pointAvgColorDataVector_;
+        return this->pointAvgColorDataVector_;
       }
 
       /** \brief Initialize decoding of color information
@@ -152,12 +153,12 @@ namespace pcl{
         switch(mapping_mode_)
         {
           case(mappingTypes::SNAKE):
-            decodeJPEGSnake(pointAvgColorDataVector_, out_data);
-            pointAvgColorDataVector_Iterator_ = pointAvgColorDataVector_.begin();
+            decodeJPEGSnake(this->pointAvgColorDataVector_, out_data);
+            this->pointAvgColorDataVector_Iterator_ = this->pointAvgColorDataVector_.begin();
           break;
           case(mappingTypes::LINES):
-            decodeJPEGLines(pointAvgColorDataVector_, out_data);
-            pointAvgColorDataVector_Iterator_ = pointAvgColorDataVector_.begin();
+            decodeJPEGLines(this->pointAvgColorDataVector_, out_data);
+            this->pointAvgColorDataVector_Iterator_ = this->pointAvgColorDataVector_.begin();
           break;
           case(mappingTypes::GRID):
           break;
@@ -165,8 +166,8 @@ namespace pcl{
           break;
         }
 
-        pointAvgColorDataVector_Iterator_ = pointAvgColorDataVector_.begin ();
-        pointDiffColorDataVector_Iterator_ = pointDiffColorDataVector_.begin ();
+        this->pointAvgColorDataVector_Iterator_ = this->pointAvgColorDataVector_.begin ();
+        this->pointDiffColorDataVector_Iterator_ = this->pointDiffColorDataVector_.begin ();
       }
 
       /** \brief Initialize encoding of color information
@@ -174,8 +175,8 @@ namespace pcl{
       virtual void
       initializeEncoding ()
       {
-        pointAvgColorDataVector_.clear ();
-        pointDiffColorDataVector_.clear ();
+        this->pointAvgColorDataVector_.clear ();
+        this->pointDiffColorDataVector_.clear ();
 
         needs_jpeg_encoding_avg_ = true;
       }
@@ -317,8 +318,8 @@ namespace pcl{
         }
         
         // another copy to handle the difference between char and uint8_t
-        pointAvgColorDataVector_.resize(out_data.size());
-        std::copy((char *)out_data.data(),(char *)out_data.data() + out_data.size(), (char *) pointAvgColorDataVector_.data());
+        this->pointAvgColorDataVector_.resize(out_data.size());
+        std::copy((char *)out_data.data(),(char *)out_data.data() + out_data.size(), (char *) this->pointAvgColorDataVector_.data());
       }
       
       //! boolean to do jpeg encoding or not

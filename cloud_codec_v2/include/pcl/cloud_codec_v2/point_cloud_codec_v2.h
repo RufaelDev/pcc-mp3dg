@@ -121,7 +121,7 @@ namespace pcl{
           create_scalable_bitstream_(createScalebleStream_arg), 
           do_connectivity_encoding_(codeConnectivity_arg)
         {
-          i_frame_rate_  = 0;
+          this->i_frame_rate_  = 0;
           macroblock_size = 16; // default macroblock size is 16x16x16
         }
 
@@ -226,7 +226,7 @@ namespace pcl{
         */
         void
         entropyEncoding (std::ostream& compressed_tree_data_out_arg1, 
-          std::ostream& compressed_tree_data_out_arg2=stringstream());
+                         std::ostream& compressed_tree_data_out_arg2);
 
         /** \brief Entropy decoding of input binary stream and output to information vectors
         * \param compressed_tree_data_in_arg: binary input stream: base layer
@@ -234,7 +234,7 @@ namespace pcl{
         */
         void
         entropyDecoding (std::istream& compressed_tree_data_in_arg1, 
-          std::istream& compressed_tree_data_in_arg2=stringstream());
+                         std::istream& compressed_tree_data_in_arg2);
 
         //! some new cool options in v2 of the codec 
         uint32_t color_coding_type_; //! color coding with jpeg, graph transform, or differential encodings

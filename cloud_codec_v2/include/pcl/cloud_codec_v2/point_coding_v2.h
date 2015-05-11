@@ -65,7 +65,7 @@ namespace pcl
       typedef boost::shared_ptr<const PointCloud> PointCloudConstPtr;
 
       /** \brief Constructor. */
-      PointCodingV2 () : PointCoding()
+      PointCodingV2 () : PointCoding<PointT>()
       {
       }
 
@@ -86,14 +86,14 @@ namespace pcl
         unsigned char diffX, diffY, diffZ;
 
         // differentially encode point coordinates and truncate overflow
-        diffX = static_cast<unsigned char> (max (-127, min<int>(127, static_cast<int> ((idxPoint.x - referencePoint_arg[0])  / pointCompressionResolution_))));
-        diffY = static_cast<unsigned char> (max (-127, min<int>(127, static_cast<int> ((idxPoint.y - referencePoint_arg[1])  / pointCompressionResolution_))));
-        diffZ = static_cast<unsigned char> (max (-127, min<int>(127, static_cast<int> ((idxPoint.z - referencePoint_arg[2])  / pointCompressionResolution_))));
+        diffX = static_cast<unsigned char> (max (-127, min<int>(127, static_cast<int> ((idxPoint.x - referencePoint_arg[0])  / this->pointCompressionResolution_))));
+        diffY = static_cast<unsigned char> (max (-127, min<int>(127, static_cast<int> ((idxPoint.y - referencePoint_arg[1])  / this->pointCompressionResolution_))));
+        diffZ = static_cast<unsigned char> (max (-127, min<int>(127, static_cast<int> ((idxPoint.z - referencePoint_arg[2])  / this->pointCompressionResolution_))));
 
         // store information in differential point vector
-        pointDiffDataVector_.push_back (diffX);
-        pointDiffDataVector_.push_back (diffY);
-        pointDiffDataVector_.push_back (diffZ);
+        this->pointDiffDataVector_.push_back (diffX);
+        this->pointDiffDataVector_.push_back (diffY);
+        this->pointDiffDataVector_.push_back (diffZ);
       }
 
       /** \brief Decode differential point information
@@ -106,17 +106,17 @@ namespace pcl
       decodePoint (PointT &outputPoint, const double* referencePoint_arg)
       {
         // retrieve differential point information
-        const unsigned char& diffX = static_cast<unsigned char> (*(pointDiffDataVectorIterator_++));
-        const unsigned char& diffY = static_cast<unsigned char> (*(pointDiffDataVectorIterator_++));
-        const unsigned char& diffZ = static_cast<unsigned char> (*(pointDiffDataVectorIterator_++));
+        const unsigned char& diffX = static_cast<unsigned char> (*(this->pointDiffDataVectorIterator_++));
+        const unsigned char& diffY = static_cast<unsigned char> (*(this->pointDiffDataVectorIterator_++));
+        const unsigned char& diffZ = static_cast<unsigned char> (*(this->pointDiffDataVectorIterator_++));
 
         // retrieve point from point cloud
         PointT& point = outputPoint;
 
         // decode point position
-        point.x = static_cast<float> (referencePoint_arg[0] + diffX * pointCompressionResolution_);
-        point.y = static_cast<float> (referencePoint_arg[1] + diffY * pointCompressionResolution_);
-        point.z = static_cast<float> (referencePoint_arg[2] + diffZ * pointCompressionResolution_);
+        point.x = static_cast<float> (referencePoint_arg[0] + diffX * this->pointCompressionResolution_);
+        point.y = static_cast<float> (referencePoint_arg[1] + diffY * this->pointCompressionResolution_);
+        point.z = static_cast<float> (referencePoint_arg[2] + diffZ * this->ointCompressionResolution_);
       }
     };
   }

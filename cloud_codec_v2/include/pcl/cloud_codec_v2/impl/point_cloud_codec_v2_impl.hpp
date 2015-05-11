@@ -42,6 +42,7 @@
 
 //
 #include <pcl/cloud_codec_v2/point_cloud_codec_v2.h>
+#include <pcl/compression/point_coding.h>
 #include <pcl/compression/impl/octree_pointcloud_compression.hpp>
 
 
