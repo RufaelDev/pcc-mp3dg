@@ -126,8 +126,8 @@ if(build)
     source_group("Image Sources" FILES ${IMAGE_SOURCES})
     
     if(WITH_JPEG)
-      include_directories(${LIBJPEG_INCLUDE_DIR})
-      link_directories(${LIBJPEG_STATIC_LIB})
+      include_directories(${JPEG_INCLUDE_DIR})
+      link_directories(${JPEG_STATIC_LIB})
     endif(WITH_JPEG)
 	
     if(FZAPI_FOUND)
@@ -323,8 +323,8 @@ if(build)
     target_link_libraries("${LIB_NAME}" pcl_common pcl_io_ply ${VTK_LIBRARIES} )
     
     if(WITH_JPEG)
-      target_link_libraries("${LIB_NAME}" ${LIBJPEG_STATIC_LIB})
-      include_directories(${LIBJPEG_INCLUDE_DIR})
+      target_link_libraries("${LIB_NAME}" ${JPEG_STATIC_LIB})
+      include_directories(${JPEG_INCLUDE_DIR})
     endif(WITH_JPEG)
     
     if(PNG_FOUND)

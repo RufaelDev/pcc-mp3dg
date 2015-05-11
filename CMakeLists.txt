@@ -295,10 +295,9 @@ endif(WITH_FZAPI)
 # JPEG
 option(WITH_JPEG "Build with JPEG support" TRUE)
 if(WITH_JPEG)
-  find_package(LibJPEG)
+  find_package(JPEG)
   if (JPEG_FOUND)
     set(HAVE_JPEG ON)
-    include_directories(SYSTEM "${LIBJPEG_INCLUDE_DIRS}")
   endif(JPEG_FOUND)
 endif(WITH_JPEG)
 
