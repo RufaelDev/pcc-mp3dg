@@ -466,6 +466,9 @@ namespace pcl{
       out_cloud_arg->height=1;
       out_cloud_arg->width =0;
 
+      // point cloud for storing all intra encoded points
+      pcl::PointCloud<PointT>::Ptr intra_coded_points(new pcl::PointCloud<PointT>());
+
       for(;it_predictive!=it_predictive_end;++it_predictive)
       {
         if(I_M.count(it_predictive.getCurrentOctreeKey()))
@@ -485,16 +488,16 @@ namespace pcl{
         }
       }
 
-      std::cout << " done creating macroblocks, shared macroblocks: " 
+      cout << " done creating macroblocks, shared macroblocks: " 
         << S_M.size() << " exclusive macroblocks: " << P_M.size() << std::endl; 
-
+      shared_macroblock_percentage = (float) (S_M.size()) / ((float) P_M.size() + S_M.size() );
       /////////////////////////////////////////////////////////////////////////////////////////
 
       //////////////// ITERATE THE SHARED MACROBLOCKS AND DO ICP BASED PREDICTION //////////////
-      std::map<pcl::octree::OctreeKey,std::pair<std::vector<int> *
+      map<pcl::octree::OctreeKey,std::pair<std::vector<int> *
         ,std::vector<int> *>,std::less<pcl::octree::OctreeKey>>::iterator sm_it;
 
-      std::cout << " iterating shared macroblocks, block count = " << S_M.size() <<std::endl;
+      cout << " iterating shared macroblocks, block count = " << S_M.size() <<std::endl;
       int conv_count=0;
 
       // iterate the common macroblocks and do ICP
@@ -504,40 +507,185 @@ namespace pcl{
         pcl::PointCloud<PointT>::Ptr cloud_in (new pcl::PointCloud<PointT>(*icloud_arg,  *(sm_it->second.first)));
         pcl::PointCloud<PointT>::Ptr cloud_out (new pcl::PointCloud<PointT>(icp_on_original ? *pcloud_arg : *simp_pcloud, *(sm_it->second.second)));
 
-        pcl::IterativeClosestPoint<PointT, PointT> icp;
+        // check on the point count
+        bool do_icp =  cloud_out->size() > 6 ? (cloud_out->size() < cloud_in->size() * 2) &&  (cloud_out->size() >= cloud_in->size() * 0.5)  : false;
 
-        icp.setInputCloud(cloud_in);
-        icp.setInputTarget(cloud_out);
+        double in_av[3]={0,0,0};
+        double out_av[3]={0,0,0};
 
-        pcl::PointCloud<PointT> Final;
-        icp.align(Final);
+        double in_var=0;
+        double out_var=0;
 
-        if(icp.hasConverged())
+        // compute the average colors
+        if(do_icp)
         {
-          
-          //std::cout << "has converged:" << icp.hasConverged() << " score: " <<
-          //icp.getFitnessScore() << std::endl;
-          //std::cout << icp.getFinalTransformation() << std::endl;
-          //std::cin.get();
-          // out_cloud_arg->
-          conv_count++;
+          // create references to ease acccess via [] operator in the cloud
+          pcl::PointCloud<PointT> & rcloud_out = *cloud_out;
+          pcl::PointCloud<PointT> & rcloud_in = *cloud_in;
 
-          // copy predicted points as the ICP prediction has converged
-          for(int i=0; i < Final.size();i++ ){
-            out_cloud_arg->push_back(Final[i]);
+          for(int i=0; i<cloud_in->size();i++)
+          {
+            in_av[0]+= (double) rcloud_in[i].r;
+            in_av[1]+= (double) rcloud_in[i].g;
+            in_av[2]+= (double) rcloud_in[i].b;
+          }
+
+          in_av[0]/=rcloud_in.size();
+          in_av[1]/=rcloud_in.size();
+          in_av[2]/=rcloud_in.size();
+          
+          // variance
+          for(int i=0; i<rcloud_in.size();i++)
+          {
+            double val= (rcloud_in[i].r - in_av[0]) * (rcloud_in[i].r - in_av[0]) + 
+              (rcloud_in[i].g - in_av[1]) * (rcloud_in[i].g - in_av[1]) +
+              (rcloud_in[i].b - in_av[2]) * (rcloud_in[i].b - in_av[2]);
+
+            in_var+=val;
+          }
+          in_var/=(3*rcloud_in.size());
+
+          //
+          for(int i=0; i<rcloud_out.size();i++)
+          {
+            out_av[0]+= (double) rcloud_out[i].r;
+            out_av[1]+= (double) rcloud_out[i].g;
+            out_av[2]+= (double) rcloud_out[i].b;
+          }
+          out_av[0]/=rcloud_out.size();
+          out_av[1]/=rcloud_out.size();
+          out_av[2]/=rcloud_out.size();
+
+          for(int i=0; i<rcloud_out.size();i++)
+          {
+            double val= (rcloud_out[i].r - out_av[0]) * (rcloud_out[i].r - out_av[0]) + 
+              (rcloud_out[i].g - out_av[1]) * (rcloud_out[i].g - out_av[1]) +
+              (rcloud_out[i].b - out_av[2]) * (rcloud_out[i].b - out_av[2]);
+
+            out_var+=val;
+          }
+          out_var/=(3*rcloud_out.size());
+
+          //cout << "input mean rgb = " << in_av[0] << "  , " << in_av[1] << "  , " << in_av[2] << endl;
+          //cout << "output mean rgb = " << out_av[0] << "  , " << out_av[1] << "  , " << out_av[2] << endl;
+          //cout << " input variance = " << in_var << " number of inputs " << rcloud_in.size() << endl;
+          //cout << " output variance = " << out_var << " number of outputs " << rcloud_out.size() << endl;
+          //cin.get();
+
+          // for segments with large variance, skip the prediction
+          if(in_var > 100 || out_var > 100)
+            do_icp = false;
+        }
+
+        // compute color offsets
+        char rgb_offset_r=0; 
+        char rgb_offset_g=0; 
+        char rgb_offset_b=0; 
+
+        if(std::abs(out_av[0] - in_av[0]) < 32)
+          rgb_offset_r = (char)(out_av[0] - in_av[0]);
+        if(std::abs(out_av[1] - in_av[1]) < 32)
+          rgb_offset_g = (char)(out_av[1] - in_av[1]);
+        if(std::abs(out_av[2] - in_av[2]) < 32)
+          rgb_offset_b = (char)(out_av[2] - in_av[2]);
+
+        if(do_icp){
+
+          pcl::IterativeClosestPoint<PointT, PointT> icp;
+
+          icp.setInputCloud(cloud_in);
+          icp.setInputTarget(cloud_out);
+
+          icp.setMaximumIterations (50);
+          // Set the transformation epsilon (criterion 2)
+          icp.setTransformationEpsilon (1e-8);
+          // Set the euclidean distance difference epsilon (criterion 3)
+          icp.setEuclideanFitnessEpsilon (point_resolution_);
+
+          pcl::PointCloud<PointT> Final;
+          icp.align(Final);
+
+          // compute the fitness for the colors
+
+          if(icp.hasConverged() && icp.getFitnessScore() < point_resolution_ * 4 )
+          {
+
+            //cout << "has converged:" << icp.hasConverged() << " score: " <<
+            //icp.getFitnessScore() << std::endl;
+            //cout << icp.getFinalTransformation() << std::endl;
+            //std::cin.get();
+            // out_cloud_arg->
+            conv_count++;
+
+            // copy predicted points as the ICP prediction has converged
+            for(int i=0; i < Final.size();i++ )
+            {
+              // compensate color offsets, ( remove if this does not give a better result)
+              if(Final[i].r > 32 && Final[i].r < 223 )
+                Final[i].r+= rgb_offset_r;
+              if(Final[i].g > 32 && Final[i].g < 223 )
+                Final[i].g+= rgb_offset_g;
+              if(Final[i].b > 32 && Final[i].b < 223 )
+                Final[i].b+= rgb_offset_b;
+
+              // push back the points
+              out_cloud_arg->push_back(Final[i]);
+            }
+
+           // for now estimate 16 bytes for each voxel
+            char p_dat[16]={};
+            p_coded_data.write(p_dat,16);
+
+            //cout << " predicted " << Final.size() << " points, from " << cloud_out->size() << " points " << endl;
+            //cin.get();
+          }
+          else
+          {
+            // copy original points as the icp prediction has not converged
+            for(int i=0; i < cloud_out->size();i++ ){
+              out_cloud_arg->push_back((*cloud_out)[i]);
+              intra_coded_points->push_back((*cloud_out)[i]);
+            }
           }
         }
-        else
-        {
+        else{
           // copy original points as the icp prediction has not converged
           for(int i=0; i < cloud_out->size();i++ ){
             out_cloud_arg->push_back((*cloud_out)[i]);
+            intra_coded_points->push_back((*cloud_out)[i]);
           }
         }
       }
 
+      // add the intra coded points
+      for(auto pm_it = P_M.begin(); pm_it != P_M.end(); ++pm_it)
+      {
+        /* hard copy of the point clouds */
+        pcl::PointCloud<PointT>::Ptr cloud_out (new pcl::PointCloud<PointT>(icp_on_original ? *pcloud_arg : *simp_pcloud, *(pm_it->second)));
+        for(int i=0; i < cloud_out->size();i++){
+          out_cloud_arg->push_back((*cloud_out)[i]);
+          intra_coded_points->push_back((*cloud_out)[i]);
+        }
+      }
       std::cout << " done, convergence percentage: " << ((float) conv_count) / S_M.size()   << std::endl;
+      shared_macroblock_convergence_percentage = ((float) conv_count) / (float) S_M.size() ; // convergence percentage
       //////////////////////////////////////////////////////////////////////////////////////////////
+
+      OctreePointCloudCompression<PointT,LeafT,BranchT,OctreeT> intra_coder
+      (
+        MANUAL_CONFIGURATION,
+        false,
+        point_resolution_,
+        octree_resolution_,
+        true,
+        0,
+        true,
+        color_bit_resolution_ 
+        /*,0,do_voxel_centroid_enDecoding_*/
+      );
+
+      // encode the intrapoints
+      intra_coder.encodePointCloud(intra_coded_points, i_coded_data);
     }
 
   /*

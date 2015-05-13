@@ -183,12 +183,22 @@ namespace pcl{
         simplifyPCloud(const PointCloudConstPtr &pcloud_arg_in, 
           OctreePointCloudCompression<PointT,LeafT,BranchT,OctreeT> *octree_simplifier,
           PointCloudPtr &out_cloud );
-      
+        
+        //! function to return preformance metric
         uint64_t *
         getPerformanceMetrics()
         {
           return compression_performance_metrics;
-        }
+        };
+
+        //! helper function to return
+        float
+        getMacroBlockPercentage(){return shared_macroblock_percentage;};
+
+        //! helper function to return
+        float
+        getMacroBlockConvergencePercentage(){return shared_macroblock_convergence_percentage;};
+
       protected: 
 
         //! write frame header for CodecV2
@@ -254,6 +264,10 @@ namespace pcl{
         static const char* frame_header_identifier_; //! new frame header identifier
 
         int macroblock_size;  //! macroblock size for inter predictive frames
+
+        float shared_macroblock_percentage;
+
+        float shared_macroblock_convergence_percentage;
     };
 
     // define frame identifier for cloud codec v2
