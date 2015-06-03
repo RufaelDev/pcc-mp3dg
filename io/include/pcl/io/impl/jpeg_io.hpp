@@ -110,7 +110,7 @@ namespace pcl{
       jpeg_create_decompress(&cinfo);
 
       // optional file stream
-      FILE *in_file;
+        FILE *in_file = NULL;
 
       // specify data source to jpeg lib
       if (!read_file) 
@@ -233,7 +233,7 @@ namespace pcl{
       unsigned char * out_buffer;
 
       // optional outfile
-      FILE *l_o_file;
+      FILE *l_o_file = NULL;
       if (write_file){
         l_o_file = fopen(file_name.c_str(), "wb");
 
