@@ -64,7 +64,7 @@ namespace pcl{
         }
 
         //! forward iterator
-        int operator++(){
+        int operator++(int){
           int ret = (w_pos + (h_pos + 8 *macro_block_pos_h) * dim_w_ + macro_block_pos_w * 8);
           updatePos();
           return ret;
@@ -110,7 +110,7 @@ namespace pcl{
         l_it.reset();
 
         for(int i =0; i < dim_w_*dim_h_; i++ ){
-          int l_pos = l_it++;
+            int l_pos = l_it++;
           result_[3 * (l_pos) + 0] = input_data[3*i];
           result_[3 * (l_pos) + 1] = input_data[3*i + 1];
           result_[3 * (l_pos) + 2] = input_data[3*i + 2];
@@ -152,4 +152,4 @@ namespace pcl{
     };
   }
 }
-#endif SNAKE_GRID_MAPPING_H
+#endif//SNAKE_GRID_MAPPING_H

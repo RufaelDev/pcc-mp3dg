@@ -116,7 +116,7 @@ namespace pcl
         // decode point position
         point.x = static_cast<float> (referencePoint_arg[0] + diffX * this->pointCompressionResolution_);
         point.y = static_cast<float> (referencePoint_arg[1] + diffY * this->pointCompressionResolution_);
-        point.z = static_cast<float> (referencePoint_arg[2] + diffZ * this->ointCompressionResolution_);
+        point.z = static_cast<float> (referencePoint_arg[2] + diffZ * this->pointCompressionResolution_);
       }
     };
   }

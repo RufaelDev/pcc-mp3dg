@@ -116,10 +116,10 @@ namespace pcl{
           doColorEncoding_arg,
           colorBitResolution_arg), 
           color_coding_type_(colorCodingType_arg), 
-          jp_color_coder_(jpeg_quality_arg,colorCodingType_arg),
           do_voxel_centroid_enDecoding_(doVoxelGridCentroid_arg),
-          create_scalable_bitstream_(createScalebleStream_arg), 
-          do_connectivity_encoding_(codeConnectivity_arg)
+          create_scalable_bitstream_(createScalebleStream_arg),
+          do_connectivity_encoding_(codeConnectivity_arg),
+          jp_color_coder_(jpeg_quality_arg, colorCodingType_arg)
         {
           this->i_frame_rate_  = 0;
           macroblock_size = 16; // default macroblock size is 16x16x16

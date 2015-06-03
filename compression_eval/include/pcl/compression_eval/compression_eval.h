@@ -60,8 +60,8 @@ namespace pcl{
 		\brief helper function to generate octree cloud codecs based 
 		on the number of bits in the base and enhancement layer
 	*/
-    template<typename PointT> boost::shared_ptr<OctreePointCloudCodecV2<PointT>>
-	  generatePCLOctreeCodecV2(int nr_bits_base_layer, int nr_bits_enh_layer, int nr_bits_colors, int i_frame_rate, int color_coding_type, bool do_centroid_coding);
+    template<typename PointT> boost::shared_ptr<OctreePointCloudCodecV2<PointT> >
+	  generatePCLOctreeCodecV2(int nr_bits_base_layer, int nr_bits_enh_layer, int nr_bits_colors, int i_frame_rate = 0, int color_coding_type = 0, bool do_centroid_coding = true);
 	}
 
 }

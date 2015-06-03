@@ -66,7 +66,7 @@ namespace pcl{
       struct JPEGLineData
       {
         uint32_t line_count;
-		typedef std::vector<uint8_t> cline_t;
+        typedef std::vector<uint8_t> cline_t;
         std::vector<cline_t> clines;
         // serialize to stream
         void 
@@ -75,7 +75,7 @@ namespace pcl{
            ss.write((char *)&line_count,sizeof(line_count)); 
           
            for(int i=0;i<line_count;i++){
-             uint32_t val = clines[i].size();
+             uint32_t val = (uint32_t) clines[i].size();
              ss.write((char *)&val, sizeof(val)); 
              if(val > 0)
                ss.write((char *) clines[i].data(),clines[i].size());
@@ -98,7 +98,7 @@ namespace pcl{
       };
 
       ColorCodingJPEG (int quality = 75, int mode=LINES) 
-        : ColorCoding<PointT>(),jpeg_quality_(quality), mapping_mode_(mode)
+        : ColorCoding<PointT>(), mapping_mode_(((mappingTypes)mode)),jpeg_quality_(quality)
       {
         needs_jpeg_encoding_avg_ = false; 
       };
@@ -120,17 +120,18 @@ namespace pcl{
           std::vector<uint8_t> out_data;
           switch(mapping_mode_)
           {
-            case(mappingTypes::SNAKE):
+            case(SNAKE):
               encodeJPEGSnake(this->pointAvgColorDataVector_, out_data);
               this->pointAvgColorDataVector_.resize(out_data.size());
-              std::copy((char *) out_data.data(),(char *) out_data.data() + out_data.size(),(char *) this->pointAvgColorDataVector_.data());
+              std::copy((char *) out_data.data(),(char *) out_data.data() + out_data.size(), this->pointAvgColorDataVector_.data());
             break;
-            case(mappingTypes::LINES):
+            case(LINES):
               encodeJPEGLines(this->pointAvgColorDataVector_, out_data);
               this->pointAvgColorDataVector_.resize(out_data.size());
-              std::copy((char *) out_data.data(),(char *) out_data.data() + out_data.size(), (char *) this->pointAvgColorDataVector_.data());
+              std::copy((char *) out_data.data(),(char *) out_data.data() + out_data.size(), this->pointAvgColorDataVector_.data());
             break;
-            case(mappingTypes::GRID):
+            case(GRID):
+            default:
             break;
           }
         }
@@ -152,15 +153,15 @@ namespace pcl{
         std::vector<uint8_t> out_data;
         switch(mapping_mode_)
         {
-          case(mappingTypes::SNAKE):
+          case(SNAKE):
             decodeJPEGSnake(this->pointAvgColorDataVector_, out_data);
             this->pointAvgColorDataVector_Iterator_ = this->pointAvgColorDataVector_.begin();
           break;
-          case(mappingTypes::LINES):
+          case(LINES):
             decodeJPEGLines(this->pointAvgColorDataVector_, out_data);
             this->pointAvgColorDataVector_Iterator_ = this->pointAvgColorDataVector_.begin();
           break;
-          case(mappingTypes::GRID):
+          case(GRID):
           break;
           default:
           break;
@@ -190,7 +191,7 @@ namespace pcl{
         PCLImage l_mapped_im;
           
         // compute the image grid 
-        long pixel_count = in_vec.size()/3;
+		long pixel_count = (long) in_vec.size() / 3;
 
         // hardcoded value for horizonal width
         l_mapped_im.width = 256;
@@ -214,7 +215,7 @@ namespace pcl{
         //! map the colors to jpeg via a zigzag scan and code them as a single jpeg
         SnakeGridMapping<char,uint8_t> m(l_mapped_im.width ,l_mapped_im.height);
         std::vector<uint8_t> &res = m.doMapping(in_vec);
-        l_mapped_im.data = std::move(res);
+          l_mapped_im.data = std::move(res);
         io::JPEGWriter<uint8_t>::writeJPEG(l_mapped_im,out_data,jpeg_quality_);
         return;
       }
@@ -234,7 +235,7 @@ namespace pcl{
       encodeJPEGLines(std::vector<char> &in_vec, std::vector<uint8_t> & out_data)
       {
         // encode as lines of jpeg scans
-        long pixel_count = in_vec.size()/3;
+        long pixel_count = (long) in_vec.size()/3;
         int num_lines = pixel_count/2048;
         JPEGLineData cdat;
         cdat.line_count = num_lines;
@@ -279,7 +280,7 @@ namespace pcl{
                       (char *)   line_dat.data());
 
             im_in.data = std::move(line_dat);
-            im_in.width = im_in.data.size()/3;
+			im_in.width = (uint32_t) im_in.data.size() / 3;
             io::JPEGWriter<uint8_t>::writeJPEG(im_in,cdat.clines[i],jpeg_quality_);
           }
         }
@@ -326,7 +327,7 @@ namespace pcl{
       bool needs_jpeg_encoding_avg_;
       
       //! enum of mapping mode
-      int  mapping_mode_;
+      mappingTypes mapping_mode_;
 
       //! the quality parameter used for the compression
       int jpeg_quality_;

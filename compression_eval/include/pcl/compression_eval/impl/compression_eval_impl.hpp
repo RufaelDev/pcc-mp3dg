@@ -55,10 +55,10 @@ namespace pcl{
     * \author Rufael Mekuria (rufael.mekuria@cwi.nl)
     */
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    template<typename PointT> boost::shared_ptr<OctreePointCloudCodecV2<PointT>>
-    generatePCLOctreeCodecV2(int nr_bits_base_layer, int nr_bits_enh_layer, int nr_bits_colors, int i_frame_rate=0, int color_coding_type=0, bool do_centroid_coding = true )
+    template<typename PointT> boost::shared_ptr<OctreePointCloudCodecV2<PointT> >
+    generatePCLOctreeCodecV2(int nr_bits_base_layer, int nr_bits_enh_layer, int nr_bits_colors, int i_frame_rate, int color_coding_type, bool do_centroid_coding)
     {
-      return boost::shared_ptr<OctreePointCloudCodecV2<PointT>>(new OctreePointCloudCodecV2<PointT>(
+      return boost::shared_ptr<OctreePointCloudCodecV2<PointT> >(new OctreePointCloudCodecV2<PointT>(
         MANUAL_CONFIGURATION,
         false,
         std::pow( 2.0, -1.0 *(nr_bits_base_layer + nr_bits_enh_layer) ),

@@ -125,10 +125,10 @@ if(build)
     source_group("Image Headers" FILES ${IMAGE_INCLUDES})
     source_group("Image Sources" FILES ${IMAGE_SOURCES})
     
-    if(WITH_JPEG)
+    if(JPEG_FOUND)
       include_directories(${JPEG_INCLUDE_DIR})
-      link_directories(${JPEG_STATIC_LIB})
-    endif(WITH_JPEG)
+#      link_directories(${JPEG_LIBRARY})
+    endif(JPEG_FOUND)
 	
     if(FZAPI_FOUND)
         set(FZAPI_GRABBER_INCLUDES
@@ -322,10 +322,10 @@ if(build)
     link_directories(${VTK_LINK_DIRECTORIES})
     target_link_libraries("${LIB_NAME}" pcl_common pcl_io_ply ${VTK_LIBRARIES} )
     
-    if(WITH_JPEG)
-      target_link_libraries("${LIB_NAME}" ${JPEG_STATIC_LIB})
+    if(JPEG_FOUND)
+      target_link_libraries("${LIB_NAME}" ${JPEG_LIBRARIES})
       include_directories(${JPEG_INCLUDE_DIR})
-    endif(WITH_JPEG)
+    endif(JPEG_FOUND)
     
     if(PNG_FOUND)
       target_link_libraries("${LIB_NAME}" ${PNG_LIBRARY})

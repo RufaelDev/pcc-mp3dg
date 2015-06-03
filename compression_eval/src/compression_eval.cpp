@@ -1162,8 +1162,7 @@ struct compression_eval_mesh_meta_data
 };
 
 //! explicit instantiation of the octree compression modules from pcl
-template class OctreePointCloudCompression<PointXYZRGB>;
-template class OctreePointCloudCodecV2<PointXYZRGB>;
+//template class OctreePointCloudCodecV2<PointXYZRGB>;
 
 template class PCL_EXPORTS pcl::io::OctreePointCloudCompression<pcl::PointXYZRGB>;
 template class PCL_EXPORTS pcl::io::OctreePointCloudCompression<pcl::PointXYZRGBA>;
@@ -1299,11 +1298,11 @@ int
   boost::program_options::options_description desc;
   desc.add_options()
     ("help", " produce help message ")
-    ("mesh_file_folders", po::value<vector<string>>(), " folder mesh files ")
-    ("octree_bit_settings", po::value<vector<int>>(), " quantization bit assignment octree ")
-    ("color_bit_settings", po::value<vector<int>>(), "color bit assignment octree or jpeg quality values ")
+    ("mesh_file_folders", po::value<vector<string> >(), " folder mesh files ")
+    ("octree_bit_settings", po::value<vector<int> >(), " quantization bit assignment octree ")
+    ("color_bit_settings", po::value<vector<int> >(), "color bit assignment octree or jpeg quality values ")
     ("enh_bit_settings", po::value<int>(), " bits to code the points towards the center ")
-    ("color_coding_types", po::value<vector<int>>(), "  pcl=0,jpeg=1 or graph transform ")
+    ("color_coding_types", po::value<vector<int> >(), "  pcl=0,jpeg=1 or graph transform ")
     ("keep_centroid", po::value<int>()->default_value(1), " for keeping centroid ")
     ("bb_expand_factor", po::value<double>()->default_value(0.15), " bounding box expansion to keep bounding box accross frames ")
     ("output_csv_file", po::value<string>()->default_value("bench_out.csv")," output .csv file ")
@@ -1328,11 +1327,11 @@ int
   vector<int> ply_folder_indices = parse_file_extension_argument (argc, argv, "");
 
   // store all loaded meshes in a vector and store all metadata separately (optional)
-  vector<vector<pcl::PolygonMesh>> meshes;
-  vector<vector<compression_eval_mesh_meta_data>> meshes_meta_data;
+  vector<vector<pcl::PolygonMesh> > meshes;
+  vector<vector<compression_eval_mesh_meta_data> > meshes_meta_data;
 
   // data structures for storing the fused meshes
-  vector<boost::shared_ptr<pcl::PointCloud<PointXYZRGB>>> fused_clouds;
+  vector<boost::shared_ptr<pcl::PointCloud<PointXYZRGB> > > fused_clouds;
   vector<compression_eval_mesh_meta_data> fused_clouds_meta_data;
 
   meshes.resize(ply_folder_indices.size());
@@ -1579,9 +1578,9 @@ int
 
   ////////////// FOR EACH PARAMETER SETTING DO ASSESMENT //////////////////
   int enh_bit_settings = vm["enh_bit_settings"].as<int>();
-  vector<int> octree_bit_settings = vm["octree_bit_settings"].as<vector<int>>();
-  vector<int> color_bit_settings =  vm["color_bit_settings"].as<vector<int>>();
-  vector<int> color_coding_types =  vm["color_coding_types"].as<vector<int>>();
+  vector<int> octree_bit_settings = vm["octree_bit_settings"].as<vector<int> >();
+  vector<int> color_bit_settings =  vm["color_bit_settings"].as<vector<int> >();
+  vector<int> color_coding_types =  vm["color_coding_types"].as<vector<int> >();
   bool keep_centroid = vm["keep_centroid"].as<int>();
   int write_out_ply =  vm["write_output_ply"].as<int>();
   int do_delta_coding = vm["do_delta_frame_coding"].as<int>();
@@ -1611,7 +1610,7 @@ int
         stringstream compression_arg_ss; 
         compression_arg_ss << octree_bit_settings[ob] << "_"  
           <<  color_bit_settings[cb] 
-        << "_colort-" << color_coding_types[ct] << "_centroid-" << keep_centroid ? "yes" : "no"  ;
+        << "_colort-" << color_coding_types[ct] << "_centroid-" << (keep_centroid ? "yes" : "no");
 
         ////////////// ASSESMENT: ENCODE, DECODE AND RECORD THE ACHIEVED QUALITY //////////////////
 
@@ -1670,7 +1669,7 @@ int
 
           //////////////////// octree delta frame encoding /////////////////////
           // predicted frame, lossy prediction with artefacts that need to be assessed
-          boost::shared_ptr<pcl::PointCloud<PointXYZRGB>> out_d(new pcl::PointCloud<PointXYZRGB>()); 
+          boost::shared_ptr<pcl::PointCloud<PointXYZRGB> > out_d(new pcl::PointCloud<PointXYZRGB>());
           if(do_delta_coding){
             if(aligned_flags[i+1]){ // only do delta coding when frames are aligned
               cout << " delta coding frame nr " << i << endl;
