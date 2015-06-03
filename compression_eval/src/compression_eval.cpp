@@ -52,6 +52,15 @@ static const unsigned int MAX_COMMENT_SIZE = 256;
 #  pragma warning(disable : 4996) //Disable depreciated use of strerror
 #endif
 
+#if __cplusplus < 201103L
+struct bounding_box
+{
+    Eigen::Vector4f min_xyz;
+    Eigen::Vector4f max_xyz;
+};
+#endif//__cplusplus
+
+
 // ***************
 // Public methods.
 // ***************
@@ -295,7 +304,7 @@ void PLY::readASCII1Body (const std::string & filename,
 		if(line.find("end_header")!= string::npos)
 			break;
     }
-    unsigned int stride = computeStride (hasNormals, hasColors);
+//  unsigned int stride = computeStride (hasNormals, hasColors); // stride is not used and 'computeStride' has no side effects
     unsigned int cptVertices = 0;
     for (unsigned int i = 0; i < numOfVertices && !in.eof (); i++) {
         for (unsigned int j = 0; j < 3; j++) {
@@ -851,10 +860,11 @@ Mesh::Mesh (unsigned int numV, float * V, unsigned int numT, unsigned int * T)
 
 
 Mesh::Mesh (const Mesh & m)
-	: _V(NULL),
-	_T(NULL),
-	_numV(0),
+	:
+    _numV(0),
+    _V(NULL),
 	_numT(0),
+    _T(NULL),
 	m_numOfImages(0)
 {
 	init (m, true, false); 
@@ -1253,7 +1263,11 @@ bool
             mdata.has_conn = false;
 
           //! check the fields in the point cloud to detect properties of the mesh
+#if __cplusplus >= 201103L
           for( auto it = meshes.back().cloud.fields.begin(); it != meshes.back().cloud.fields.end(); ++it)
+#else
+          for( std::vector<pcl::PCLPointField>::iterator it = meshes.back().cloud.fields.begin(); it != meshes.back().cloud.fields.end(); ++it)
+#endif//__cplusplus >= 201103L
           {
             if( it->name == "rgb")
               mdata.has_colors = true;
@@ -1390,11 +1404,13 @@ int
 
   /////////////// NORMALIZE CLOUDS ///////////////////////////////////////////////////////
 
+#if __cplusplus >= 201103L
   struct bounding_box
   {
     Eigen::Vector4f min_xyz;
     Eigen::Vector4f max_xyz;
   };
+#endif//__cplusplus
 
   // initial bounding box
   min_pt_bb[0]= 1000;
@@ -1404,9 +1420,9 @@ int
   max_pt_bb[0]= -1000;
   max_pt_bb[1]= -1000;
   max_pt_bb[2]= -1000;
-
+    
   vector<bounding_box> assigned_bbs(fused_clouds.size());
-
+    
   for(int k=0;k<fused_clouds.size();k++){
     /*
     Eigen::Vector4f min_pt;
@@ -1525,9 +1541,13 @@ int
     else 
       aligned_flags[k] = true;
 
+#if __cplusplus >= 201103L
     auto dyn_range = max_pt_bb - min_pt_bb;
+#else
+    Eigen::Vector4f  dyn_range = max_pt_bb - min_pt_bb;
+#endif//__cplusplus >= 201103L
 
-    assigned_bbs[k].max_xyz = max_pt_bb; 
+    assigned_bbs[k].max_xyz = max_pt_bb;
     assigned_bbs[k].min_xyz = min_pt_bb;
 
     for(int j=0; j < fused_clouds[k]->size();j++)
@@ -1564,11 +1584,18 @@ int
 
   /////////////// PREPARE OUTPUT CSV FILE AND CODEC PARAMTER SETTINGS /////////////////////////
   string o_log_csv = vm["output_csv_file"].as<string>();
+#if __cplusplus >= 201103L
   ofstream res_base_ofstream(o_log_csv);
-
+#else
+    ofstream res_base_ofstream(o_log_csv.c_str());
+#endif//__cplusplus >= 201103L
   string p_log_csv = vm["pframe_quality_log"].as<string>();
+#if __cplusplus >= 201103L
   ofstream res_p_ofstream(p_log_csv);
-  //ofstream res_enh_ofstream("results_enh.csv");
+#else
+    ofstream res_p_ofstream(p_log_csv.c_str());
+#endif//__cplusplus >= 201103L
+  ofstream res_enh_ofstream("results_enh.csv");
 
   // print the headers
   QualityMetric::print_csv_header(res_base_ofstream);
@@ -1617,7 +1644,11 @@ int
         // declare codecs outside the mesh iterator loop to test double buffering
 
         //! encode the fused cloud with and without colors
+#if __cplusplus >= 201103L
         auto l_codec_encoder = generatePCLOctreeCodecV2<PointXYZRGB>(
+#else
+        boost::shared_ptr<OctreePointCloudCodecV2<PointXYZRGB> > l_codec_encoder = generatePCLOctreeCodecV2<PointXYZRGB>(
+#endif//__cplusplus < 201103L
           octree_bit_settings[ob],
           enh_bit_settings,
           color_bit_settings[cb],
@@ -1630,7 +1661,11 @@ int
         l_codec_encoder->setMacroblockSize(macroblocksize);
 
         // initialize structures for decoding base and enhancement layers
-        auto l_codec_decoder_base = generatePCLOctreeCodecV2<PointXYZRGB>(
+#if __cplusplus >= 201103L
+          auto l_codec_decoder_base = generatePCLOctreeCodecV2<PointXYZRGB>(
+#else
+          boost::shared_ptr<OctreePointCloudCodecV2<PointXYZRGB> > l_codec_decoder_base = generatePCLOctreeCodecV2<PointXYZRGB>(
+#endif//__cplusplus < 201103L
           octree_bit_settings[ob],
           enh_bit_settings,
           color_bit_settings[cb],
