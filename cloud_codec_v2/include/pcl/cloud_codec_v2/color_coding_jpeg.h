@@ -121,28 +121,28 @@ namespace pcl{
           switch(mapping_mode_)
           {
             case(SNAKE):
-              encodeJPEGSnake(this->pointAvgColorDataVector_, out_data);
-              this->pointAvgColorDataVector_.resize(out_data.size());
-              std::copy((char *) out_data.data(),(char *) out_data.data() + out_data.size(), this->pointAvgColorDataVector_.data());
+              encodeJPEGSnake(pointAvgColorDataVector_, out_data);
+              pointAvgColorDataVector_.resize(out_data.size());
+              std::copy((char *) out_data.data(),(char *) out_data.data() + out_data.size(), pointAvgColorDataVector_.data());
             break;
             case(LINES):
-              encodeJPEGLines(this->pointAvgColorDataVector_, out_data);
-              this->pointAvgColorDataVector_.resize(out_data.size());
-              std::copy((char *) out_data.data(),(char *) out_data.data() + out_data.size(), this->pointAvgColorDataVector_.data());
+              encodeJPEGLines(pointAvgColorDataVector_, out_data);
+              pointAvgColorDataVector_.resize(out_data.size());
+              std::copy((char *) out_data.data(),(char *) out_data.data() + out_data.size(), pointAvgColorDataVector_.data());
             break;
             case(GRID):
             default:
             break;
           }
         }
-        return this->pointAvgColorDataVector_;
+        return pointAvgColorDataVector_;
       };
 
       // function to just get the pointAvgVector
       virtual std::vector<char>&
       getAverageDataVectorB()
       {
-        return this->pointAvgColorDataVector_;
+        return pointAvgColorDataVector_;
       }
 
       /** \brief Initialize decoding of color information
@@ -154,12 +154,12 @@ namespace pcl{
         switch(mapping_mode_)
         {
           case(SNAKE):
-            decodeJPEGSnake(this->pointAvgColorDataVector_, out_data);
-            this->pointAvgColorDataVector_Iterator_ = this->pointAvgColorDataVector_.begin();
+            decodeJPEGSnake(pointAvgColorDataVector_, out_data);
+            pointAvgColorDataVector_Iterator_ = pointAvgColorDataVector_.begin();
           break;
           case(LINES):
-            decodeJPEGLines(this->pointAvgColorDataVector_, out_data);
-            this->pointAvgColorDataVector_Iterator_ = this->pointAvgColorDataVector_.begin();
+            decodeJPEGLines(pointAvgColorDataVector_, out_data);
+            pointAvgColorDataVector_Iterator_ = pointAvgColorDataVector_.begin();
           break;
           case(GRID):
           break;
@@ -167,8 +167,8 @@ namespace pcl{
           break;
         }
 
-        this->pointAvgColorDataVector_Iterator_ = this->pointAvgColorDataVector_.begin ();
-        this->pointDiffColorDataVector_Iterator_ = this->pointDiffColorDataVector_.begin ();
+        pointAvgColorDataVector_Iterator_ = pointAvgColorDataVector_.begin ();
+        pointDiffColorDataVector_Iterator_ = pointDiffColorDataVector_.begin ();
       }
 
       /** \brief Initialize encoding of color information
@@ -176,8 +176,8 @@ namespace pcl{
       virtual void
       initializeEncoding ()
       {
-        this->pointAvgColorDataVector_.clear ();
-        this->pointDiffColorDataVector_.clear ();
+        pointAvgColorDataVector_.clear ();
+        pointDiffColorDataVector_.clear ();
 
         needs_jpeg_encoding_avg_ = true;
       }
@@ -339,7 +339,7 @@ namespace pcl{
         }
         
         // another copy to handle the difference between char and uint8_t
-        this->pointAvgColorDataVector_.resize(out_data.size());
+        pointAvgColorDataVector_.resize(out_data.size());
         std::copy((char *)out_data.data(),(char *)out_data.data() + out_data.size(), (char *) this->pointAvgColorDataVector_.data());
       }
       
@@ -351,6 +351,12 @@ namespace pcl{
 
       //! the quality parameter used for the compression
       int jpeg_quality_;
+
+    protected:
+        using pcl::octree::ColorCoding<PointT>::pointAvgColorDataVector_;
+        using pcl::octree::ColorCoding<PointT>::pointAvgColorDataVector_Iterator_;
+        using pcl::octree::ColorCoding<PointT>::pointDiffColorDataVector_;
+        using pcl::octree::ColorCoding<PointT>::pointDiffColorDataVector_Iterator_;
     };
   }
 }

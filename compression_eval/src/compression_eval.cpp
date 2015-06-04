@@ -1665,7 +1665,7 @@ int
           auto l_codec_decoder_base = generatePCLOctreeCodecV2<PointXYZRGB>(
 #else
           boost::shared_ptr<OctreePointCloudCodecV2<PointXYZRGB> > l_codec_decoder_base = generatePCLOctreeCodecV2<PointXYZRGB>(
-#endif//__cplusplus < 201103L
+#endif//__cplusplus >= 201103L
           octree_bit_settings[ob],
           enh_bit_settings,
           color_bit_settings[cb],
