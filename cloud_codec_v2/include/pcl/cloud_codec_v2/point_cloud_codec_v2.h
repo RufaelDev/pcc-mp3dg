@@ -271,12 +271,12 @@ namespace pcl{
         
 // inherited protected members needed
         using pcl::octree::Octree2BufBase<LeafT, BranchT>::deleteCurrentBuffer;
-        using pcl::octree::Octree2BufBase<LeafT, BranchT>::deserializeTree;
+        using pcl::octree::Octree2BufBase<LeafT, BranchT>::deserializeTree; // does not work in windows
         using pcl::octree::Octree2BufBase<LeafT, BranchT>::leaf_count_;
         using pcl::octree::Octree2BufBase<LeafT, BranchT>::serializeTree;
         using pcl::octree::Octree2BufBase<LeafT, BranchT>::switchBuffers;
         using pcl::octree::OctreePointCloud<PointT, LeafT, BranchT, OctreeT>::addPointsFromInputCloud;
-        using pcl::octree::OctreePointCloud<PointT, LeafT, BranchT, OctreeT>::deleteCurrentBuffer;
+//        using pcl::octree::OctreePointCloud<PointT, LeafT, BranchT, OctreeT>::deleteCurrentBuffer;
         using pcl::octree::OctreePointCloud<PointT, LeafT, BranchT, OctreeT>::deleteTree;
         using pcl::octree::OctreePointCloud<PointT, LeafT, BranchT, OctreeT>::getTreeDepth;
         using pcl::octree::OctreePointCloud<PointT, LeafT, BranchT, OctreeT>::input_;
