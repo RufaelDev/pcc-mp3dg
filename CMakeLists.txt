@@ -293,6 +293,7 @@ if(WITH_FZAPI)
 endif(WITH_FZAPI)
 
 # JPEG
+# tested with CMake 3.2.2, Xcode 6.3.2 (MacOSX 10.10.3), Visual Studio 12.0 (Windows 8.1), c++ 4.8 (Ubuntu 14.04)
 option(WITH_JPEG "Build with JPEG support" TRUE)
 if(WITH_JPEG)
   find_package(JPEG)
