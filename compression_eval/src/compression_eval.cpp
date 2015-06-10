@@ -1706,7 +1706,7 @@ int
           // predicted frame, lossy prediction with artefacts that need to be assessed
           boost::shared_ptr<pcl::PointCloud<PointXYZRGB> > out_d(new pcl::PointCloud<PointXYZRGB>());
           if(do_delta_coding){
-            if(aligned_flags[i+1]){ // only do delta coding when frames are aligned
+            if(aligned_flags[i]){ // only do delta coding when frames are aligned
               cout << " delta coding frame nr " << i << endl;
               if(i < (fused_clouds.size() -1)) 
               {

@@ -323,6 +323,7 @@ if(build)
     target_link_libraries("${LIB_NAME}" pcl_common pcl_io_ply ${VTK_LIBRARIES} )
     
     if(JPEG_FOUND)
+	message("jpeg io, jpeg was found!" ${JPEG_LIBRARIES} ${JPEG_INCLUDE_DIR})
       target_link_libraries("${LIB_NAME}" ${JPEG_LIBRARIES})
       include_directories(${JPEG_INCLUDE_DIR})
     endif(JPEG_FOUND)

@@ -19,10 +19,14 @@ if(build)
 		"include/pcl/${SUBSYS_NAME}/color_coding_jpeg.h"
 		"include/pcl/${SUBSYS_NAME}/snake_grid_mapping.h"
 		"include/pcl/${SUBSYS_NAME}/color_coding_jpeg.h"
+		"include/pcl/${SUBSYS_NAME}/quaternion_coding.h"
+		"include/pcl/${SUBSYS_NAME}/rigid_transform_coding.h"
         )
 
     set(impl_incs
 		"include/pcl/${SUBSYS_NAME}/impl/point_cloud_codec_v2_impl.hpp"
+		"include/pcl/${SUBSYS_NAME}/impl/quaternion_coding_impl.hpp"
+		"include/pcl/${SUBSYS_NAME}/impl/rigid_transform_coding_impl.hpp"
         )
 
 	if(WITH_JPEG)

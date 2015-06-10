@@ -42,6 +42,7 @@
 
 //
 #include <pcl/cloud_codec_v2/point_cloud_codec_v2.h>
+#include <pcl/cloud_codec_v2/impl/rigid_transform_coding_impl.hpp>
 #include <pcl/compression/point_coding.h>
 #include <pcl/compression/impl/octree_pointcloud_compression.hpp>
 
@@ -54,6 +55,10 @@
 // quality metrics, such that we can assess the quality of the ICP based transform
 #include <pcl/quality/quality_metrics.h>
 #include <pcl/quality/impl/quality_metrics_impl.hpp>
+
+#include <Eigen/geometry>
+
+#include <pcl/cloud_codec_v2/impl/quaternion_coding_impl.hpp>
 
 namespace pcl{
 
@@ -632,12 +637,32 @@ namespace pcl{
               out_cloud_arg->push_back(Final[i]);
             }
 
-           // for now estimate 16 bytes for each voxel
-            char p_dat[16]={};
-            p_coded_data.write(p_dat,16);
+            //
+            auto tf_matr = icp.getFinalTransformation(); 
 
-            //cout << " predicted " << Final.size() << " points, from " << cloud_out->size() << " points " << endl;
-            //cin.get();
+            std::cout << " final encoded transformation is " << std::endl;
+            std::cout << tf_matr << std::endl;
+
+            std::vector<int16_t> comp_dat;
+            RigidTransformCoding<float>::compressRigidTransform(tf_matr,comp_dat);
+            std::cin.get();
+
+            Eigen::Matrix4f mdec;
+            RigidTransformCoding<float>::deCompressRigidTransform(comp_dat,mdec);
+            
+            std::cout << " final decoded transformation is " << std::endl;
+            std::cout << mdec << std::endl;
+            std::cin.get();
+
+            pcl::PointCloud<PointT> manual_final;
+             
+            transformPointCloud<PointT, float>
+            (  *cloud_in,
+               manual_final, 
+               mdec
+            );
+            cout << " transformed " << manual_final.size() << " points, from " << cloud_out->size() << " points " << endl;
+            cin.get();
           }
           else
           {
