@@ -36,6 +36,7 @@
 #ifndef POINT_CLOUD_CODECV2_H
 #define POINT_CLOUD_CODECV2_H
 
+// from PCL library
 #include <pcl/io/pcd_io.h>
 #include <pcl/io/ply_io.h>
 #include <pcl/console/print.h>
@@ -45,6 +46,8 @@
 #include <pcl/features/normal_3d.h>
 #include <pcl/octree/octree_iterator.h>
 #include <pcl/octree/impl/octree_iterator.hpp>
+
+// added for cloud codec v2
 #include <pcl/cloud_codec_v2/point_coding_v2.h>
 #include <pcl/cloud_codec_v2/color_coding_jpeg.h>
 
@@ -70,6 +73,15 @@ namespace pcl{
        typedef typename OctreePointCloudCodecV2<PointT, LeafT, BranchT, OctreeT>::PointCloud PointCloud;
        typedef typename OctreePointCloudCodecV2<PointT, LeafT, BranchT, OctreeT>::PointCloudPtr PointCloudPtr;
        typedef typename OctreePointCloudCodecV2<PointT, LeafT, BranchT, OctreeT>::PointCloudConstPtr PointCloudConstPtr;
+       typedef typename OctreePointCloudCompression<PointT,LeafT,BranchT,OctreeT> MacroBlockTree;
+
+       //! map to store the macroblocks that are shared 
+       //typedef typename std::map<pcl::octree::OctreeKey,std::pair<std::vector<int> *
+       // ,std::vector<int> *>,std::less<pcl::octree::OctreeKey> > KeyMapS;
+
+       //! map to store the macroblock to be intra coded 
+       //typedef typename std::map<pcl::octree::OctreeKey,std::vector<int> *, 
+       //   std::less<pcl::octree::OctreeKey> > KeyMapP;
 
         // Boost shared pointers
         typedef boost::shared_ptr<OctreePointCloudCodecV2<PointT, LeafT, BranchT, OctreeT> > Ptr;
@@ -122,44 +134,28 @@ namespace pcl{
           jp_color_coder_(jpeg_quality_arg, colorCodingType_arg)
         {
           this->i_frame_rate_  = 0;
-          macroblock_size = 16; // default macroblock size is 16x16x16
+          macroblock_size_ = 16; // default macroblock size is 16x16x16
+          icp_var_threshold_ = 100;
+          icp_max_iterations_=50;
+          do_icp_color_offset_ = true;
+          transformationepsilon_=1e-8;
         }
 
-        /** \brief Initialization using the parent
-          */
         void initialization ()
         {
         }
 
-        /** \brief function for setting the macroblocksize
-          */
         void setMacroblockSize(int size)
         {
-          macroblock_size = size;
+          macroblock_size_ = size;
         }
-         /** \brief Encode point cloud to output stream
-          * \param cloud_arg:  point cloud to be compressed
-          * \param compressed_tree_data_out_arg:  binary output stream containing compressed data
-          */
+
         void
         encodePointCloud (const PointCloudConstPtr &cloud_arg, std::ostream& compressed_tree_data_out_arg);
 
-        /** \brief Decode point cloud from input stream
-          * \param compressed_tree_data_in_arg: binary input stream containing compressed data
-          * \param cloud_arg: reference to decoded point cloud
-          */
         void
         decodePointCloud (std::istream& compressed_tree_data_in_arg, PointCloudPtr &cloud_arg);
 
-        /** \brief generate a point cloud Delta to output stream
-        * \param icloud_arg:  point cloud to be used a I frame
-        * \param pcloud_arg:  point cloud to be encoded
-        * \param PointCloudPtr &out_cloud_arg [out] the predicted frame 
-        * \param std::ostream& i_coded_data intra encoded data (not yet implemented)
-        * \param std::ostream& p_coded_data inter encoded data (not yet implemented)
-        * \param bool  icp_on_original 
-        * \param bool  write_out_cloud  flag to write the output cloud to out_cloud_arg
-        */
         virtual void
         generatePointCloudDeltaFrame (const PointCloudConstPtr &icloud_arg, const PointCloudConstPtr &pcloud_arg, PointCloudPtr &out_cloud_arg, 
             std::ostream& i_coded_data, std::ostream& p_coded_data, bool icp_on_original = false,bool write_out_cloud = true );
@@ -170,19 +166,9 @@ namespace pcl{
         encodePointCloudDeltaFrame (const PointCloudConstPtr &icloud_arg, const PointCloudConstPtr &pcloud_arg, PointCloudPtr &out_cloud_arg, 
         std::ostream& i_coded_data, std::ostream& p_coded_data, bool icp_on_original = false,bool write_out_cloud = true ){};
 
-        /** \brief Decode point cloud Delta to output stream (not yet implemented)
-        */
         virtual void
         decodePointCloudDeltaFrame(const PointCloudConstPtr &icloud_arg, const PointCloudConstPtr &pcloud_arg, 
         std::istream& i_coded_data, std::istream& p_coded_data);
-        /*!
-        \brief function to simplify the delta frame to do a prediction
-        \author Rufael Mekuria rufael.mekuria@cwi.nl
-        */
-        virtual void
-        simplifyPCloud(const PointCloudConstPtr &pcloud_arg_in, 
-          OctreePointCloudCompression<PointT,LeafT,BranchT,OctreeT> *octree_simplifier,
-          PointCloudPtr &out_cloud );
         
         //! function to return preformance metric
         uint64_t *
@@ -193,60 +179,56 @@ namespace pcl{
 
         //! helper function to return
         float
-        getMacroBlockPercentage(){return shared_macroblock_percentage;};
+        getMacroBlockPercentage(){return shared_macroblock_percentage_;};
 
         //! helper function to return
         float
-        getMacroBlockConvergencePercentage(){return shared_macroblock_convergence_percentage;};
+        getMacroBlockConvergencePercentage(){return shared_macroblock_convergence_percentage_;};
 
       protected: 
 
-        //! write frame header for CodecV2
+        // protected functions for cloud_codec_v2
+
+        virtual void
+        simplifyPCloud(const PointCloudConstPtr &pcloud_arg_in, PointCloudPtr &out_cloud );
+
+        MacroBlockTree *
+        generate_macroblock_tree(PointCloudConstPtr in_cloud);
+
+        void do_icp_prediction(
+          PointCloudPtr i_cloud,
+          PointCloudPtr p_cloud,
+          Eigen::Matrix4f &rigid_transform,
+          bool & has_converged,
+          char *rgb_offsets
+          );
+
+        // protected functions overriding OctreePointCloudCompression
+        
         void
         writeFrameHeader(std::ostream& compressed_tree_data_out_arg);
 
-        //! read Frame header for CodecV2
         void
         readFrameHeader(std::istream& compressed_tree_data_in_arg);
 
-        /** \brief Encode leaf node information during serialization
-        * \param leaf_arg: reference to new leaf node
-        * \param key_arg: octree key of new leaf node
-        */
         virtual void
         serializeTreeCallback (LeafT &leaf_arg, const OctreeKey& key_arg);
 
-        /** \brief Decode leaf nodes information during deserialization
-        * \param key_arg octree key of new leaf node
-        */
-
-        // param leaf_arg reference to new leaf node
         virtual void 
         deserializeTreeCallback (LeafT&, const OctreeKey& key_arg);
 
-        /** \brief Synchronize to frame header
-        * \param compressed_tree_data_in_arg: binary input stream
-        */
         void
         syncToHeader (std::istream& compressed_tree_data_in_arg);
 
-        /** \brief Apply entropy encoding to encoded information and output to binary stream
-        * \param compressed_tree_data_out_arg: binary output stream: base layer
-        * \param compressed_tree_data_out_arg: binary output streams: enhancement layer
-        */
         void
         entropyEncoding (std::ostream& compressed_tree_data_out_arg1, 
                          std::ostream& compressed_tree_data_out_arg2);
 
-        /** \brief Entropy decoding of input binary stream and output to information vectors
-        * \param compressed_tree_data_in_arg: binary input stream: base layer
-        * \param compressed_tree_data_in_arg: binary input stream: enhancement layer
-        */
         void
         entropyDecoding (std::istream& compressed_tree_data_in_arg1, 
                          std::istream& compressed_tree_data_in_arg2);
 
-        //! some new cool options in v2 of the codec 
+        // protected variables
         uint32_t color_coding_type_; //! color coding with jpeg, graph transform, or differential encodings
 
         bool do_voxel_centroid_enDecoding_;  //! encode the centroid in addition
@@ -263,11 +245,21 @@ namespace pcl{
 
         static const char* frame_header_identifier_; //! new frame header identifier
 
-        int macroblock_size;  //! macroblock size for inter predictive frames
+        int macroblock_size_;  //! macroblock size for inter predictive frames
 
-        float shared_macroblock_percentage;
+        float shared_macroblock_percentage_;
 
-        float shared_macroblock_convergence_percentage;
+        float shared_macroblock_convergence_percentage_;
+
+        float icp_var_threshold_;
+
+        int icp_max_iterations_;
+
+        float transformationepsilon_;
+
+        bool do_icp_color_offset_;
+
+        int conv_count_;
         
 // inherited protected members needed
         using pcl::octree::Octree2BufBase<LeafT, BranchT>::deleteCurrentBuffer;
