@@ -586,33 +586,29 @@ namespace pcl{
             // icp success, encode the rigid transform
             std::vector<int16_t> comp_dat;
             RigidTransformCoding<float>::compressRigidTransform(rt,comp_dat);
+            
             // write octree key, write rigid transform
             int16_t l_key_dat[3]={0,0,0};
-            l_key_dat[0] = (int)  current_key.x; 
+            l_key_dat[0] = (int) current_key.x; 
             l_key_dat[1] = (int) current_key.y; 
             l_key_dat[2] = (int) current_key.z;
             
             // write the p coded data (we can add entropy encoding later)
             p_coded_data.write((const char *) l_key_dat ,3*sizeof(int16_t));
-            p_coded_data.write((const char *) &comp_dat[0] ,3*sizeof(int16_t));
+            p_coded_data.write((const char *) &comp_dat[0] ,comp_dat.size()*sizeof(int16_t));
+            
             if(do_icp_color_offset_)
               p_coded_data.write((const char *) &rbg_offsets[0] ,3*sizeof(char));
-            
+             
             // following code is for generation of predicted frame
             Eigen::Matrix4f mdec;
             RigidTransformCoding<float>::deCompressRigidTransform(comp_dat, mdec);
-            
-            // code for generation
-            //Eigen::Quaternion<float> test_quat(rt.block<3,3>(0,0));
-            mdec.block<3,3>(0,0) = rt.block<3,3>(0,0);
-            //rt(0,3)= mdec(0,3);// =
-            //rt(1,3)= mdec(1,3); //=
-            //rt(2,3)= mdec(2,3); //=
+
             pcl::PointCloud<PointT> manual_final;
             transformPointCloud<PointT, float>
             (  *cloud_in,
                manual_final, 
-               rt
+               mdec
             );
 
             // generate the output points
