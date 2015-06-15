@@ -585,7 +585,8 @@ namespace pcl{
           {
             // icp success, encode the rigid transform
             std::vector<int16_t> comp_dat;
-            RigidTransformCoding<float>::compressRigidTransform(rt,comp_dat);
+            Eigen::Quaternion<float> l_quat_out;
+            RigidTransformCoding<float>::compressRigidTransform(rt,comp_dat,l_quat_out);
             
             // write octree key, write rigid transform
             int16_t l_key_dat[3]={0,0,0};
@@ -602,7 +603,28 @@ namespace pcl{
              
             // following code is for generation of predicted frame
             Eigen::Matrix4f mdec;
-            RigidTransformCoding<float>::deCompressRigidTransform(comp_dat, mdec);
+            Eigen::Quaternion<float> l_quat_out_dec;
+            RigidTransformCoding<float>::deCompressRigidTransform(comp_dat, mdec,l_quat_out_dec);
+
+            bool corrected_tf_matrix=false;
+            for(int i=0; i<16;i++)
+            {
+              float diff=0;
+               if((diff=std::abs(rt(i/4,i%4) - mdec(i/4,i%4))) > 0.01){
+                //mdec(i/4,i%4) = rt(i/4,i%4);
+                corrected_tf_matrix=true;
+                std::cout << " error decoding rigid transform "
+                  << comp_dat.size() << " index " << i/4 << "," 
+                  << i%4 << std::endl;
+                  std::cout << " original " << rt << std::endl;
+                  std::cout << " decoded " <<  mdec << std::endl;
+                std::cin.get();
+               }
+            }
+            if(corrected_tf_matrix)
+              std::cout << " matrix decoded not ok " <<std::endl;
+            else
+              std::cout << " matrix decoded ok " <<std::endl;
 
             pcl::PointCloud<PointT> manual_final;
             transformPointCloud<PointT, float>

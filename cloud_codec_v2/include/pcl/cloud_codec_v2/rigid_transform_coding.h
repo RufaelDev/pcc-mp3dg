@@ -56,11 +56,13 @@ namespace pcl{
 
         static bool 
         compressRigidTransform(const Eigen::Matrix<Scalar, 4, 4> &tr_in, 
-                               std::vector<int16_t> &comp_dat_out);
+                               std::vector<int16_t> &comp_dat_out,
+                               Eigen::Quaternion<Scalar> &quat_in);
         
         static bool 
-        deCompressRigidTransform(const std::vector<int16_t> comp_dat_in, 
-                                 Eigen::Matrix<Scalar, 4, 4> &tr_out);
+        deCompressRigidTransform(const std::vector<int16_t> &comp_dat_in, 
+                                 Eigen::Matrix<Scalar, 4, 4> &tr_out, 
+                                 Eigen::Quaternion<Scalar> &quat_out);
     };
   }
 }

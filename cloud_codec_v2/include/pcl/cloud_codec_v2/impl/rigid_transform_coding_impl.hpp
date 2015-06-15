@@ -50,8 +50,6 @@ namespace pcl{
 
   namespace io
   {
-    
-
     /*
       \brief Class for Rigid transform coding, assumes normalized [0,1][0,1] space
     */
@@ -59,11 +57,60 @@ namespace pcl{
     template <typename Scalar> bool 
       RigidTransformCoding<Scalar>::compressRigidTransform(
         const Eigen::Matrix<Scalar, 4, 4> &tr_in, 
-        std::vector<int16_t> &comp_dat_out)
+        std::vector<int16_t> &comp_dat_out,Eigen::Quaternion<Scalar> &quat_out)
     {
-      // 2 is the maximum 
+      // 2,5 is the maximum translation
       const float scaling_factor = (float) std::numeric_limits<int16_t>::max()/2.5;
       
+      // convert the rotation to a quaternion
+      Eigen::Matrix<Scalar,3,3> rotm = tr_in.block<3,3>(0,0); 
+      quat_out = Eigen::Quaternion<Scalar>(tr_in.block<3,3>(0,0));
+
+      // test the quaternion mode for coding the rotation (encode,decode check if stable)
+      Eigen::Quaternion<Scalar> quat_test;
+      comp_dat_out.resize(3);
+      QuaternionCoding::compressQuaternion(quat_out,(int16_t *) &comp_dat_out[0]);
+      QuaternionCoding::deCompressQuaternion(&comp_dat_out[0],quat_test);
+      Eigen::Matrix<Scalar, 3, 3> res_rot = quat_test.toRotationMatrix();
+ 
+      //std::cout << "rigid tf coding original " << std::endl << tr_in.block<3,3>(0,0);
+      //std::cout << "rigid tf test  quaternion " << std::endl << res_rot;
+
+      // check if decoding the matrix from the quaternion gives a stable result
+      bool quaternion_is_stable=true;
+
+      for(int i=0; i<9;i++)
+      {
+        float diff=0.0;
+        if((diff=std::abs(res_rot(i/3,i%3) - tr_in(i/3,i%3))) > 0.001){
+          quaternion_is_stable=false;
+          //std::cout << "instable"<<std::endl;
+          break;
+        }
+      }
+      //if(quaternion_is_stable)
+      //  std::cout << " stable " <<std::endl;
+      
+      // compress the rotation matrix as two vectors if quaternion method is not numerically stable
+      if(!quaternion_is_stable){
+         comp_dat_out.resize(7);
+         // only store two vectors of the rotation matrix
+         for(int l=0;l<3;l++){
+           comp_dat_out[l] =  (int16_t) int(rotm(0,l) * (std::numeric_limits<int16_t>::max() -1));
+           comp_dat_out[l+3] =  (int16_t) int(rotm(1,l) * (std::numeric_limits<int16_t>::max() -1));
+           
+           // add a byte for storing the signs
+           comp_dat_out[6]+= rotm(2,l)<0? 1<<l:0;
+           std::cout << " stored bits: " <<  int(1<<l) << std::endl;
+         }
+      }
+      else{
+        // make sure to code the rotation properly to the outputvector as a quantized quaternion
+        QuaternionCoding::compressQuaternion(quat_out,(int16_t *) &comp_dat_out[0]);
+      }
+
+      // quantize the translation
+
       float t1 = (float) tr_in(0,3);
       if(t1>2.5)
         t1=2.5;
@@ -81,41 +128,8 @@ namespace pcl{
         t3=2.5;
       if(t3<-2.5)
         t3=-2.5;
-      
-      // convert the rotation to a quaternion
-      Eigen::Matrix<Scalar,3,3> rotm;
-      rotm << tr_in.block<3,3>(0,0);
-      Eigen::Quaternion<Scalar> rot_q(rotm);
 
-      // sometimes the quaternion results in incorrect matrix check this before encoding 
-      // not yet sure what is causing this
-      // check if the quaternion is stable first
-      Eigen::Matrix<Scalar, 3, 3> res_rot = rot_q.toRotationMatrix();
-      bool quaternion_is_stable=true;
-      for(int i=0; i<9;i++)
-      {
-        float diff=0;
-          if((diff=std::abs(res_rot(i/3,i%3) - rotm(i/3,i%3))) > 0.001){
-            quaternion_is_stable=false;
-          }
-      }
-      
-      // compress the rotation matrix as two vectors or quaternion
-      if(quaternion_is_stable)
-      {
-        comp_dat_out.resize(3);
-        QuaternionCoding::compressQuaternion(rot_q,(int16_t *) &comp_dat_out[0]);
-      }
-      else{
-         comp_dat_out.resize(6);
-         // only store two vectors of the rotation matrix
-         for(int l=0;l<3;l++){
-           comp_dat_out[l] =  (int16_t) int(rotm(0,l) * (std::numeric_limits<int16_t>::max() -1));
-           comp_dat_out[l+3] =  (int16_t) int(rotm(1,l) * (std::numeric_limits<int16_t>::max() -1));
-         }
-      }
-
-      // compress the translation
+      // compress the translation by quantization using 16 bits
       comp_dat_out.push_back( (int16_t) (int) (t1 * (scaling_factor-1)));
       comp_dat_out.push_back( (int16_t) (int) (t2 * (scaling_factor-1)));
       comp_dat_out.push_back( (int16_t)  (int)(t3 * (scaling_factor-1)));
@@ -125,26 +139,31 @@ namespace pcl{
 
     template <typename Scalar> bool 
       RigidTransformCoding<Scalar>::deCompressRigidTransform(
-        const std::vector<int16_t> comp_dat_in, 
-        Eigen::Matrix<Scalar, 4, 4> &tr_out)
+        const std::vector<int16_t> & comp_dat_in, 
+        Eigen::Matrix<Scalar, 4, 4> &tr_out, Eigen::Quaternion<Scalar> &quat_out)
     {
       // 2 is the maximum 
       const float scaling_factor = (float) std::numeric_limits<int16_t>::max()/2.5;
       
       if(comp_dat_in.size() == 6){
-        // decode rotation offset
-        Eigen::Quaternion<Scalar> rot_q;
-        QuaternionCoding::deCompressQuaternion((int16_t *) &comp_dat_in[0], rot_q);
-        tr_out.block<3,3>(0,0) = rot_q.toRotationMatrix();
+        // decode rotation offset which is coded as quaternion
+        QuaternionCoding::deCompressQuaternion((int16_t *) &comp_dat_in[0], quat_out);
+        tr_out.block<3,3>(0,0) = quat_out.toRotationMatrix();
+        //std::cout << "decoded rotation" << std::endl << tr_out.block<3,3>(0,0) << std::endl;
       }
       else{
-        //decode the rotation matrix from two vectors
+        //decode the rotation matrix from two vectors and the sign vectors
          for(int l=0;l<3;l++){
-           tr_out(0,l) = (float) comp_dat_in[l] / (std::numeric_limits<int16_t>::max() -1);
-           tr_out(1,l) = (float) comp_dat_in[l+3] / (std::numeric_limits<int16_t>::max() -1);
+           tr_out(0,l) = ((float) comp_dat_in[l]) / (std::numeric_limits<int16_t>::max() -1);
+           tr_out(1,l) = ((float) comp_dat_in[l+3]) / (std::numeric_limits<int16_t>::max() -1);
            tr_out(2,l) =  std::sqrt(1 - tr_out(0,l) * tr_out(0,l) - tr_out(1,l) * tr_out(1,l));
+           
+           // decode the sign
+           if( ((1<<l) & ((int)comp_dat_in[6])) == 1<<l)
+             tr_out(2,l)= - tr_out(2,l);
          }
       }
+
       // decode offset 
       tr_out(0,3) = ((Scalar) comp_dat_in[comp_dat_in.size()-3]) / ((Scalar) (scaling_factor -1)); 
       tr_out(1,3) = ((Scalar) comp_dat_in[comp_dat_in.size()-2]) / ((Scalar) (scaling_factor -1));
@@ -161,40 +180,3 @@ namespace pcl{
   }
 }
 #endif
-
-/*
-bool is_normalized = true;
-            for(int k=0;k<3;k++)
-            {
-              float norm=(rt(0,k)*rt(0,k) + rt(1,k)*rt(1,k) + rt(2,k)*rt(2,k));
-              if( norm > 1.01 || norm < 0.99 ){
-                is_normalized = false;
-                 std::cout << "matrix not normalized! " << norm  << std::endl;
-                 std::cout << rt;
-                 std::cin.get();
-                break;
-              }
-            }
-
-            // code for generation
-            Eigen::Quaternion<float> test_quat(rt.block<3,3>(0,0));
-            if(! (test_quat.squaredNorm()) == 1)
-            {
-              std::cout << "quaternion not normalized" << std::endl;
-              std::cin.get();
-            }
-            
-            bool corrected_tf_matrix=false;
-            for(int i=0; i<16;i++)
-            {
-              float diff=0;
-               if((diff=std::abs(rt(i/4,i%4) - mdec(i/4,i%4))) > 0.001){
-                mdec(i/4,i%4) = rt(i/4,i%4);
-                corrected_tf_matrix=true;
-               }
-            }
-            if(corrected_tf_matrix)
-              std::cout << " corrected transform matrix! " << std::endl;
-            else
-              std::cout << " . ";
-*/
