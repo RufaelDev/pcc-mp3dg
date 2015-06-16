@@ -1,6 +1,6 @@
 set(SUBSYS_NAME compression_eval)
 set(SUBSYS_DESC "Compression Evaluation Suite for Evaluation of Point Cloud Codec")
-set(SUBSYS_DEPS common sample_consensus search kdtree octree filters features io geometry visualization cloud_codec_v2 registration quality cloud_codec_v2)
+set(SUBSYS_DEPS common sample_consensus search kdtree octree filters features io geometry cloud_codec_v2 registration quality cloud_codec_v2)
 
 set(build TRUE)
 PCL_SUBSYS_OPTION(build "${SUBSYS_NAME}" "${SUBSYS_DESC}" ON)
@@ -15,10 +15,12 @@ if(build)
 
     set(incs
         "include/pcl/${SUBSYS_NAME}/compression_eval.h"
+		"include/pcl/${SUBSYS_NAME}/reverie_mesh.h"
         )
 
     set(impl_incs
         "include/pcl/${SUBSYS_NAME}/impl/compression_eval_impl.hpp"
+		"include/pcl/${SUBSYS_NAME}/impl/reverie_mesh_impl.hpp"
         )
 
 	if(WITH_JPEG)
@@ -30,7 +32,7 @@ if(build)
     set(LIB_NAME "pcl_${SUBSYS_NAME}")
     include_directories("${CMAKE_CURRENT_SOURCE_DIR}/include")
     PCL_ADD_EXECUTABLE("${LIB_NAME}" "${SUBSYS_NAME}" ${srcs} ${incs} ${impl_incs})
-    target_link_libraries("${LIB_NAME}" pcl_common pcl_sample_consensus pcl_search pcl_kdtree pcl_octree pcl_io pcl_io_ply pcl_visualization)
+    target_link_libraries("${LIB_NAME}" pcl_common pcl_sample_consensus pcl_search pcl_kdtree pcl_octree pcl_io pcl_io_ply)
     PCL_MAKE_PKGCONFIG("${LIB_NAME}" "${SUBSYS_NAME}" "${SUBSYS_DESC}" "${SUBSYS_DEPS}" "" "" "" "")
 
     # Install include files

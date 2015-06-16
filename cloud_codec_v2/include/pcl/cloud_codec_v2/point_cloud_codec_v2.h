@@ -96,6 +96,9 @@ namespace pcl{
         * \param showStatistics_arg:  output compression statistics
         * \param colorCodingType_arg:  jpeg or pcl dpcm
         * \param doVoxelGridCentroid_arg:  keep voxel grid positions or not 
+        * \param createScalebleStream_arg:  scalable bitstream (not yet implemented)
+        * \param codeConnectivity_arg:  connectivity coding (not yet implemented)
+        * \param jpeg_quality_arg:  quality of the jpeg encoder (jpeg quality)
         */
         OctreePointCloudCodecV2 (compression_Profiles_e compressionProfile_arg = MED_RES_ONLINE_COMPRESSION_WITH_COLOR,
           bool showStatistics_arg = false,
@@ -129,7 +132,7 @@ namespace pcl{
           macroblock_size_ = 16; // default macroblock size is 16x16x16
           icp_var_threshold_ = 100;
           icp_max_iterations_=50;
-          do_icp_color_offset_ = true;
+          do_icp_color_offset_ = false;
           transformationepsilon_=1e-8;
         }
 
@@ -172,8 +175,6 @@ namespace pcl{
         generatePointCloudDeltaFrame (const PointCloudConstPtr &icloud_arg, const PointCloudConstPtr &pcloud_arg, PointCloudPtr &out_cloud_arg, 
             std::ostream& i_coded_data, std::ostream& p_coded_data, bool icp_on_original = false,bool write_out_cloud = true );
 
-        /** \brief Encode point cloud Delta to output stream (not yet implemented)
-        */
         virtual void
         encodePointCloudDeltaFrame (const PointCloudConstPtr &icloud_arg, const PointCloudConstPtr &pcloud_arg, PointCloudPtr &out_cloud_arg, 
         std::ostream& i_coded_data, std::ostream& p_coded_data, bool icp_on_original = false,bool write_out_cloud = false);
@@ -182,7 +183,7 @@ namespace pcl{
         decodePointCloudDeltaFrame(const PointCloudConstPtr &icloud_arg, PointCloudPtr &out_cloud_arg, 
         std::istream& i_coded_data, std::istream& p_coded_data);
         
-        //! function to return preformance metric
+        //! function to return performance metric
         uint64_t *
         getPerformanceMetrics()
         {
@@ -196,7 +197,7 @@ namespace pcl{
           return shared_macroblock_percentage_;
         };
 
-        //! helper function to return
+        //! helper function to return convergence percentage
         float
         getMacroBlockConvergencePercentage(){
           return shared_macroblock_convergence_percentage_;
@@ -246,18 +247,19 @@ namespace pcl{
         entropyDecoding (std::istream& compressed_tree_data_in_arg1, 
                          std::istream& compressed_tree_data_in_arg2);
 
-        // protected variables
+        // protected variables cloud codec v2
+
         uint32_t color_coding_type_; //! color coding with jpeg, graph transform, or differential encodings
 
         bool do_voxel_centroid_enDecoding_;  //! encode the centroid in addition
 
-        bool create_scalable_bitstream_;  //! create a scalable bitstream
+        bool create_scalable_bitstream_;  //! create a scalable bitstream (not yet implemented)
 
-        bool do_connectivity_encoding_;   //! encode the connectivity
+        bool do_connectivity_encoding_;   //! encode the connectivity (not yet implemented)
 
         PointCodingV2<PointT> centroid_coder_; //! centroid encoding
 
-        ColorCodingJPEG<PointT> jp_color_coder_; //! new color coding
+        ColorCodingJPEG<PointT> jp_color_coder_; //! new color coding via jpeg
 
         uint64_t compression_performance_metrics[3]; //! octree_bytes, centroid_bytes, color_bytes, monitor the buildup of compressed data
 

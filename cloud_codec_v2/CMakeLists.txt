@@ -1,6 +1,6 @@
 set(SUBSYS_NAME cloud_codec_v2)
 set(SUBSYS_DESC "Extensions for Point Cloud Compression for MPEG")
-set(SUBSYS_DEPS common sample_consensus search kdtree octree filters features io geometry visualization registration quality)
+set(SUBSYS_DEPS common sample_consensus search kdtree octree filters features io geometry registration quality)
 
 set(build TRUE)
 PCL_SUBSYS_OPTION(build "${SUBSYS_NAME}" "${SUBSYS_DESC}" ON)
@@ -38,7 +38,7 @@ if(build)
     set(LIB_NAME "pcl_${SUBSYS_NAME}")
     include_directories("${CMAKE_CURRENT_SOURCE_DIR}/include")
     PCL_ADD_LIBRARY("${LIB_NAME}" "${SUBSYS_NAME}" ${srcs} ${incs} ${impl_incs})
-    target_link_libraries("${LIB_NAME}" pcl_common pcl_sample_consensus pcl_search pcl_kdtree pcl_octree pcl_io pcl_io_ply pcl_visualization pcl_registration)
+    target_link_libraries("${LIB_NAME}" pcl_common pcl_sample_consensus pcl_search pcl_kdtree pcl_octree pcl_io pcl_io_ply pcl_registration)
     PCL_MAKE_PKGCONFIG("${LIB_NAME}" "${SUBSYS_NAME}" "${SUBSYS_DESC}" "${SUBSYS_DEPS}" "" "" "" "")
 
     # Install include files
