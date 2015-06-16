@@ -98,7 +98,7 @@ namespace pcl{
         }
 
         // apply encoding configuration
-		cloud_with_color_ &= do_color_encoding_;
+		    cloud_with_color_ &= do_color_encoding_;
 
         // if octree depth changed, we enforce I-frame encoding
         i_frame_ |= (recent_tree_depth != getTreeDepth ());// | !(iFrameCounter%10);
@@ -151,7 +151,7 @@ namespace pcl{
         writeFrameHeader (compressed_tree_data_out_arg);
 
         // apply entropy coding to the content of all data vectors and send data to output stream
-		entropyEncoding(compressed_tree_data_out_arg, compressed_tree_data_out_arg);
+		    entropyEncoding(compressed_tree_data_out_arg, compressed_tree_data_out_arg);
 
         // prepare for next frame
         switchBuffers ();
@@ -231,7 +231,7 @@ namespace pcl{
       jp_color_coder_ = ColorCodingJPEG<PointT>(75,color_coding_type_);
 
       // decode data vectors from stream
-	  entropyDecoding(compressed_tree_data_in_arg, compressed_tree_data_in_arg);
+	    entropyDecoding(compressed_tree_data_in_arg, compressed_tree_data_in_arg);
 
       // initialize color and point encoding
       if(!color_coding_type_)
@@ -531,7 +531,7 @@ namespace pcl{
       OctreePointCloudCodecV2<PointT,LeafT,BranchT,OctreeT>::generatePointCloudDeltaFrame( 
       const PointCloudConstPtr &icloud_arg /* icloud is already stored but can also be given as argument */,
       const PointCloudConstPtr &pcloud_arg,
-      PointCloudPtr &out_cloud_arg, /* write the output cloud so we can assess the quality resulting from this algorithm */
+      PointCloudPtr& out_cloud_arg, /* write the output cloud so we can assess the quality resulting from this algorithm */
       std::ostream& i_coded_data, 
       std::ostream& p_coded_data, 
       bool icp_on_original,
@@ -542,6 +542,7 @@ namespace pcl{
 
       // initialize predictive cloud
       PointCloudPtr simp_pcloud(new PointCloud());
+
       if(!icp_on_original){
         simplifyPCloud(pcloud_arg, simp_pcloud);
       }
@@ -550,11 +551,11 @@ namespace pcl{
       out_cloud_arg->height=1;
       out_cloud_arg->width =0;
 
-      // generate the octree for the macroblocks
+      ////////////// generate the octree for the macroblocks //////////////////////////////
       MacroBlockTree * i_block_tree = generate_macroblock_tree(icloud_arg);
       MacroBlockTree * p_block_tree = generate_macroblock_tree(icp_on_original ? pcloud_arg:simp_pcloud);
       
-      // iterate the predictive frame and find common macro blocks /////////////
+      //////////// iterate the predictive frame and find common macro blocks /////////////
       octree::OctreeLeafNodeIterator<OctreeT> it_predictive = p_block_tree->leaf_begin();
       octree::OctreeLeafNodeIterator<OctreeT> it_predictive_end = p_block_tree->leaf_end();
 
@@ -571,14 +572,14 @@ namespace pcl{
           // shared block, do icp
           bool icp_success=false;
           Eigen::Matrix4f rt;
-          char rbg_offsets[3]={0,0,0};
+          char rgb_offsets[3]={0,0,0};
 
           do_icp_prediction(
             cloud_in,
             cloud_out,
             rt,
             icp_success,
-            rbg_offsets
+            rgb_offsets
           );
           
           if(icp_success)
@@ -590,6 +591,7 @@ namespace pcl{
             
             // write octree key, write rigid transform
             int16_t l_key_dat[3]={0,0,0};
+
             l_key_dat[0] = (int) current_key.x; 
             l_key_dat[1] = (int) current_key.y; 
             l_key_dat[2] = (int) current_key.z;
@@ -599,13 +601,14 @@ namespace pcl{
             p_coded_data.write((const char *) &comp_dat[0] ,comp_dat.size()*sizeof(int16_t));
             
             if(do_icp_color_offset_)
-              p_coded_data.write((const char *) &rbg_offsets[0] ,3*sizeof(char));
+              p_coded_data.write((const char *) &rgb_offsets[0] ,3*sizeof(char));
              
             // following code is for generation of predicted frame
             Eigen::Matrix4f mdec;
             Eigen::Quaternion<float> l_quat_out_dec;
             RigidTransformCoding<float>::deCompressRigidTransform(comp_dat, mdec,l_quat_out_dec);
 
+            /* uncomment this code for debugging the rigid transform
             bool corrected_tf_matrix=false;
             for(int i=0; i<16;i++)
             {
@@ -625,7 +628,9 @@ namespace pcl{
               std::cout << " matrix decoded not ok " <<std::endl;
             else
               std::cout << " matrix decoded ok " <<std::endl;
+            */
 
+            // predicted point cloud
             pcl::PointCloud<PointT> manual_final;
             transformPointCloud<PointT, float>
             (  *cloud_in,
@@ -640,9 +645,9 @@ namespace pcl{
               
               // color offset
               if(do_icp_color_offset_){
-                pt.r+=rbg_offsets[0];
-                pt.g+=rbg_offsets[1];
-                pt.b+=rbg_offsets[2];
+                pt.r+=rgb_offsets[0];
+                pt.g+=rgb_offsets[1];
+                pt.b+=rgb_offsets[2];
               }
               
               out_cloud_arg->push_back(pt);
@@ -662,7 +667,8 @@ namespace pcl{
         {
           // exclusive block
           // add to intra coded points
-          for(int i=0; i < cloud_out->size();i++){
+          for(int i=0; i < cloud_out->size();i++)
+          {
             out_cloud_arg->push_back((*cloud_out)[i]);
             intra_coded_points->push_back((*cloud_out)[i]);
           }
@@ -685,15 +691,283 @@ namespace pcl{
       );
       intra_coder.defineBoundingBox(0.0, 0.0, 0.0, 1.0, 1.0, 1.0);
       intra_coder.encodePointCloud(intra_coded_points, i_coded_data);
+
+       // clean up
+      delete i_block_tree;
+      delete p_block_tree;
     }
 
     /////////////////////////////////////////////////////////////////////////////////////////////////
     template<typename PointT, typename LeafT, typename BranchT, typename OctreeT> void
-      OctreePointCloudCodecV2<PointT, LeafT, BranchT, OctreeT>::decodePointCloudDeltaFrame( 
-          const PointCloudConstPtr &icloud_arg, const PointCloudConstPtr &pcloud_arg, 
-          std::istream& i_coded_data, std::istream& p_coded_data)
-    {}
+      OctreePointCloudCodecV2<PointT, LeafT, BranchT, OctreeT>::encodePointCloudDeltaFrame (
+      const PointCloudConstPtr &icloud_arg, const PointCloudConstPtr &pcloud_arg, PointCloudPtr &out_cloud_arg, 
+      std::ostream& i_coded_data, std::ostream& p_coded_data, bool icp_on_original, bool write_out_cloud  )
+    {
+      // intra coded points storage (points that cannot be predicted)
+      typename pcl::PointCloud<PointT>::Ptr intra_coded_points(new pcl::PointCloud<PointT>());
 
+      // initialize predictive cloud
+      PointCloudPtr simp_pcloud(new PointCloud());
+
+      if(!icp_on_original){
+        simplifyPCloud(pcloud_arg, simp_pcloud);
+      }
+
+      // initialize output cloud
+      out_cloud_arg->height=1;
+      out_cloud_arg->width =0;
+
+      ////////////// generate the octree for the macroblocks //////////////////////////////
+      MacroBlockTree * i_block_tree = generate_macroblock_tree(icloud_arg);
+      MacroBlockTree * p_block_tree = generate_macroblock_tree(icp_on_original ? pcloud_arg:simp_pcloud);
+
+      //////////// iterate the predictive frame and find common macro blocks /////////////
+      octree::OctreeLeafNodeIterator<OctreeT> it_predictive = p_block_tree->leaf_begin();
+      octree::OctreeLeafNodeIterator<OctreeT> it_predictive_end = p_block_tree->leaf_end();
+
+      for(;it_predictive!=it_predictive_end;++it_predictive)
+      {
+        const octree::OctreeKey current_key = it_predictive.getCurrentOctreeKey();
+        pcl::octree::OctreeContainerPointIndices *i_leaf;
+        typename pcl::PointCloud<PointT>::Ptr cloud_out (new pcl::PointCloud<PointT>(icp_on_original ? *pcloud_arg : *simp_pcloud , it_predictive.getLeafContainer().getPointIndicesVector()));
+
+        if(i_leaf = i_block_tree->findLeaf(current_key.x,current_key.y,current_key.z))
+        {
+          typename pcl::PointCloud<PointT>::Ptr cloud_in (new pcl::PointCloud<PointT>(*icloud_arg, i_leaf->getPointIndicesVector()));
+
+          // shared block, do icp
+          bool icp_success=false;
+          Eigen::Matrix4f rt;
+          char rgb_offsets[3]={0,0,0};
+
+          do_icp_prediction(
+            cloud_in,
+            cloud_out,
+            rt,
+            icp_success,
+            rgb_offsets
+            );
+
+          if(icp_success)
+          {
+            // icp success, encode the rigid transform
+            std::vector<int16_t> comp_dat;
+            Eigen::Quaternion<float> l_quat_out;
+            RigidTransformCoding<float>::compressRigidTransform(rt,comp_dat,l_quat_out);
+
+            // write octree key, write rigid transform
+            int16_t l_key_dat[3]={0,0,0};
+
+            l_key_dat[0] = (int) current_key.x; 
+            l_key_dat[1] = (int) current_key.y; 
+            l_key_dat[2] = (int) current_key.z;
+
+            // write the p coded data (we can add entropy encoding later)
+            uint8_t chunk_size = 3*sizeof(int16_t) + comp_dat.size()*sizeof(int16_t) + (do_icp_color_offset_ ? 3:0); // size of the chunk
+            p_coded_data.write((const char *) chunk_size, sizeof(chunk_size));
+            p_coded_data.write((const char *) l_key_dat, 3*sizeof(int16_t));
+            p_coded_data.write((const char *) &comp_dat[0], comp_dat.size()*sizeof(int16_t));
+
+            if(do_icp_color_offset_)
+              p_coded_data.write((const char *) &rgb_offsets[0] ,3*sizeof(char));
+
+            // following code is for generation of predicted frame
+            Eigen::Matrix4f mdec;
+            Eigen::Quaternion<float> l_quat_out_dec;
+            RigidTransformCoding<float>::deCompressRigidTransform(comp_dat, mdec,l_quat_out_dec);
+
+            // predicted point cloud
+            pcl::PointCloud<PointT> manual_final;
+            if(write_out_cloud){
+              transformPointCloud<PointT, float>
+                (  *cloud_in,
+                manual_final, 
+                mdec
+                );
+            }
+
+            // generate the output points
+            if(write_out_cloud){
+              for(int i=0; i < manual_final.size();i++){
+
+                PointT &pt = manual_final[i];
+
+                // color offset
+                if(do_icp_color_offset_){
+                  pt.r+=rgb_offsets[0];
+                  pt.g+=rgb_offsets[1];
+                  pt.b+=rgb_offsets[2];
+                }
+
+                out_cloud_arg->push_back(pt);
+              }
+            }
+          }
+          else
+          {
+            // icp failed
+            // add to intra coded points
+            for(int i=0; i < cloud_out->size();i++){
+              if(write_out_cloud)
+                out_cloud_arg->push_back((*cloud_out)[i]);
+              intra_coded_points->push_back((*cloud_out)[i]);
+            }
+          }
+        }
+        else
+        {
+          // exclusive block
+          // add to intra coded points
+          for(int i=0; i < cloud_out->size();i++)
+          {
+            if(write_out_cloud)
+              out_cloud_arg->push_back((*cloud_out)[i]);
+            intra_coded_points->push_back((*cloud_out)[i]);
+          }
+        }
+      }  
+
+      /* encode all the points that could not be predicted 
+      from the previous coded frame in i frame manner with cluod_codec_v2 */
+      OctreePointCloudCodecV2<PointT,LeafT,BranchT,OctreeT> intra_coder 
+        (
+        MANUAL_CONFIGURATION,
+        false,
+        point_resolution_,
+        octree_resolution_,
+        true,
+        0,
+        true,
+        color_bit_resolution_,
+        color_coding_type_, 
+        do_voxel_centroid_enDecoding_
+        );
+      intra_coder.defineBoundingBox(0.0, 0.0, 0.0, 1.0, 1.0, 1.0);
+      intra_coder.encodePointCloud(intra_coded_points, i_coded_data);
+
+      // clean up
+      delete i_block_tree;
+      delete p_block_tree;
+    }
+
+    template<typename PointT, typename LeafT, typename BranchT, typename OctreeT> void
+      OctreePointCloudCodecV2<PointT, LeafT, BranchT, OctreeT>::decodePointCloudDeltaFrame( 
+      const PointCloudConstPtr &icloud_arg, PointCloudPtr &cloud_out_arg, 
+      std::istream& i_coded_data, std::istream& p_coded_data)
+    {
+      ////////////// generate the macroblocks of the iframe //////////////////////////////
+      MacroBlockTree * i_block_tree = generate_macroblock_tree(icloud_arg);
+
+      ///////////// inputs for decoding chunks of p data /////////////////////////////////
+      int16_t keys_in[3]={0,0,0};
+      uint8_t chunk_size=0;
+      char rgb_offsets[3]={0,0,0};
+      std::vector<int16_t> comp_dat_in;
+      bool ended_unexpected=false;
+      int decoded_mblocks=0;
+
+      ///////////////////////////decode p data ///////////////////////////
+      while(p_coded_data.good())
+      {
+        // read the chunk size first
+        p_coded_data.read((char *) chunk_size, sizeof(uint8_t));
+
+        if((chunk_size > 0) && p_coded_data.good()){
+
+          // read the keys 
+          p_coded_data.read((char *) keys_in, 3*sizeof(int16_t));
+
+          // compute size of comp_dat (13 for vector mode a, 6 for quaternion mode)
+          uint8_t comp_dat_size = chunk_size - 3*sizeof(int16_t) - (do_icp_color_offset_ ? 3:0);
+          comp_dat_in.resize(comp_dat_size/sizeof(int16_t));
+
+          //  load compdat
+          p_coded_data.read((char *) &comp_dat_in[0] ,comp_dat_in.size()*sizeof(int16_t));
+
+          //load color offsets
+          if(do_icp_color_offset_)
+            p_coded_data.read((char *) &rgb_offsets[0] ,3*sizeof(char));
+
+          pcl::octree::OctreeContainerPointIndices *i_leaf;
+
+          if(i_leaf = i_block_tree->findLeaf(keys_in[0],keys_in[1],keys_in[2]))
+          {
+            typename pcl::PointCloud<PointT>::Ptr cloud_in (new pcl::PointCloud<PointT>(*icloud_arg, i_leaf->getPointIndicesVector()));
+
+            // following code is for generation of predicted frame
+            Eigen::Matrix4f mdec;
+            Eigen::Quaternion<float> l_quat_out_dec;
+            RigidTransformCoding<float>::deCompressRigidTransform(comp_dat_in, mdec,l_quat_out_dec);
+
+            // predicted point cloud
+            pcl::PointCloud<PointT> p_chunk;
+
+            // generate the pcoded data from the previous frame
+            transformPointCloud<PointT, float>
+              (  
+              *cloud_in,
+              p_chunk, 
+              mdec
+              );
+            decoded_mblocks++;
+
+            //decode the predictive points
+            for(int j=0; j<p_chunk.size();j++)
+            {
+              PointT &p_point = (p_chunk)[j];
+
+              if(do_icp_color_offset_)
+              {
+                p_point.r+=p_point.r + rgb_offsets[0];
+                p_point.g+=p_point.g + rgb_offsets[1];
+                p_point.b+=p_point.b + rgb_offsets[2];
+              }
+
+              cloud_out_arg->push_back(p_point);
+            } 
+          }
+          else{
+            std::cout << " failed decoding predictive frame, no corresponding i block " << std::endl;
+          }
+        }
+        else
+          break;
+      }
+      std::cout << " decoded: " << decoded_mblocks 
+                << " pblocks, resulting in " 
+                << cloud_out_arg->size() 
+                << " output points " 
+                << std::endl;
+
+      // decode the intra coded points
+      
+      typename pcl::PointCloud<PointT>::Ptr intra_coded_points(new pcl::PointCloud<PointT>());
+
+      OctreePointCloudCodecV2<PointT,LeafT,BranchT,OctreeT> intra_coder 
+        (
+        MANUAL_CONFIGURATION,
+        false,
+        point_resolution_,
+        octree_resolution_,
+        true,
+        0,
+        true,
+        color_bit_resolution_,
+        color_coding_type_, 
+        do_voxel_centroid_enDecoding_
+        );
+
+      intra_coder.decodePointCloud(i_coded_data,intra_coded_points);
+
+      // add the decoded input points to the output cloud
+      for(int i=0; i< intra_coded_points->size();i++)
+        cloud_out_arg->push_back((*intra_coded_points)[i]);
+
+      // clean up
+      delete i_block_tree;
+    
+    }
+    
     /////////////////// CODE OVERWRITING CODEC V1 to become codec V2 ////////////////////////////////
 
     //! write frame header, extended for cloud codecV2
@@ -705,10 +979,12 @@ namespace pcl{
       OctreePointCloudCompression<PointT, LeafT, BranchT, OctreeT>::writeFrameHeader(compressed_tree_data_out_arg);
 
       //! write additional fields for cloud codec v2
-      compressed_tree_data_out_arg.write (reinterpret_cast<const char*> (&do_voxel_centroid_enDecoding_), sizeof (do_voxel_centroid_enDecoding_));
-      compressed_tree_data_out_arg.write (reinterpret_cast<const char*> (&do_connectivity_encoding_), sizeof (do_connectivity_encoding_));
-      compressed_tree_data_out_arg.write (reinterpret_cast<const char*> (&create_scalable_bitstream_), sizeof (create_scalable_bitstream_));
-      compressed_tree_data_out_arg.write (reinterpret_cast<const char*> (&color_coding_type_), sizeof (color_coding_type_));
+      compressed_tree_data_out_arg.write (reinterpret_cast<const char*> (&do_voxel_centroid_enDecoding_), sizeof (do_voxel_centroid_enDecoding_)); // centroid coding
+      compressed_tree_data_out_arg.write (reinterpret_cast<const char*> (&do_connectivity_encoding_), sizeof (do_connectivity_encoding_));        // connectivity coding (not yet added)
+      compressed_tree_data_out_arg.write (reinterpret_cast<const char*> (&create_scalable_bitstream_), sizeof (create_scalable_bitstream_));     // scalable bitstream
+      compressed_tree_data_out_arg.write (reinterpret_cast<const char*> (&color_coding_type_), sizeof (color_coding_type_));                    // color coding type (added jpeg based modes)
+      compressed_tree_data_out_arg.write (reinterpret_cast<const char*> (&macroblock_size_), sizeof (macroblock_size_));                       // settings for ICP based prediction
+      compressed_tree_data_out_arg.write (reinterpret_cast<const char*> (&do_icp_color_offset_), sizeof (do_icp_color_offset_));              // settings for ICP based prediction
     };
 
     //! read Frame header, extended for cloud codecV2
@@ -723,6 +999,8 @@ namespace pcl{
       compressed_tree_data_in_arg.read (reinterpret_cast<char*> (&do_connectivity_encoding_), sizeof (do_connectivity_encoding_));
       compressed_tree_data_in_arg.read (reinterpret_cast<char*> (&create_scalable_bitstream_), sizeof (create_scalable_bitstream_));
       compressed_tree_data_in_arg.read (reinterpret_cast<char*> (&color_coding_type_), sizeof (color_coding_type_));
+      compressed_tree_data_in_arg.read (reinterpret_cast<char*> (&macroblock_size_), sizeof (macroblock_size_));
+      compressed_tree_data_in_arg.read (reinterpret_cast<char*> (&do_icp_color_offset_), sizeof (do_icp_color_offset_));
     };
 
     /** \brief Encode leaf node information during serialization
@@ -817,7 +1095,7 @@ namespace pcl{
       if (!do_voxel_grid_enDecoding_)
       {
         // get current cloud size
-		cloudSize = output_->points.size();
+		    cloudSize = output_->points.size();
 
         // get amount of point to be decoded
         pointCount = *point_count_data_vector_iterator_;
@@ -902,7 +1180,7 @@ namespace pcl{
     */
     template<typename PointT, typename LeafT, typename BranchT, typename OctreeT> void
       OctreePointCloudCodecV2<PointT, LeafT, BranchT, OctreeT>::entropyEncoding (std::ostream& compressed_tree_data_out_arg1, std::ostream& compressed_tree_data_out_arg2 )
-    {
+     {
       uint64_t binary_tree_data_vector_size;
       uint64_t point_avg_color_data_vector_size;
 

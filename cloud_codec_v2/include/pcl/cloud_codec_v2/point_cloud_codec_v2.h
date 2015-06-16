@@ -75,14 +75,6 @@ namespace pcl{
        typedef typename OctreePointCloudCodecV2<PointT, LeafT, BranchT, OctreeT>::PointCloudConstPtr PointCloudConstPtr;
        typedef typename OctreePointCloudCompression<PointT,LeafT,BranchT,OctreeT> MacroBlockTree;
 
-       //! map to store the macroblocks that are shared 
-       //typedef typename std::map<pcl::octree::OctreeKey,std::pair<std::vector<int> *
-       // ,std::vector<int> *>,std::less<pcl::octree::OctreeKey> > KeyMapS;
-
-       //! map to store the macroblock to be intra coded 
-       //typedef typename std::map<pcl::octree::OctreeKey,std::vector<int> *, 
-       //   std::less<pcl::octree::OctreeKey> > KeyMapP;
-
         // Boost shared pointers
         typedef boost::shared_ptr<OctreePointCloudCodecV2<PointT, LeafT, BranchT, OctreeT> > Ptr;
         typedef boost::shared_ptr<const OctreePointCloudCodecV2<PointT, LeafT, BranchT, OctreeT> > ConstPtr;
@@ -150,6 +142,26 @@ namespace pcl{
           macroblock_size_ = size;
         }
 
+        void setColorVarThreshold(int size)
+        {
+          macroblock_size_ = size;
+        }
+
+        void setMaxIterations(int max_in)
+        {
+          icp_max_iterations_ = max_in;
+        }
+
+        void setDoICPColorOffset(bool doit)
+        {
+          do_icp_color_offset_ = doit;
+        }
+
+        void setDoICPColorOffset(float tfeps)
+        {
+          transformationepsilon_ = tfeps;
+        }
+
         void
         encodePointCloud (const PointCloudConstPtr &cloud_arg, std::ostream& compressed_tree_data_out_arg);
 
@@ -164,10 +176,10 @@ namespace pcl{
         */
         virtual void
         encodePointCloudDeltaFrame (const PointCloudConstPtr &icloud_arg, const PointCloudConstPtr &pcloud_arg, PointCloudPtr &out_cloud_arg, 
-        std::ostream& i_coded_data, std::ostream& p_coded_data, bool icp_on_original = false,bool write_out_cloud = true ){};
+        std::ostream& i_coded_data, std::ostream& p_coded_data, bool icp_on_original = false,bool write_out_cloud = false);
 
         virtual void
-        decodePointCloudDeltaFrame(const PointCloudConstPtr &icloud_arg, const PointCloudConstPtr &pcloud_arg, 
+        decodePointCloudDeltaFrame(const PointCloudConstPtr &icloud_arg, PointCloudPtr &out_cloud_arg, 
         std::istream& i_coded_data, std::istream& p_coded_data);
         
         //! function to return preformance metric
@@ -179,11 +191,16 @@ namespace pcl{
 
         //! helper function to return
         float
-        getMacroBlockPercentage(){return shared_macroblock_percentage_;};
+        getMacroBlockPercentage()
+        {
+          return shared_macroblock_percentage_;
+        };
 
         //! helper function to return
         float
-        getMacroBlockConvergencePercentage(){return shared_macroblock_convergence_percentage_;};
+        getMacroBlockConvergencePercentage(){
+          return shared_macroblock_convergence_percentage_;
+        };
 
       protected: 
 
@@ -195,13 +212,14 @@ namespace pcl{
         MacroBlockTree *
         generate_macroblock_tree(PointCloudConstPtr in_cloud);
 
-        void do_icp_prediction(
+        void 
+        do_icp_prediction(
           PointCloudPtr i_cloud,
           PointCloudPtr p_cloud,
           Eigen::Matrix4f &rigid_transform,
           bool & has_converged,
           char *rgb_offsets
-          );
+        );
 
         // protected functions overriding OctreePointCloudCompression
         
