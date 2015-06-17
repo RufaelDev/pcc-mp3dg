@@ -9,6 +9,7 @@ output_csv_file=intra_frame_quality.csv
 write_output_ply=1
 do_delta_frame_coding=1
 icp_on_original=0
+code_color_off=0
 pframe_quality_log=predictive_quality.csv
 macroblocksize=16
 testbbalign=0
