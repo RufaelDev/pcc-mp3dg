@@ -232,16 +232,7 @@ namespace pcl{
       unsigned long out_data_size=0;
       unsigned char * out_buffer;
 
-      // optional outfile
-      FILE *l_o_file = NULL;
-      if (write_file){
-        l_o_file = fopen(file_name.c_str(), "wb");
-
-        if(!l_o_file)
-          return false;
-      }
-
-      // Now we can initialize the JPEG compression object.
+        // Now we can initialize the JPEG compression object.
       jpeg_create_compress(&cinfo);
 
       // establish setjump to return false
@@ -252,6 +243,15 @@ namespace pcl{
         return false;
       }
 
+      // optional outfile
+      FILE *l_o_file = NULL;
+      if (write_file){
+        l_o_file = fopen(file_name.c_str(), "wb");
+            
+         if(!l_o_file)
+           return false;
+      }
+        
       // either write the output file or write to a membuffer
       if (!write_file) 
         jpeg_mem_dest(&cinfo, &out_buffer, &out_data_size);
