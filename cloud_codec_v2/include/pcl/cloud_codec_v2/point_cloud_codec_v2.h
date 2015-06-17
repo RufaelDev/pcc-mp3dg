@@ -73,7 +73,7 @@ namespace pcl{
        typedef typename OctreePointCloudCodecV2<PointT, LeafT, BranchT, OctreeT>::PointCloud PointCloud;
        typedef typename OctreePointCloudCodecV2<PointT, LeafT, BranchT, OctreeT>::PointCloudPtr PointCloudPtr;
        typedef typename OctreePointCloudCodecV2<PointT, LeafT, BranchT, OctreeT>::PointCloudConstPtr PointCloudConstPtr;
-       typedef typename OctreePointCloudCompression<PointT,LeafT,BranchT,OctreeT> MacroBlockTree;
+       typedef OctreePointCloudCompression<PointT,LeafT,BranchT,OctreeT> MacroBlockTree;
 
         // Boost shared pointers
         typedef boost::shared_ptr<OctreePointCloudCodecV2<PointT, LeafT, BranchT, OctreeT> > Ptr;

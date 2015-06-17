@@ -37,7 +37,7 @@
 #ifndef QUATERNION_CODING_CCV2_H
 #define QUATERNION_CODING_CCV2_H
 // class for quaternion encoding
-#include <eigen/geometry>
+#include <Eigen/Geometry>
 #include <stdint.h>
 
 namespace pcl{

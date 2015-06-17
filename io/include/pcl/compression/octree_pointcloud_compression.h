@@ -42,6 +42,7 @@
 #include <pcl/common/io.h>
 #include <pcl/octree/octree2buf_base.h>
 #include <pcl/octree/octree_pointcloud.h>
+#include <pcl/compression/octree_pointcloud_compression.h>
 #include "entropy_range_coder.h"
 #include "color_coding.h"
 #include "point_coding.h"

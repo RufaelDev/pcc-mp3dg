@@ -37,7 +37,7 @@
 #ifndef RIGID_TRANSFORM_CODING_CCV2_H
 #define RIGID_TRANSFORM_CODING_CCV2_H
 // class for rigid transform encoding
-#include <eigen/geometry>
+#include <Eigen/Geometry>
 #include <stdint.h>
 #include <vector>
 

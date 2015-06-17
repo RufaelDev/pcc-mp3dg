@@ -47,7 +47,7 @@
 //includes to do the ICP procedures
 #include <pcl/point_types.h>
 #include <pcl/registration/icp.h>
-#include <Eigen/geometry>
+#include <Eigen/Geometry>
 #include <pcl/cloud_codec_v2/impl/rigid_transform_coding_impl.hpp>
 
 namespace pcl{
@@ -598,7 +598,7 @@ namespace pcl{
         pcl::octree::OctreeContainerPointIndices *i_leaf;
         typename pcl::PointCloud<PointT>::Ptr cloud_out (new pcl::PointCloud<PointT>(icp_on_original ? *pcloud_arg : *simp_pcloud , it_predictive.getLeafContainer().getPointIndicesVector()));
 
-        if(i_leaf = i_block_tree->findLeaf(current_key.x,current_key.y,current_key.z))
+        if((i_leaf = i_block_tree->findLeaf(current_key.x,current_key.y,current_key.z)) != NULL)
         {
           typename pcl::PointCloud<PointT>::Ptr cloud_in (new pcl::PointCloud<PointT>(*icloud_arg, i_leaf->getPointIndicesVector()));
           shared_macroblock_count++;
@@ -791,7 +791,7 @@ namespace pcl{
         typename pcl::PointCloud<PointT>::Ptr cloud_out (new pcl::PointCloud<PointT>(icp_on_original ? *pcloud_arg : *simp_pcloud , it_predictive.getLeafContainer().getPointIndicesVector()));
         macro_block_count++;
 
-        if(i_leaf = i_block_tree->findLeaf(current_key.x,current_key.y,current_key.z))
+        if((i_leaf = i_block_tree->findLeaf(current_key.x,current_key.y,current_key.z)) != NULL)
         {
           shared_macroblock_count++;
           typename pcl::PointCloud<PointT>::Ptr cloud_in (new pcl::PointCloud<PointT>(*icloud_arg, i_leaf->getPointIndicesVector()));
@@ -963,7 +963,7 @@ namespace pcl{
 
           pcl::octree::OctreeContainerPointIndices *i_leaf;
 
-          if(i_leaf = i_block_tree->findLeaf(keys_in[0],keys_in[1],keys_in[2]))
+          if((i_leaf = i_block_tree->findLeaf(keys_in[0],keys_in[1],keys_in[2])))
           {
             typename pcl::PointCloud<PointT>::Ptr cloud_in (new pcl::PointCloud<PointT>(*icloud_arg, i_leaf->getPointIndicesVector()));
 

@@ -38,7 +38,7 @@
 #define RIGID_TRANSFORM_CODING_CCV2_HPP
 
 // class for quaternion encoding
-#include <eigen/geometry>
+#include <Eigen/Geometry>
 #include <stdint.h>
 
 // use quaternions
@@ -69,9 +69,13 @@ namespace pcl{
       const float scaling_factor = (float) std::numeric_limits<int16_t>::max()/2.5;
       
       // convert the rotation to a quaternion
-      Eigen::Matrix<Scalar,3,3> rotm = tr_in.block<3,3>(0,0); 
+#if _WIN32
+      Eigen::Matrix<Scalar,3,3> rotm = tr_in.block<3,3>(0,0);
       quat_out = Eigen::Quaternion<Scalar>(tr_in.block<3,3>(0,0));
-
+#else
+      Eigen::Matrix<Scalar,3,3> rotm = tr_in.block(0,0,3,3);
+      quat_out = Eigen::Quaternion<Scalar>(rotm);
+#endif//_WIN32
       // test the quaternion mode for coding the rotation (encode,decode check if stable)
       Eigen::Quaternion<Scalar> quat_test;
       comp_dat_out.resize(3);
@@ -162,8 +166,13 @@ namespace pcl{
       if(comp_dat_in.size() == 6){
         // decode rotation offset which is coded as quaternion
         QuaternionCoding::deCompressQuaternion((int16_t *) &comp_dat_in[0], quat_out);
+#if _WIN32
         tr_out.block<3,3>(0,0) = quat_out.toRotationMatrix();
         //std::cout << "decoded rotation" << std::endl << tr_out.block<3,3>(0,0) << std::endl;
+#else
+          tr_out.block(0,0,3,3) = quat_out.toRotationMatrix();
+          //std::cout << "decoded rotation" << std::endl << tr_out.block<3,3>(0,0) << std::endl;
+#endif//_WIN323
       }
       else{
         //decode the rotation matrix from two vectors and the sign vectors
