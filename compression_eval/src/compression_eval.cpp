@@ -226,32 +226,42 @@ int
     return (-1);
   }
 
-  ////////////////// parse configuration settings from ..//parameter_config.txt ///////////////////
+  ////////////////// parse configuration settings from required file ..//parameter_config.txt ///////////////////
   boost::program_options::options_description desc;
+
+  // default values for all options are the same as in the distributed 'parameter_config.txt '
   desc.add_options()
     ("help", " produce help message ")
     ("mesh_file_folders", po::value<vector<string> >(), " folder mesh files ")
-    ("octree_bit_settings", po::value<vector<int> >(), " quantization bit assignment octree ")
-    ("color_bit_settings", po::value<vector<int> >(), "color bit assignment octree or jpeg quality values ")
-    ("enh_bit_settings", po::value<int>(), " bits to code the points towards the center ")
-    ("color_coding_types", po::value<vector<int> >(), "  pcl=0,jpeg=1 or graph transform ")
-    ("keep_centroid", po::value<int>()->default_value(1), " for keeping centroid ")
-    ("bb_expand_factor", po::value<double>()->default_value(0.15), " bounding box expansion to keep bounding box accross frames ")
-    ("output_csv_file", po::value<string>()->default_value("bench_out.csv")," output .csv file ")
-    ("write_output_ply", po::value<int>()->default_value(0)," write output as .ply files")
-    ("do_delta_frame_coding", po::value<int>()->default_value(0)," do_delta_frame_coding ")
+    ("octree_bit_settings", po::value<vector<int> >()->default_value(std::vector<int>(),"{11}"), " quantization bit assignment octree ")
+    ("color_bit_settings", po::value<vector<int> >()->default_value(std::vector<int>(),"{8}"), "color bit assignment octree or jpeg quality values ")
+    ("enh_bit_settings", po::value<int>()->default_value(0), " bits to code the points towards the center ")
+    ("color_coding_types", po::value<vector<int> >()->default_value(std::vector<int>(),"{0}"), "  pcl=0,jpeg=1 or graph transform ")
+    ("keep_centroid", po::value<int>()->default_value(0), " for keeping centroid ")
+    ("bb_expand_factor", po::value<double>()->default_value(0.20), " bounding box expansion to keep bounding box accross frames ")
+    ("output_csv_file", po::value<string>()->default_value("intra_frame_quality.csv")," output .csv file ")
+    ("write_output_ply", po::value<int>()->default_value(1)," write output as .ply files")
+    ("do_delta_frame_coding", po::value<int>()->default_value(1)," do_delta_frame_coding ")
     ("icp_on_original", po::value<int>()->default_value(0)," icp_on_original ")
-    ("pframe_quality_log",po::value<string>()->default_value("pframe_log.csv"), " write the quality results of predictive coding of p frames")
+    ("pframe_quality_log",po::value<string>()->default_value("predictive_quality.csv"), " write the quality results of predictive coding of p frames")
     ("macroblocksize",po::value<int>()->default_value(16), " size of macroblocks used for predictive frame (has to be a power of 2)")
     ("testbbalign",po::value<int>()->default_value(0), " set this option to test allignements only ")
     ("code_color_off",po::value<int>()->default_value(0), " do color offset coding on predictive frames")
     ;
-
-  po::variables_map vm;
+  // Check if required file 'parameter_config.txt' is present
   ifstream in_conf("..//parameter_config.txt");
+    if (in_conf.fail()) {
+      in_conf.open("parameter_config.txt");
+      if (in_conf.fail()) {
+        print_info (" Required file 'parameter_config.txt' not found in '%s' or its parent.\n", boost::filesystem::current_path().string().c_str());
+        return (-1);
+      }
+  }
+  po::variables_map vm;
   po::store(po::parse_config_file(in_conf, desc), vm);
-  po::notify(vm);  
+  po::notify(vm);
   bb_expand_factor = vm["bb_expand_factor"].as<double>();
+    
   ////////////////// ~end parse configuration file  /////////////////////////////////////
 
 
