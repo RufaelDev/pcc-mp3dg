@@ -105,7 +105,7 @@ namespace pcl{
           const double pointResolution_arg = 0.001,
           const double octreeResolution_arg = 0.01,
           bool doVoxelGridDownDownSampling_arg = false,
-          const unsigned int iFrameRate_arg = 30,
+		  const unsigned int iFrameRate_arg = 0, /* NO PCL P Frames in this version of the codec !! */
           bool doColorEncoding_arg = true,
           const unsigned char colorBitResolution_arg = 6,
           const unsigned char colorCodingType_arg = 0,
@@ -119,7 +119,7 @@ namespace pcl{
           pointResolution_arg,
           octreeResolution_arg,
           doVoxelGridDownDownSampling_arg,
-          0 /* NO PCL P Frames in this version of the codec !! */,
+		  iFrameRate_arg, 
           doColorEncoding_arg,
           colorBitResolution_arg), 
           color_coding_type_(colorCodingType_arg), 
@@ -128,7 +128,6 @@ namespace pcl{
           do_connectivity_encoding_(codeConnectivity_arg),
           jp_color_coder_(jpeg_quality_arg, colorCodingType_arg)
         {
-          this->i_frame_rate_  = 0;
           macroblock_size_ = 16; // default macroblock size is 16x16x16
           icp_var_threshold_ = 100;
           icp_max_iterations_=50;

@@ -54,7 +54,7 @@ namespace pcl{
       public:
         /** \brief function for writing an image as a compressed JPEG buffer
         *  \param[in] im_in PCLImage input image
-        *  \param[out] jpeg_out  vector<uint8_t> containing compressed jpeg data
+        *  \param[out] cdat vector<uint8_t> containing compressed jpeg data
         *  \param[in] quality quality value of jpeg to use (100 is best)
         *  \return  returns true when succesfull, false otherwise
         */
@@ -63,7 +63,7 @@ namespace pcl{
 
         /** \brief function for writing an image as a compressed JPEG file
         *  \param[in] im_in PCLImage input image
-        *  \param[out] jpeg_out string  containing compressed jpeg filename
+        *  \param[out] file_name string  containing compressed jpeg filename
         *  \param[in] quality quality value of jpeg to use (100 is best)
         *  \return  returns true when succesfull, false otherwise
         */

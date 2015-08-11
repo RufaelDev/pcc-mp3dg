@@ -728,7 +728,7 @@ int
 
               Eigen::Vector4f l_range_scale =assigned_bbs[i].max_xyz - assigned_bbs[i].min_xyz;
 
-              Nano3D::Mesh m(decoded_cloud_base->size(),mdat,1,l_triang);
+              Nano3D::Mesh m((unsigned int) decoded_cloud_base->size(),mdat,1,l_triang);
               for(int l=0; l<decoded_cloud_base->size();l++)
               {
                 mdat[9*l] = (*decoded_cloud_base)[l].x * l_range_scale[0]  + assigned_bbs[i].min_xyz[0];
@@ -780,7 +780,7 @@ int
                   l_triang[0] = 0;
                   l_triang[1] = 1;
                   l_triang[2] = 2;
-                  Nano3D::Mesh m(out_d->size(),mdat,1,l_triang);
+				  Nano3D::Mesh m((unsigned int) out_d->size(), mdat, 1, l_triang);
 
                   Eigen::Vector4f l_range_scale =assigned_bbs[i].max_xyz - assigned_bbs[i].min_xyz;
 

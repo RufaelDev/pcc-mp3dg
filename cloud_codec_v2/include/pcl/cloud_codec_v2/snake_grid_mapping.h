@@ -80,7 +80,6 @@ namespace pcl{
       };
 
       /**!
-      \func GenerateMapping
       \brief creates a class for generating a mapping to the RGB values based on a pattern
       */
       SnakeGridMapping(int dim_w, int dim_h)

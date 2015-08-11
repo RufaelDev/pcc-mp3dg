@@ -47,11 +47,13 @@ namespace pcl{
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
     /**! 
     * function to generate octree codec with bit settings
-    * @param nr_bits_base_layer, an integer argument representing the number of bits for encoding the base layer (octree).
-    * @param nr_bits_enh_layer, an integer argument representing the number of bits for encoding the  enhancement layer (octree).
-    * @param nr_bits_colors, an integer argument representing the number of bits for encoding the colors per point.
-    * @param i_frame_rate, an integer controlling the framerate of iframes
-    * \note PointT typename of point used in point cloud
+    * @param nr_bits_base_layer an integer argument representing the number of bits for encoding the base layer (octree).
+    * @param nr_bits_enh_layer an integer argument representing the number of bits for encoding the  enhancement layer (octree).
+    * @param nr_bits_colors an integer argument representing the number of bits for encoding the colors per point.
+	* @param i_frame_rate an integer controlling the framerate of iframes
+	* @param color_coding_type an integer specifying the color coding type to be used (pcl=0,jpeg=1)
+	* @param do_centroid_coding a boolean indicating whether or not centroid coding is toe be used
+	* \note PointT typename of point used in point cloud
     * \author Rufael Mekuria (rufael.mekuria@cwi.nl)
     */
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
