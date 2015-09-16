@@ -56,7 +56,7 @@ namespace pcl{
     */
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
     template<typename PointT> boost::shared_ptr<OctreePointCloudCodecV2<PointT> >
-    generatePCLOctreeCodecV2(int nr_bits_base_layer, int nr_bits_enh_layer, int nr_bits_colors, int i_frame_rate, int color_coding_type, bool do_centroid_coding)
+    generatePCLOctreeCodecV2(int nr_bits_base_layer, int nr_bits_enh_layer, int nr_bits_colors, int i_frame_rate, int color_coding_type, bool do_centroid_coding, bool scalable_arg, bool conn_arg, int jpeg_value)
     {
       return boost::shared_ptr<OctreePointCloudCodecV2<PointT> >(new OctreePointCloudCodecV2<PointT>(
         MANUAL_CONFIGURATION,
@@ -68,8 +68,41 @@ namespace pcl{
         nr_bits_colors ? true : false,
         nr_bits_colors,
         color_coding_type,
-        do_centroid_coding
+        do_centroid_coding ,
+        scalable_arg,
+        conn_arg,
+        jpeg_value
         ));
+    }
+
+    // function to log occupancy codes frequencies
+    void
+    logOccupancyCodesFrequencies(std::vector<std::vector<char>> & occupancy_codes,
+    std::ostream &output_file)
+    {
+       // iterate each of the levels 
+      for(int k=0; k < occupancy_codes.size(); k++)
+      {
+        // create the frequency table
+        unsigned int freq_table[256]={};
+        
+        for(int l=0; l < occupancy_codes[k].size(); l++)
+        {
+          // increment the entry in the frequency table 
+          freq_table[(unsigned char) occupancy_codes[k][l]]++;;
+        }
+
+        // write the frequency table to the .csv file
+        output_file << k << ";";
+
+        for(int l=0; l < 256; l++)
+        {
+          // 
+          output_file << (unsigned int) freq_table[l] << ";";
+        }
+
+        output_file << std::endl;
+      }
     }
   }
 }

@@ -197,8 +197,8 @@ namespace pcl
       // clear binary vector
       binary_tree_out_arg.clear ();
       binary_tree_out_arg.reserve (this->branch_count_);
-
-      serializeTreeRecursive (root_node_, new_key, &binary_tree_out_arg, 0, do_XOR_encoding_arg, false);
+      
+      serializeTreeRecursive (root_node_, new_key, &binary_tree_out_arg, 0, do_XOR_encoding_arg, false,0);
 
       // serializeTreeRecursive cleans-up unused octree nodes in previous octree
       tree_dirty_flag_ = false;
@@ -532,7 +532,8 @@ namespace pcl
                                                                    std::vector<char>* binary_tree_out_arg,
                                                                    typename std::vector<LeafContainerT*>* leaf_container_vector_arg,
                                                                    bool do_XOR_encoding_arg,
-                                                                   bool new_leafs_filter_arg)
+                                                                   bool new_leafs_filter_arg,
+                                                                   int level)
     {
       // child iterator
       unsigned char child_idx;
@@ -579,7 +580,7 @@ namespace pcl
             {
                 // recursively proceed with indexed child branch
                 serializeTreeRecursive (static_cast<BranchNode*> (child_node), key_arg, binary_tree_out_arg,
-                                        leaf_container_vector_arg, do_XOR_encoding_arg, new_leafs_filter_arg);
+                                        leaf_container_vector_arg, do_XOR_encoding_arg, new_leafs_filter_arg, level + 1);
                 break;
             }
             case LEAF_NODE:

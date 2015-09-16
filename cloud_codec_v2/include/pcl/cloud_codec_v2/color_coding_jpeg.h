@@ -191,7 +191,7 @@ namespace pcl{
         PCLImage l_mapped_im;
           
         // compute the image grid 
-		long pixel_count = (long) in_vec.size() / 3;
+		    long pixel_count = (long) in_vec.size() / 3;
 
         // hardcoded value for horizonal width
         l_mapped_im.width = 256;

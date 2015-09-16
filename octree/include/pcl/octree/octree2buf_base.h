@@ -798,7 +798,8 @@ namespace pcl
                                 std::vector<char>* binary_tree_out_arg,
                                 typename std::vector<LeafContainerT*>* leaf_container_vector_arg,
                                 bool do_XOR_encoding_arg = false,
-                                bool new_leafs_filter_arg = false);
+                                bool new_leafs_filter_arg = false,
+                                int level=0);
 
         /** \brief Rebuild an octree based on binary XOR octree description and DataT objects for leaf node initialization.
          *  \param branch_arg: current branch node
@@ -915,7 +916,6 @@ namespace pcl
         /** \brief Enable dynamic_depth
          *  \note Note that this parameter is ignored in octree2buf! */
         bool dynamic_depth_enabled_;
-
     };
   }
 }

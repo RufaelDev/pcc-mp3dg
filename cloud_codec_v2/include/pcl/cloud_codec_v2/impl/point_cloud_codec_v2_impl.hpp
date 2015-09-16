@@ -159,10 +159,6 @@ namespace pcl{
         // apply entropy coding to the content of all data vectors and send data to output stream
         entropyEncoding(compressed_tree_data_out_arg, compressed_tree_data_out_arg);
 
-        // prepare for next frame
-        switchBuffers ();
-        i_frame_ = false;
-
         // reset object count
         object_count_ = 0;
 
@@ -221,7 +217,6 @@ namespace pcl{
       // added to prevent crashes as happens with original cloud codec
       deleteCurrentBuffer();
       deleteTree();
-
       setOutputCloud (cloud_arg);
 
       // color field analysis
@@ -1040,6 +1035,237 @@ namespace pcl{
       delete i_block_tree;
 
     }
+
+    // 
+    struct local_color_enh{
+      unsigned int r; 
+      unsigned int g;
+      unsigned int b; 
+    };
+    /*
+    //! function for coding an enhancement layer, use the same input cloud!! 
+    template<typename PointT, typename LeafT, typename BranchT, typename OctreeT> void 
+      OctreePointCloudCodecV2<PointT, LeafT, BranchT, OctreeT>::encodeEnhancementLayer(const PointCloudConstPtr &cloud_arg, 
+      std::ostream& compressed_tree_data_out_arg)
+    {
+      // get the leafs
+      LeafNodeIterator leaf_it = leaf_begin();
+      LeafNodeIterator leaf_end_it = leaf_end();
+
+      StaticRangeCoder color_coder;
+      StaticRangeCoder position_coder;
+
+      // temporary storage of the occupancy codes
+      std::vector<char> occupancy_codes;
+      occupancy_codes.reserve(this->leaf_count_);
+
+      // write the color code back
+      std::vector<char> color_vector;
+
+      // iterate the leafs
+      while(leaf_it != leaf_end_it)
+      {
+        // get the point indices
+        std::vector<int>& point_indices = leaf_it.getLeafContainer().getPointIndicesVector();
+
+        // get the voxel grid size
+        Eigen::Vector3f minpt;
+        Eigen::Vector3f maxpt;
+        getVoxelBounds(leaf_it, minpt,maxpt);
+        
+        // middle vertices
+        Eigen::Vector3f midden = (maxpt - minpt) * 0.5 + minpt;
+
+        // initialize the code position
+        char code_pos=0u;
+
+        // global and local color averages for the color
+        unsigned int color_r=0;
+        unsigned int color_g=0; 
+        unsigned int color_b=0;
+
+        // local color averages for the colors
+        std::array<local_color_enh,8> colors_per_cell;
+        std::array<int,8> occupancy_count={};
+
+        // iterate all points and compute the occupancy code
+        for(int i=0; i < point_indices.size(); i++)
+        {
+          unsigned char occ_code=0u;
+          const PointT &l_point = (*cloud_arg)[point_indices[i]];
+
+          // 
+          if(l_point.x > midden.x())
+            occ_code+=1;
+          
+          //
+          if(l_point.y > midden.y())
+            occ_code+=2;
+
+          //
+          if(l_point.z > midden.z())
+            occ_code+=4;
+
+          code_pos |= (1u << occ_code);
+
+          // global color average //
+          color_r+=l_point.r;
+          color_g+=l_point.g;
+          color_b+=l_point.b;
+
+          // local color average //
+          colors_per_cell[occ_code].r+= l_point.r;
+          colors_per_cell[occ_code].g+= l_point.g;
+          colors_per_cell[occ_code].b+= l_point.b;
+          occupancy_count[occ_code]++;
+        }
+
+        // write the occupancy code back
+        occupancy_codes.push_back( (char) code_pos);
+
+        color_r/=point_indices.size();
+        color_g/=point_indices.size();
+        color_b/=point_indices.size();
+
+        ///////////  local color averages /////////////////////
+        for(int k=0;k<8;k++)
+        {
+           if(occupancy_count[k])
+           {
+             colors_per_cell[k].r/= occupancy_count[k];
+             colors_per_cell[k].g/= occupancy_count[k];
+             colors_per_cell[k].b/= occupancy_count[k];
+
+             int color_diff_r = (int) color_r - (int) colors_per_cell[k].r;
+
+             if(color_diff_r < 128 && color_diff_r  >= -128)
+               color_vector.push_back((char) color_diff_r);
+             else
+               color_vector.push_back(0);
+
+             int color_diff_g = (int) color_g - (int) colors_per_cell[k].g;
+             
+             if(color_diff_g < 128 && color_diff_g  >= -128)
+               color_vector.push_back((char) color_diff_g);
+             else
+               color_vector.push_back(0);
+
+             int color_diff_b = (int) color_b - (int) colors_per_cell[k].b;
+             
+             if(color_diff_b < 128 && color_diff_b  >= -128)
+               color_vector.push_back((char) color_diff_b);
+             else
+               color_vector.push_back(0);
+           }
+        }
+        
+        // increment 
+        ++leaf_it;
+      }
+      
+      /// format of the enhancement layer  //////
+      std::size_t pos_vec_size = occupancy_codes.size();
+      std::size_t color_vec_size = color_vector.size();
+      std::size_t comp_dat_size=0;
+
+      compressed_tree_data_out_arg.write( (const char *) &pos_vec_size, sizeof(pos_vec_size ));
+      compressed_tree_data_out_arg.write( (const char *) &color_vec_size , sizeof(color_vec_size));
+   
+      comp_dat_size+=position_coder.encodeCharVectorToStream(occupancy_codes, compressed_tree_data_out_arg);
+      comp_dat_size+=color_coder.encodeCharVectorToStream(color_vector, compressed_tree_data_out_arg);
+    }
+
+    //! function for coding an enhancment layer
+    template<typename PointT, typename LeafT, typename BranchT, typename OctreeT> void
+      OctreePointCloudCodecV2<PointT, LeafT, BranchT, OctreeT>::decodeEnhancementLayer(std::istream& compressed_tree_data_in_arg, PointCloudPtr &cloud_arg, PointCloudPtr &cloud_arg_enh)
+    {      
+      // decode all the occupancy codes
+      std::size_t size_of_colors; 
+      std::size_t size_of_occupancy_codes;
+
+      std::vector<char> occ_codes; 
+      std::vector<char> color_deltas; 
+
+      compressed_tree_data_in_arg.read((char *) &size_of_colors, sizeof(size_of_colors));
+      compressed_tree_data_in_arg.read((char *) &size_of_occupancy_codes,sizeof(size_of_occupancy_codes));
+
+      occ_codes.resize(size_of_occupancy_codes);
+      color_deltas.resize(size_of_colors);
+
+      StaticRangeCoder pos_decoder;
+      StaticRangeCoder color_decoder;
+
+      pos_decoder.decodeStreamToCharVector(compressed_tree_data_in_arg, occ_codes);
+      color_decoder.decodeStreamToCharVector(compressed_tree_data_in_arg, color_deltas);
+
+      // get the leafs
+      LeafNodeIterator leaf_it = leaf_begin();
+      LeafNodeIterator leaf_end_it = leaf_end();
+
+      std::vector<char>::iterator curr_occ = occ_codes.begin();
+      std::vector<char>::iterator color_it= color_deltas.begin();
+     
+      assert(occ_codes.size() == this->leaf_count_);
+
+      // apply all inverse operations
+      // iterate the leafs
+      while(leaf_it != leaf_end_it)
+      {
+        // do the decoding 
+        OctreeKey ckey;
+        ckey = leaf_it.getCurrentOctreeKey();
+        
+        for(unsigned char k=0;k<8;k++)
+        {
+          unsigned char ccode = (1u << k); 
+          
+          // test occupancy
+          if( (*curr_code & ccode) == ccode){
+            uint8_t x=0,y=0,z=0;
+            PointT newPoint;
+            
+            int l = k;
+            
+            if(l >= 4)
+            {
+              //zpos
+              z++;
+              l-=4;
+            }
+            if(l>=2)
+            {
+               y++;
+               l-=2; 
+            }
+            if(l>=1)
+            {
+               x++;
+            }
+            
+            //
+            newPoint.x = static_cast<float> ((static_cast<double> (ckey.x) + (x ? 0.75 : 0.25)) * resolution_ + min_x_);
+            newPoint.y = static_cast<float> ((static_cast<double> (ckey.y) + (y ? 0.75 : 0.25)) * resolution_ + min_y_);
+            newPoint.z = static_cast<float> ((static_cast<double> (ckey.z) + (z ? 0.75 : 0.25)) * resolution_ + min_z_);
+            
+            std::vector<int>& indicesV =leaf_it.getLeafContainer().getPointIndicesVector();
+            int index_point = indicesV.size() > 0 ? indicesV[0] : -1;
+           
+            if(index_point != -1){
+              newPoint.r = *color_it++ + (*cloud_arg[index_point]).r;
+              newPoint.g = *color_it++ + (*cloud_arg[index_point]).g;
+              newPoint.b = *color_it++ + (*cloud_arg[index_point]).b;
+            }
+            //enhancement layer code decoded
+            cloud_arg_enh->push_back(newPoint);           
+          }
+        }
+
+        // increment iterator
+        ++leaf_it;
+        ++curr_code;
+      }
+    }
+    */
 
     /////////////////// CODE OVERWRITING CODEC V1 to become codec V2 ////////////////////////////////
 

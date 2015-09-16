@@ -58,8 +58,13 @@ namespace pcl{
 		on the number of bits in the base and enhancement layer
 	*/
     template<typename PointT> boost::shared_ptr<OctreePointCloudCodecV2<PointT> >
-	  generatePCLOctreeCodecV2(int nr_bits_base_layer, int nr_bits_enh_layer, int nr_bits_colors, int i_frame_rate = 0, int color_coding_type = 0, bool do_centroid_coding = true);
-	}
+	  generatePCLOctreeCodecV2(int nr_bits_base_layer, int nr_bits_enh_layer, int nr_bits_colors, int i_frame_rate = 0, int color_coding_type = 0, bool do_centroid_coding = true, int jpeg_value=75, bool scalable_arg=true, bool conn_arg=false);
+	
+    // function to log occupancy codes frequencies
+    void
+    logOccupancyCodesFrequencies(std::vector<std::vector<char>> & occupancy_codes,
+    std::ostream &output_file);
+  }
 
 }
 

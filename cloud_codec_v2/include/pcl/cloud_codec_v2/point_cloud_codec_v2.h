@@ -110,7 +110,7 @@ namespace pcl{
           const unsigned char colorBitResolution_arg = 6,
           const unsigned char colorCodingType_arg = 0,
           bool doVoxelGridCentroid_arg = true, 
-          bool createScalebleStream_arg = true, 
+          bool createScalableStream_arg = true, 
           bool codeConnectivity_arg = false,
           int jpeg_quality_arg = 75) :
         OctreePointCloudCompression<PointT,LeafT,BranchT,OctreeT>(
@@ -124,7 +124,7 @@ namespace pcl{
           colorBitResolution_arg), 
           color_coding_type_(colorCodingType_arg), 
           do_voxel_centroid_enDecoding_(doVoxelGridCentroid_arg),
-          create_scalable_bitstream_(createScalebleStream_arg),
+          create_scalable_bitstream_(createScalableStream_arg),
           do_connectivity_encoding_(codeConnectivity_arg),
           jp_color_coder_(jpeg_quality_arg, colorCodingType_arg)
         {
@@ -203,6 +203,14 @@ namespace pcl{
           return shared_macroblock_convergence_percentage_;
         };
 
+        //! function for coding an enhancement layer
+       // virtual void 
+       // encodeEnhancementLayer(const PointCloudConstPtr &cloud_arg, std::ostream& compressed_tree_data_out_arg);
+
+        //! function for coding an enhancment layer
+       // virtual void
+        //decodeEnhancementLayer(std::istream& compressed_tree_data_in_arg, PointCloudPtr &cloud_arg, PointCloudPtr &cloud_arg_enh);
+
       protected: 
 
         // protected functions for cloud_codec_v2
@@ -280,6 +288,9 @@ namespace pcl{
         bool do_icp_color_offset_;
 
         int conv_count_;
+
+        // store the colors for usage in the enhancement layers
+        std::vector<char> decoded_colors_;
         
 // inherited protected members needed
         using pcl::octree::Octree2BufBase<LeafT, BranchT>::deleteCurrentBuffer;

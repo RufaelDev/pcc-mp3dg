@@ -1,15 +1,23 @@
 #configuration file for testing the color encoding
 octree_bit_settings=11
+octree_bit_settings=10
+octree_bit_settings=9
+octree_bit_settings=8
+octree_bit_settings=7
+octree_bit_settings=6
 color_bit_settings=8 # values to test for the enhancement 
-color_coding_types= 0 # color coding types 1=grid 2=lines
+color_coding_types= 1 # color coding types 1=grid 2=lines
 enh_bit_settings = 0
 keep_centroid=0 # option for keeping centroid instead of voxel centers only
 bb_expand_factor=0.20#  expansion factor used to keep bounding box constant over time
-output_csv_file=intra_frame_quality.csv
-write_output_ply=1
-do_delta_frame_coding=1
+output_csv_file=intra_frame_quality_jpeg85_color_new.csv
+write_output_ply=0
+do_delta_frame_coding=0
 icp_on_original=0
 code_color_off=0
 pframe_quality_log=predictive_quality.csv
 macroblocksize=16
 testbbalign=0
+jpeg_value=85
+radius_outlier_filter=20
+radius_size=0.01
