@@ -16,7 +16,7 @@ if(build)
 
     set(incs
         "include/pcl/${SUBSYS_NAME}/compression_eval.h"
-        "include/pcl/${SUBSYS_NAME}/compression_eval_OMP.h"
+        "include/pcl/${SUBSYS_NAME}/compression_eval_omp.h"
 	"include/pcl/${SUBSYS_NAME}/reverie_mesh.h"
         )
 
