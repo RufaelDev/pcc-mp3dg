@@ -39,9 +39,12 @@
  */
 #include <pcl/cloud_codec_v2/point_cloud_codec_v2.h>
 #include <pcl/cloud_codec_v2/impl/point_cloud_codec_v2_impl.hpp>
+#include <pcl/cloud_codec_v2/point_cloud_codec_v2_omp.h>
+#include <pcl/cloud_codec_v2/impl/point_cloud_codec_v2_omp_impl.hpp>
 
 using namespace pcl;
 using namespace io;
 
 template class OctreePointCloudCodecV2<PointXYZRGB>;
+template class OctreePointCloudCodecV2OMP<PointXYZRGB>;
 //template class OctreePointCloudCompressionDeltaFrames<PointXYZ>;

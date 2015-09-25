@@ -328,10 +328,11 @@ namespace pcl{
 //      using pcl::io::OctreePointCloudCompression<PointT, LeafT, BranchT, OctreeT>::
 //      using pcl::octree::OctreePointCloud<PointT, LeafT, BranchT, OctreeT>::
     };
-
     // define frame identifier for cloud codec v2
     template<typename PointT, typename LeafT, typename BranchT, typename OctreeT>
     const char* OctreePointCloudCodecV2<PointT, LeafT, BranchT, OctreeT>::frame_header_identifier_ = "<PCL-OCT-CODECV2-COMPRESSED>";
   }
 }
 #endif
+
+

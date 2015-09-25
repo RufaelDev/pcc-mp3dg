@@ -57,7 +57,7 @@ namespace pcl{
     class OctreePointCloudCodecV2OMP : public OctreePointCloudCodecV2<PointT,LeafT,BranchT,OctreeT>
     {
       public:
-      /*
+   
         // public typedefs, copied from original implementation by Julius Kammerl
        typedef typename OctreePointCloudCodecV2<PointT, LeafT, BranchT, OctreeT>::PointCloud PointCloud;
        typedef typename OctreePointCloudCodecV2<PointT, LeafT, BranchT, OctreeT>::PointCloudPtr PointCloudPtr;
@@ -70,7 +70,7 @@ namespace pcl{
 
         typedef typename OctreeT::LeafNode LeafNode;
         typedef typename OctreeT::BranchNode BranchNode;
-
+	/*
         typedef OctreePointCloudCodecV2<PointT, LeafT, BranchT, Octree2BufBase<LeafT, BranchT> > RealTimeStreamCompression;
         typedef OctreePointCloudCodecV2<PointT, LeafT, BranchT, OctreeBase<LeafT, BranchT> > SinglePointCloudCompressionLowMemory;
       */
@@ -102,7 +102,7 @@ namespace pcl{
           bool createScalebleStream_arg = true, 
           bool codeConnectivity_arg = false,
           int jpeg_quality_arg = 75) :
-        OctreePointCloudCompressionV2<PointT,LeafT,BranchT,OctreeT>(
+        OctreePointCloudCodecV2<PointT,LeafT,BranchT,OctreeT>(
           compressionProfile_arg,
           showStatistics_arg,
           pointResolution_arg,
@@ -110,12 +110,12 @@ namespace pcl{
           doVoxelGridDownDownSampling_arg,
 	  iFrameRate_arg, 
           doColorEncoding_arg,
-          colorBitResolution_arg), 
-          color_coding_type_(colorCodingType_arg), 
-          do_voxel_centroid_enDecoding_(doVoxelGridCentroid_arg),
-          create_scalable_bitstream_(createScalebleStream_arg),
-          do_connectivity_encoding_(codeConnectivity_arg),
-          jp_color_coder_(jpeg_quality_arg, colorCodingType_arg)
+          colorBitResolution_arg, 
+          colorCodingType_arg, 
+          doVoxelGridCentroid_arg,
+          createScalebleStream_arg,
+          codeConnectivity_arg,
+          jpeg_quality_arg)
         {
         }
 
@@ -140,8 +140,20 @@ namespace pcl{
 //      virtual void
 //      decodePointCloudDeltaFrame(const PointCloudConstPtr &icloud_arg, PointCloudPtr &out_cloud_arg, 
 //          std::istream& i_coded_data, std::istream& p_coded_data);
-/*
 // inherited protected members needed
+        using pcl::io:: OctreePointCloudCodecV2<PointT, LeafT, BranchT, OctreeT>::do_icp_color_offset_;
+        using pcl::io:: OctreePointCloudCodecV2<PointT, LeafT, BranchT, OctreeT>::point_resolution_;
+        using pcl::io:: OctreePointCloudCodecV2<PointT, LeafT, BranchT, OctreeT>::octree_resolution_;
+        using pcl::io:: OctreePointCloudCodecV2<PointT, LeafT, BranchT, OctreeT>::color_bit_resolution_;
+        using pcl::io:: OctreePointCloudCodecV2<PointT, LeafT, BranchT, OctreeT>::color_coding_type_;
+        using pcl::io:: OctreePointCloudCodecV2<PointT, LeafT, BranchT, OctreeT>::do_voxel_centroid_enDecoding_;
+        using pcl::io:: OctreePointCloudCodecV2<PointT, LeafT, BranchT, OctreeT>::shared_macroblock_percentage_;
+        using pcl::io:: OctreePointCloudCodecV2<PointT, LeafT, BranchT, OctreeT>::shared_macroblock_convergence_percentage_;
+        using pcl::io:: OctreePointCloudCodecV2<PointT, LeafT, BranchT, OctreeT>::simplifyPCloud;
+        using pcl::io:: OctreePointCloudCodecV2<PointT, LeafT, BranchT, OctreeT>::generate_macroblock_tree;
+        using pcl::io:: OctreePointCloudCodecV2<PointT, LeafT, BranchT, OctreeT>::do_icp_prediction;
+//      using pcl::io:: OctreePointCloudCodecV2<PointT, LeafT, BranchT, OctreeT>::;
+/*
         using pcl::octree::Octree2BufBase<LeafT, BranchT>::deleteCurrentBuffer;
         using pcl::octree::Octree2BufBase<LeafT, BranchT>::deserializeTree; // does not work in windows
         using pcl::octree::Octree2BufBase<LeafT, BranchT>::leaf_count_;
@@ -192,8 +204,8 @@ namespace pcl{
     };
 
     // define frame identifier for cloud codec v2 omp
-    template<typename PointT, typename LeafT, typename BranchT, typename OctreeT>
-    const char* OctreePointCloudCodecV2OMP<PointT, LeafT, BranchT, OctreeT>::frame_header_identifier_ = "<PCL-OCT-CODECV2-COMPRESSED-OMP>";
+//  template<typename PointT, typename LeafT, typename BranchT, typename OctreeT>
+//  const char* OctreePointCloudCodecV2OMP<PointT, LeafT, BranchT, OctreeT>::frame_header_identifier_ = "<PCL-OCT-CODECV2-COMPRESSED-OMP>";
   }
 }
 #endif // POINT_CLOUD_CODEC_V2_OMP_H

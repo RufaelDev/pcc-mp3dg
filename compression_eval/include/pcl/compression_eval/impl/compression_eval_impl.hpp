@@ -36,8 +36,8 @@
 * $Id$
 *
 */
-#ifndef COMPRESSION_EVAL_HPP
-#define COMPRESSION_EVAL_HPP
+#ifndef COMPRESSION_EVAL_IMPL_HPP
+#define COMPRESSION_EVAL_IMPL_HPP
 
 #include <pcl/compression_eval/compression_eval.h>
 
@@ -78,5 +78,5 @@ namespace pcl{
 
 
 
-#endif
+#endif // COMPRESSION_EVAL_IMPL_HPP
 
