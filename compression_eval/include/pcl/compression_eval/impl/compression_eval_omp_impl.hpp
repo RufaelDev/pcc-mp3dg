@@ -36,17 +36,17 @@
 * $Id$
 *
 */
-#ifndef COMPRESSION_EVAL_IMPL_HPP
-#define COMPRESSION_EVAL_IMPL_HPP
+#ifndef COMPRESSION_EVAL_OMP_IMPL_HPP
+#define COMPRESSION_EVAL_OMP_IMPL_HPP
 
-#include <pcl/compression_eval/compression_eval.h>
+#include <pcl/compression_eval/compression_eval_omp.h>
 
 namespace pcl{
 
   namespace io{
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
     /**! 
-    * function to generate octree codec with bit settings
+    * function to generate octree codec with bit settings (OpenMP version)
     * @param nr_bits_base_layer an integer argument representing the number of bits for encoding the base layer (octree).
     * @param nr_bits_enh_layer an integer argument representing the number of bits for encoding the  enhancement layer (octree).
     * @param nr_bits_colors an integer argument representing the number of bits for encoding the colors per point.
@@ -57,10 +57,10 @@ namespace pcl{
     * \author Rufael Mekuria (rufael.mekuria@cwi.nl)
     */
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    template<typename PointT> boost::shared_ptr<OctreePointCloudCodecV2<PointT> >
-    generatePCLOctreeCodecV2(int nr_bits_base_layer, int nr_bits_enh_layer, int nr_bits_colors, int i_frame_rate, int color_coding_type, bool do_centroid_coding, bool scalable_arg, bool conn_arg, int jpeg_value)
+    template<typename PointT> boost::shared_ptr<OctreePointCloudCodecV2OMP<PointT> >
+    generatePCLOctreeCodecV2OMP(int nr_bits_base_layer, int nr_bits_enh_layer, int nr_bits_colors, int i_frame_rate, int color_coding_type, bool do_centroid_coding)
     {
-      return boost::shared_ptr<OctreePointCloudCodecV2<PointT> >(new OctreePointCloudCodecV2<PointT>(
+      return boost::shared_ptr<OctreePointCloudCodecV2OMP<PointT> >(new OctreePointCloudCodecV2OMP<PointT>(
         MANUAL_CONFIGURATION,
         false,
         std::pow( 2.0, -1.0 *(nr_bits_base_layer + nr_bits_enh_layer) ),
@@ -70,46 +70,13 @@ namespace pcl{
         nr_bits_colors ? true : false,
         nr_bits_colors,
         color_coding_type,
-        do_centroid_coding ,
-        scalable_arg,
-        conn_arg,
-        jpeg_value
+        do_centroid_coding
         ));
-    }
-
-    // function to log occupancy codes frequencies
-    void
-    logOccupancyCodesFrequencies(std::vector<std::vector<char>> & occupancy_codes,
-    std::ostream &output_file)
-    {
-       // iterate each of the levels 
-      for(int k=0; k < occupancy_codes.size(); k++)
-      {
-        // create the frequency table
-        unsigned int freq_table[256]={};
-        
-        for(int l=0; l < occupancy_codes[k].size(); l++)
-        {
-          // increment the entry in the frequency table 
-          freq_table[(unsigned char) occupancy_codes[k][l]]++;;
-        }
-
-        // write the frequency table to the .csv file
-        output_file << k << ";";
-
-        for(int l=0; l < 256; l++)
-        {
-          // 
-          output_file << (unsigned int) freq_table[l] << ";";
-        }
-
-        output_file << std::endl;
-      }
     }
   }
 }
 
 
 
-#endif // COMPRESSION_EVAL_IMPL_HPP
+#endif // COMPRESSION_EVAL_OMP_IMPL_HPP
 

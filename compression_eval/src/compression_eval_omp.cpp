@@ -40,14 +40,14 @@
 #include <vector>
 
 #include <cmath>
-#include <pcl/compression_eval/compression_eval.h>
+#include <pcl/compression_eval/compression_eval_omp.h>
 
 // dependency on the reverie mesh, allows rendering in reverie framework
 #include <pcl/compression_eval/reverie_mesh.h>
 #include <pcl/compression_eval/impl/reverie_mesh_impl.hpp>
-#include <pcl/filters/radius_outlier_removal.h>
+
 #include <pcl/compression_eval/compression_eval.h>
-#include <pcl/compression_eval/impl/compression_eval_impl.hpp>
+#include <pcl/compression_eval/impl/compression_eval_omp_impl.hpp>
 
 #include <pcl/quality/quality_metrics.h>
 #include <pcl/quality/impl/quality_metrics_impl.hpp>
@@ -97,7 +97,7 @@ template class PCL_EXPORTS pcl::io::OctreePointCloudCompression<pcl::PointXYZRGB
 
 typedef OctreePointCloudCompression<PointXYZ> pointsOnlyOctreeCodec;
 typedef OctreePointCloudCompression<PointXYZRGB> colorOctreeCodec;
-typedef OctreePointCloudCodecV2<PointXYZRGB> colorOctreeCodecV2;
+typedef OctreePointCloudCodecV2OMP<PointXYZRGB> colorOctreeCodecV2OMP;
 ///////////////  Bounding Box Logging /////////////////////////	
 // log information on the bounding boxes, which is critical for alligning clouds in time
 ofstream bb_out("bounding_box_pre_mesh.txt");
@@ -247,10 +247,6 @@ int
     ("macroblocksize",po::value<int>()->default_value(16), " size of macroblocks used for predictive frame (has to be a power of 2)")
     ("testbbalign",po::value<int>()->default_value(0), " set this option to test allignements only ")
     ("code_color_off",po::value<int>()->default_value(0), " do color offset coding on predictive frames")
-    ("radius_outlier_filter",po::value<int>()->default_value(0), " K neighbours for radius outlier filter ")
-    ("radius_size",po::value<double>()->default_value(0.01), " radius outlier filter, maximum radius ")
-    ("jpeg_value",po::value<int>()->default_value(75), " jpeg quality parameter ")
-    ("scalable", po::value<int>()->default_value(1), " create scalable bitstream ")
     ;
   // Check if required file 'parameter_config.txt' is present
   ifstream in_conf("..//parameter_config.txt");
@@ -265,23 +261,8 @@ int
   po::store(po::parse_config_file(in_conf, desc), vm);
   po::notify(vm);
   bb_expand_factor = vm["bb_expand_factor"].as<double>();
-
-   ////////////// FOR EACH PARAMETER SETTING DO ASSESMENT //////////////////
-  int enh_bit_settings = vm["enh_bit_settings"].as<int>();
-  vector<int> octree_bit_settings = vm["octree_bit_settings"].as<vector<int> >();
-  vector<int> color_bit_settings =  vm["color_bit_settings"].as<vector<int> >();
-  vector<int> color_coding_types =  vm["color_coding_types"].as<vector<int> >();
-  bool keep_centroid = vm["keep_centroid"].as<int>();
-  int write_out_ply =  vm["write_output_ply"].as<int>();
-  int do_delta_coding = vm["do_delta_frame_coding"].as<int>();
-  int icp_on_original = vm["icp_on_original"].as<int>();
-  int macroblocksize= vm["macroblocksize"].as<int>();
-  int testbbalign = vm["testbbalign"].as<int>();  // testing the bounding box alignment algorithm
-  bool do_icp_color_offset = vm["code_color_off"].as<int>(); 
-  int do_radius_align = vm["radius_outlier_filter"].as<int>();
-  double rad_size = vm["radius_size"].as<double>();
-  bool create_scalable = static_cast<bool>(vm["scalable"].as<int>());
-  int jpeg_value = vm["jpeg_value"].as<int>();  ////////////////// ~end parse configuration file  /////////////////////////////////////
+    
+  ////////////////// ~end parse configuration file  /////////////////////////////////////
 
 
   ////////////////// LOADING CLOUDS INTO MEMORY /////////////////////////////////////
@@ -339,29 +320,6 @@ int
           for(int k=0;k<l_ptr->size();k++)
             fused_clouds[i]->push_back((*l_ptr)[k]); // appends the points
         }
-      }
-    }
-    // apply a radius filter to remove outliers
-    if(do_radius_align)
-    {
-      for(int i=0;i<fused_clouds.size();i++){
-        colorOctreeCodec::PointCloudPtr l_ptr = colorOctreeCodec::PointCloudPtr(new colorOctreeCodec::PointCloud()); 
-        pcl::RadiusOutlierRemoval<PointXYZRGB> rorfilter (true); // Initializing with true will allow us to extract the removed indices
-        rorfilter.setInputCloud (fused_clouds[i]); 
-        rorfilter.setRadiusSearch (rad_size);
-        rorfilter.setMinNeighborsInRadius (do_radius_align);
-        rorfilter.setNegative (false);
-        rorfilter.filter (*l_ptr);
-
-        std::size_t or_number_of_points = fused_clouds[i]->size();
-
-        // swap the pointer
-         IndicesConstPtr indices_rem = rorfilter.getRemovedIndices ();
-        // fused_clouds[i]->erase(indices_rem->begin(),indices_rem->end());
-        // The resulting cloud_out contains all points of cloud_in that have 4 or less neighbors within the 0.1 search radius
-        fused_clouds[i] = l_ptr;
-        std::cout << "filtered out a total of: " << indices_rem->size() << "outliers" <<std::endl;
-        // The indices_rem array indexes all points of cloud_in that have 5 or more neighbors within the 0.1 search radius
       }
     }
   }
@@ -574,6 +532,19 @@ int
 
   /////////////// END PREPARE OUTPUT CSV FILE AND CODEC PARAMTER SETTINGS /////////////////////////
 
+  ////////////// FOR EACH PARAMETER SETTING DO ASSESMENT //////////////////
+  int enh_bit_settings = vm["enh_bit_settings"].as<int>();
+  vector<int> octree_bit_settings = vm["octree_bit_settings"].as<vector<int> >();
+  vector<int> color_bit_settings =  vm["color_bit_settings"].as<vector<int> >();
+  vector<int> color_coding_types =  vm["color_coding_types"].as<vector<int> >();
+  bool keep_centroid = vm["keep_centroid"].as<int>();
+  int write_out_ply =  vm["write_output_ply"].as<int>();
+  int do_delta_coding = vm["do_delta_frame_coding"].as<int>();
+  int icp_on_original = vm["icp_on_original"].as<int>();
+  int macroblocksize= vm["macroblocksize"].as<int>();
+  int testbbalign = vm["testbbalign"].as<int>();  // testing the bounding box alignment algorithm
+  bool do_icp_color_offset = vm["code_color_off"].as<int>(); 
+
   if(testbbalign){
     std::cout << " re-alligned " << bb_align_count << " frames out of " << fused_clouds.size() <<" frames" << std::endl;
     return true;
@@ -604,19 +575,16 @@ int
 
         //! encode the fused cloud with and without colors
 #if __cplusplus >= 201103L
-        auto l_codec_encoder = generatePCLOctreeCodecV2<PointXYZRGB>(
+        auto l_codec_encoder = generatePCLOctreeCodecV2OMP<PointXYZRGB>(
 #else
-        boost::shared_ptr<OctreePointCloudCodecV2<PointXYZRGB> > l_codec_encoder = generatePCLOctreeCodecV2<PointXYZRGB>(
+        boost::shared_ptr<OctreePointCloudCodecV2OMP<PointXYZRGB> > l_codec_encoder = generatePCLOctreeCodecV2OMP<PointXYZRGB>(
 #endif//__cplusplus < 201103L
           octree_bit_settings[ob],
           enh_bit_settings,
           color_bit_settings[cb],
           0,
           color_coding_types[ct],
-          keep_centroid,
-          (bool) create_scalable,
-          false,
-          jpeg_value
+          keep_centroid
           );
 
         // set the macroblocksize for inter prediction
@@ -624,19 +592,16 @@ int
 
         // initialize structures for decoding base and enhancement layers
 #if __cplusplus >= 201103L
-        auto l_codec_decoder_base = generatePCLOctreeCodecV2<PointXYZRGB>(
+        auto l_codec_decoder_base = generatePCLOctreeCodecV2OMP<PointXYZRGB>(
 #else
-        boost::shared_ptr<OctreePointCloudCodecV2<PointXYZRGB> > l_codec_decoder_base = generatePCLOctreeCodecV2<PointXYZRGB>(
+        boost::shared_ptr<OctreePointCloudCodecV2OMP<PointXYZRGB> > l_codec_decoder_base = generatePCLOctreeCodecV2OMP<PointXYZRGB>(
 #endif//__cplusplus >= 201103L
           octree_bit_settings[ob],
           enh_bit_settings,
           color_bit_settings[cb],
           0,
           color_coding_types[ct],
-          keep_centroid,
-          (bool) create_scalable,
-          false,
-          jpeg_value
+          keep_centroid
           );
 
         for(int i=0; i < fused_clouds.size(); i++)
@@ -654,18 +619,6 @@ int
           tt.tic ();
           l_codec_encoder->encodePointCloud(fused_clouds[i] ,l_output_base);
           achieved_quality.encoding_time_ms = tt.toc();
-
-          // code for testing frequencies of occupancy codes, removed from source
-          /*stringstream out_name;
-          out_name << "occupancy_log_";
-          out_name << i;
-          ofstream output_file_i = ofstream(out_name.str().c_str());
-          
-          if(output_file_i.good()){
-            logOccupancyCodesFrequencies(l_codec_encoder->getCodedLayers(), output_file_i);
-            output_file_i.close();
-          }*/
-         
           ////////////////////////////////////////////////////////////
 
           ////////////////////////////////////////////////////////////////
@@ -842,7 +795,7 @@ int
                     mdat[9*l+6] = (*out_d)[l].r;
                     mdat[9*l+7] = (*out_d)[l].g;
                     mdat[9*l+8] = (*out_d)[l].b; 
-                  }
+                  }predi
                   //////////////////////////////////////////////////////
                   m.recomputeSmoothVertexNormals(.3);
                   m.storePLY("prev_ct_" +
@@ -879,7 +832,7 @@ int
       }
       cout << " overall shared macroblock percentage: " << av_macroblock_sharing / p_frame_count <<" total p frames: "  << p_frame_count <<endl;
       cout << " overall shared macroblock convergence percentage: " << av_convergence_percentage / p_frame_count <<" total p frames: "  << p_frame_count <<endl;
-      //cin.get();
+      cin.get();
     }
   }
 

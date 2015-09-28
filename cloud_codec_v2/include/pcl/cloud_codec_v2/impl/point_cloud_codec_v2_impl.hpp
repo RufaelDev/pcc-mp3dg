@@ -61,8 +61,8 @@ namespace pcl{
     *        - color coding based on jpeg
     *        - scalable bitstream (not yet implemented)
     * \author Rufael Mekuria rufael.mekuria@cwi.nl
-    * \param  const PointCloudConstPtr &cloud_arg
-    * \param  std::ostream& compressed_tree_data_out_arg
+    * \param  cloud_arg
+    * \param  compressed_tree_data_out_arg
     */
     template<typename PointT, typename LeafT, typename BranchT, typename OctreeT> void OctreePointCloudCodecV2<
       PointT, LeafT, BranchT, OctreeT>::encodePointCloud (
@@ -199,8 +199,8 @@ namespace pcl{
     *        - centroid coding
     *        - color coding based on jpeg
     * \author Rufael Mekuria rufael.mekuria@cwi.nl
-    * \param  std::istream& compressed_tree_data_in_arg
-    * \param  PointCloudPtr &cloud_arg  decoded point cloud
+    * \param  compressed_tree_data_in_arg
+    * \param  cloud_arg  decoded point cloud
     */
     template<typename PointT, typename LeafT, typename BranchT, typename OctreeT> void
       OctreePointCloudCodecV2<PointT, LeafT, BranchT, OctreeT>::decodePointCloud (
@@ -294,7 +294,7 @@ namespace pcl{
     /*!
     * \brief  helper function to compute the delta frames
     * \author Rufael Mekuria rufael.mekuria@cwi.nl
-    * \param  const PointCloudConstPtr &pcloud_arg_in  input argument, cloud to simplify
+    * \param  pcloud_arg_in input point cloud to simplify
     * \param  out_cloud  output simplified point cloud
     */
     template<typename PointT, typename LeafT, typename BranchT, typename OctreeT> void
@@ -378,7 +378,7 @@ namespace pcl{
     /*!
     * \brief  helper function to  generate macroblock tree for computing shared macroblocks
     * \author Rufael Mekuria rufael.mekuria@cwi.nl
-    * \param  PointCloudConstPtr  in_cloud (input cloud)
+    * \param  in_cloud input point cloud
     * \return pointer to a macroblock tree structure
     */
     template<typename PointT, typename LeafT, typename BranchT, typename OctreeT> OctreePointCloudCompression<PointT,LeafT,BranchT,OctreeT> *  
@@ -407,11 +407,11 @@ namespace pcl{
     /*!
     * \brief  helper function to  do ICP prediction between shared macroblocks
     * \author Rufael Mekuria rufael.mekuria@cwi.nl
-    * \param  PointCloudPtr i_cloud, macroblock icloud
-    * \param  PointCloudPtr p_cloud, macroblock pcloud
-    * \param  Eigen::Matrix4f &rigid_transform,  output rigid transform
-    * \param  bool & has_converged,  true if converged otherwise false
-    * \param  char *rgb_offsets  , values for rgb offsets (if enabled)
+    * \param  i_cloud macroblock icloud
+    * \param  p_cloud macroblock pcloud
+    * \param  rigid_transform  output rigid transform
+    * \param  has_converged  true if converged otherwise false
+    * \param  rgb_offsets values for rgb offsets (if enabled)
     * pointer to a macroblock tree structure
     */
     template<typename PointT, typename LeafT, typename BranchT, typename OctreeT> void 
@@ -541,13 +541,13 @@ namespace pcl{
     }
 
     /** \brief generate a point cloud Delta to output stream
-    * \param icloud_arg:  point cloud to be used a I frame
-    * \param pcloud_arg:  point cloud to be encoded as a pframe
-    * \param PointCloudPtr &out_cloud_arg [out] the predicted frame 
-    * \param std::ostream& i_coded_data intra encoded data 
-    * \param std::ostream& p_coded_data inter encoded data
-    * \param bool  icp_on_original  (option to do icp on original or simplified clouds)
-    * \param bool  write_out_cloud  (flag to write the output cloud to out_cloud_arg)
+    * \param icloud_arg  point cloud to be used a I frame
+    * \param pcloud_arg  point cloud to be encoded as a pframe
+    * \param out_cloud_arg [out] the predicted frame 
+    * \param i_coded_data intra encoded data 
+    * \param p_coded_data inter encoded data
+    * \param icp_on_original  (option to do icp on original or simplified clouds)
+    * \param write_out_cloud  (flag to write the output cloud to out_cloud_arg)
     */
     template<typename PointT, typename LeafT, typename BranchT, typename OctreeT> void 
       OctreePointCloudCodecV2<PointT,LeafT,BranchT,OctreeT>::generatePointCloudDeltaFrame( 
@@ -739,13 +739,13 @@ namespace pcl{
 
     /** \brief routine to encode a delta frame (predictive coding)
     * \author Rufael Mekuria rufael.mekuria@cwi.nl
-    * \param icloud_arg:  point cloud to be used a I frame
-    * \param pcloud_arg:  point cloud to be encoded as a pframe
-    * \param PointCloudPtr &out_cloud_arg [out] the predicted frame 
-    * \param std::ostream& i_coded_data intra encoded data 
-    * \param std::ostream& p_coded_data inter encoded data
-    * \param bool  icp_on_original  (option to do icp on original or simplified clouds)
-    * \param bool  write_out_cloud  (flag to write the output cloud to out_cloud_arg)
+    * \param icloud_arg  point cloud to be used a I frame
+    * \param pcloud_arg  point cloud to be encoded as a pframe
+    * \param out_cloud_arg [out] the predicted frame 
+    * \param i_coded_data intra encoded data 
+    * \param p_coded_data inter encoded data
+    * \param icp_on_original  (option to do icp on original or simplified clouds)
+    * \param write_out_cloud  (flag to write the output cloud to out_cloud_arg)
     */
     template<typename PointT, typename LeafT, typename BranchT, typename OctreeT> void
       OctreePointCloudCodecV2<PointT, LeafT, BranchT, OctreeT>::encodePointCloudDeltaFrame (
@@ -820,7 +820,7 @@ namespace pcl{
             l_key_dat[2] = (int) current_key.z;
 
             // write the p coded data (we can add entropy encoding later)
-            uint8_t chunk_size = 3*sizeof(int16_t) + comp_dat.size()*sizeof(int16_t) + (do_icp_color_offset_ ? 3:0); // size of the chunk
+            uint8_t chunk_size = (uint8_t) (3*sizeof(int16_t) + comp_dat.size()*sizeof(int16_t) + (do_icp_color_offset_ ? 3:0)); // size of the chunk
             p_coded_data.write((const char *) &chunk_size, sizeof(chunk_size));
             p_coded_data.write((const char *) l_key_dat, 3*sizeof(int16_t));
             p_coded_data.write((const char *) &comp_dat[0], comp_dat.size()*sizeof(int16_t));
@@ -913,10 +913,10 @@ namespace pcl{
 
     /** \brief routine to decode a delta frame (predictive coding)
     * \author Rufael Mekuria rufael.mekuria@cwi.nl
-    * \param PointCloudPtr icloud_arg:  point cloud to be used a I frame
-    * \param PointCloudPtr cloud_out_arg:  decoded frame
-    * \param std::ostream& i_coded_data intra encoded data 
-    * \param std::ostream& p_coded_data inter encoded data
+    * \param icloud_arg  point cloud to be used a I frame
+    * \param cloud_out_arg  decoded frame
+    * \param i_coded_data intra encoded data 
+    * \param p_coded_data inter encoded data
     */
     template<typename PointT, typename LeafT, typename BranchT, typename OctreeT> void
       OctreePointCloudCodecV2<PointT, LeafT, BranchT, OctreeT>::decodePointCloudDeltaFrame( 
@@ -1474,8 +1474,9 @@ namespace pcl{
     };
 
     /** \brief Apply entropy encoding to encoded information and output to binary stream, added bitstream scalability and centroid encoding compared to  V1
-    * \param compressed_tree_data_out_arg: binary output stream
-    */
+	* \param compressed_tree_data_out_arg1 binary voxel output stream
+	* \param compressed_tree_data_out_arg2 binary color output stream
+	*/
     template<typename PointT, typename LeafT, typename BranchT, typename OctreeT> void
       OctreePointCloudCodecV2<PointT, LeafT, BranchT, OctreeT>::entropyEncoding (std::ostream& compressed_tree_data_out_arg1, std::ostream& compressed_tree_data_out_arg2 )
     {
@@ -1557,8 +1558,9 @@ namespace pcl{
     };
 
     /** \brief Entropy decoding of input binary stream and output to information vectors, added bitstream scalability and centroid encoding compared to  V1
-    * \param compressed_tree_data_in_arg: binary input stream1, binary input stream1,
-    */
+	* \param compressed_tree_data_in_arg1 binary voxel input stream
+	* \param compressed_tree_data_in_arg2 binary color enhancement input stream
+	*/
     template<typename PointT, typename LeafT, typename BranchT, typename OctreeT> void
       OctreePointCloudCodecV2<PointT, LeafT, BranchT, OctreeT>::entropyDecoding (std::istream& compressed_tree_data_in_arg1, std::istream& compressed_tree_data_in_arg2)
     {

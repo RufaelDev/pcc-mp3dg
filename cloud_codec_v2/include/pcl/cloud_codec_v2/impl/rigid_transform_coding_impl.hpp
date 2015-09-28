@@ -54,16 +54,17 @@ namespace pcl{
     /*!
     * \brief  compression of Rigid Transform resulting from ICP procedure (either as quaternion or 2 vectors and sign byte)
     * \author Rufael Mekuria rufael.mekuria@cwi.nl
-    * \param  const Eigen::Matrix<Scalar, 4, 4> &tr_in  input rigid transform
-    * \param  std::vector<int16_t> &comp_dat_out output words containing compressed transform
-    * \param  Eigen::Quaternion<Scalar> &quat_out output quaternion
+    * \param  tr_in  input rigid transform
+    * \param  comp_dat_out output words containing compressed transform
+    * \param  quat_out output quaternion
+    * \note The output vector will contain 6 16-bit words if quaternion encoding was used, otherwise 7.
     */
 
     template <typename Scalar> bool 
       RigidTransformCoding<Scalar>::compressRigidTransform(
-        const Eigen::Matrix<Scalar, 4, 4> &tr_in, 
-        std::vector<int16_t> &comp_dat_out,
-        Eigen::Quaternion<Scalar> &quat_out)
+        const Eigen::Matrix<Scalar, 4, 4>& tr_in, 
+        std::vector<int16_t>& comp_dat_out,
+        Eigen::Quaternion<Scalar>& quat_out)
     {
       // 2,5 is the maximum translation
       const float scaling_factor = (float) std::numeric_limits<int16_t>::max()/2.5;
@@ -148,17 +149,17 @@ namespace pcl{
     }
 
     /*!
-    * \brief  compression of Rigid Transform resulting from ICP procedure (either as quaternion or 2 vectors and sign byte)
+    * \brief  decompression of Rigid Transform resulting from ICP procedure (either as quaternion or 2 vectors and sign byte)
     * \author Rufael Mekuria rufael.mekuria@cwi.nl
-    * \param  std::vector<int16_t> &comp_dat_in input words containing compressed transform
-    * \param  const Eigen::Matrix<Scalar, 4, 4> &tr_in  input rigid transform
-    * \param  Eigen::Quaternion<Scalar> &quat_out output quaternion
-    */
+    * \param  comp_dat_in input words containing compressed transform
+    * \param  tr_out  output rigid transform
+    * \param  quat_out output quaternion (will be only changed when quaternion encoding was used)
+	*/
     template <typename Scalar> bool 
       RigidTransformCoding<Scalar>::deCompressRigidTransform(
-        const std::vector<int16_t> & comp_dat_in, 
-        Eigen::Matrix<Scalar, 4, 4> &tr_out, 
-        Eigen::Quaternion<Scalar> &quat_out)
+        const std::vector<int16_t>& comp_dat_in, 
+        Eigen::Matrix<Scalar, 4, 4>& tr_out, 
+        Eigen::Quaternion<Scalar>& quat_out)
     {
       // 2 is the maximum 
       const float scaling_factor = (float) std::numeric_limits<int16_t>::max()/2.5;
