@@ -48,6 +48,7 @@
 
 #include <pcl/compression_eval/compression_eval.h>
 #include <pcl/compression_eval/impl/compression_eval_impl.hpp>
+#include <pcl/compression_eval/impl/compression_eval_omp_impl.hpp>
 
 #include <pcl/quality/quality_metrics.h>
 #include <pcl/quality/impl/quality_metrics_impl.hpp>
@@ -577,7 +578,7 @@ int
 #if __cplusplus >= 201103L
         auto l_codec_encoder = generatePCLOctreeCodecV2<PointXYZRGB>(
 #else
-        boost::shared_ptr<OctreePointCloudCodecV2<PointXYZRGB> > l_codec_encoder = generatePCLOctreeCodecV2<PointXYZRGB>(
+        boost::shared_ptr<OctreePointCloudCodecV2<PointXYZRGB> > l_codec_encoder = generatePCLOctreeCodecV2OMP<PointXYZRGB>(
 #endif//__cplusplus < 201103L
           octree_bit_settings[ob],
           enh_bit_settings,
@@ -594,7 +595,7 @@ int
 #if __cplusplus >= 201103L
         auto l_codec_decoder_base = generatePCLOctreeCodecV2<PointXYZRGB>(
 #else
-        boost::shared_ptr<OctreePointCloudCodecV2<PointXYZRGB> > l_codec_decoder_base = generatePCLOctreeCodecV2<PointXYZRGB>(
+        boost::shared_ptr<OctreePointCloudCodecV2<PointXYZRGB> > l_codec_decoder_base = generatePCLOctreeCodecV2OMP<PointXYZRGB>(
 #endif//__cplusplus >= 201103L
           octree_bit_settings[ob],
           enh_bit_settings,
