@@ -58,7 +58,18 @@ namespace pcl{
 		on the number of bits in the base and enhancement layer
 	*/
     template<typename PointT> boost::shared_ptr<OctreePointCloudCodecV2OMP<PointT> >
-	  generatePCLOctreeCodecV2OMP(int nr_bits_base_layer, int nr_bits_enh_layer, int nr_bits_colors, int i_frame_rate = 0, int color_coding_type = 0, bool do_centroid_coding = true);
+	  generatePCLOctreeCodecV2OMP(
+      int nr_bits_base_layer, 
+      int nr_bits_enh_layer, 
+      int nr_bits_colors, 
+      int i_frame_rate = 0, 
+      int color_coding_type = 0, 
+      bool do_centroid_coding = true,
+      bool create_scalable=false,
+      bool keep_conn=false,
+      int jpeg_value=75,
+      int num_threads=0
+      );
 	}
 
 }

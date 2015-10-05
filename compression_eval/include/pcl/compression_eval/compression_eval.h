@@ -47,7 +47,9 @@
 
 #include <pcl/compression/octree_pointcloud_compression.h>
 #include <pcl/cloud_codec_v2/point_cloud_codec_v2.h>
+#include <pcl/cloud_codec_v2/point_cloud_codec_v2_omp.h>
 #include <pcl/cloud_codec_v2/impl/point_cloud_codec_v2_impl.hpp>
+#include <pcl/cloud_codec_v2/impl/point_cloud_codec_v2_omp_impl.hpp>
 
 namespace pcl{
 
@@ -58,7 +60,17 @@ namespace pcl{
 		on the number of bits in the base and enhancement layer
 	*/
     template<typename PointT> boost::shared_ptr<OctreePointCloudCodecV2<PointT> >
-	  generatePCLOctreeCodecV2(int nr_bits_base_layer, int nr_bits_enh_layer, int nr_bits_colors, int i_frame_rate = 0, int color_coding_type = 0, bool do_centroid_coding = true, int jpeg_value=75, bool scalable_arg=true, bool conn_arg=false);
+	  generatePCLOctreeCodecV2(
+      int nr_bits_base_layer, 
+      int nr_bits_enh_layer, 
+      int nr_bits_colors, 
+      int i_frame_rate = 0, 
+      int color_coding_type = 0, 
+      bool do_centroid_coding = true,
+      bool create_scalable=false,
+      bool keep_conn=false,
+      int jpeg_value=75,
+      int num_threads=0);
 	
     // function to log occupancy codes frequencies
     void

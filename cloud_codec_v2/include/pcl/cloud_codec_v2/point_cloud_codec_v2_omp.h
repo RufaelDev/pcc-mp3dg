@@ -101,7 +101,8 @@ namespace pcl{
           bool doVoxelGridCentroid_arg = true, 
           bool createScalebleStream_arg = true, 
           bool codeConnectivity_arg = false,
-          int jpeg_quality_arg = 75) :
+          int jpeg_quality_arg = 75, 
+          int num_threads=1) :
         OctreePointCloudCodecV2<PointT,LeafT,BranchT,OctreeT>(
           compressionProfile_arg,
           showStatistics_arg,
@@ -115,7 +116,7 @@ namespace pcl{
           doVoxelGridCentroid_arg,
           createScalebleStream_arg,
           codeConnectivity_arg,
-          jpeg_quality_arg)
+          jpeg_quality_arg),num_threads_(num_threads)
         {
         }
 
@@ -200,7 +201,9 @@ namespace pcl{
 //      using pcl::io::OctreePointCloudCompression<PointT, LeafT, BranchT, OctreeT>::i_frame_counter_;
 //      using pcl::io::OctreePointCloudCompression<PointT, LeafT, BranchT, OctreeT>::
 //      using pcl::octree::OctreePointCloud<PointT, LeafT, BranchT, OctreeT>::
-*/
+*/      
+       //! number of omp threads
+       int num_threads_;
     };
 
     // define frame identifier for cloud codec v2 omp

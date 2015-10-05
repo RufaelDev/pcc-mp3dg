@@ -48,7 +48,6 @@
 #include <pcl/filters/radius_outlier_removal.h>
 #include <pcl/compression_eval/compression_eval.h>
 #include <pcl/compression_eval/impl/compression_eval_impl.hpp>
-#include <pcl/compression_eval/impl/compression_eval_omp_impl.hpp>
 
 #include <pcl/quality/quality_metrics.h>
 #include <pcl/quality/impl/quality_metrics_impl.hpp>
@@ -252,6 +251,7 @@ int
     ("radius_size",po::value<double>()->default_value(0.01), " radius outlier filter, maximum radius ")
     ("jpeg_value",po::value<int>()->default_value(75), " jpeg quality parameter ")
     ("scalable", po::value<int>()->default_value(1), " create scalable bitstream ")
+    ("omp_cores",po::value<int>()->default_value(0), " number of omp cores () = default and no omp)")
     ;
   // Check if required file 'parameter_config.txt' is present
   ifstream in_conf("..//parameter_config.txt");
@@ -267,6 +267,24 @@ int
   po::notify(vm);
   bb_expand_factor = vm["bb_expand_factor"].as<double>();  ////////////////// ~end parse configuration file  /////////////////////////////////////
 
+  ////////////// FOR EACH PARAMETER SETTING DO ASSESMENT //////////////////
+  int enh_bit_settings = vm["enh_bit_settings"].as<int>();
+  vector<int> octree_bit_settings = vm["octree_bit_settings"].as<vector<int> >();
+  vector<int> color_bit_settings =  vm["color_bit_settings"].as<vector<int> >();
+  vector<int> color_coding_types =  vm["color_coding_types"].as<vector<int> >();
+  bool keep_centroid = vm["keep_centroid"].as<int>();
+  int write_out_ply =  vm["write_output_ply"].as<int>();
+  int do_delta_coding = vm["do_delta_frame_coding"].as<int>();
+  int icp_on_original = vm["icp_on_original"].as<int>();
+  int macroblocksize= vm["macroblocksize"].as<int>();
+  int testbbalign = vm["testbbalign"].as<int>();  // testing the bounding box alignment algorithm
+  bool do_icp_color_offset = vm["code_color_off"].as<int>(); 
+  int do_radius_align = vm["radius_outlier_filter"].as<int>();
+  double rad_size = vm["radius_size"].as<double>();
+  bool create_scalable = static_cast<bool>(vm["scalable"].as<int>());
+  int jpeg_value = vm["jpeg_value"].as<int>();
+  int omp_cores = vm["omp_cores"].as<int>();
+  ////////////////// ~end parse configuration file  /////////////////////////////////////
 
   ////////////////// LOADING CLOUDS INTO MEMORY /////////////////////////////////////
   // store folders to load in a vector
@@ -590,7 +608,7 @@ int
 #if __cplusplus >= 201103L
         auto l_codec_encoder = generatePCLOctreeCodecV2<PointXYZRGB>(
 #else
-        boost::shared_ptr<OctreePointCloudCodecV2<PointXYZRGB> > l_codec_encoder = generatePCLOctreeCodecV2OMP<PointXYZRGB>(
+        boost::shared_ptr<OctreePointCloudCodecV2<PointXYZRGB> > l_codec_encoder = generatePCLOctreeCodecV2<PointXYZRGB>(
 #endif//__cplusplus < 201103L
           octree_bit_settings[ob],
           enh_bit_settings,
@@ -600,7 +618,8 @@ int
           keep_centroid,
           (bool) create_scalable,
           false,
-          jpeg_value
+          jpeg_value,
+          omp_cores
           );
 
         // set the macroblocksize for inter prediction
@@ -610,7 +629,7 @@ int
 #if __cplusplus >= 201103L
         auto l_codec_decoder_base = generatePCLOctreeCodecV2<PointXYZRGB>(
 #else
-        boost::shared_ptr<OctreePointCloudCodecV2<PointXYZRGB> > l_codec_decoder_base = generatePCLOctreeCodecV2OMP<PointXYZRGB>(
+        boost::shared_ptr<OctreePointCloudCodecV2<PointXYZRGB> > l_codec_decoder_base = generatePCLOctreeCodecV2<PointXYZRGB>(
 #endif//__cplusplus >= 201103L
           octree_bit_settings[ob],
           enh_bit_settings,
@@ -620,7 +639,8 @@ int
           keep_centroid,
           (bool) create_scalable,
           false,
-          jpeg_value
+          jpeg_value,
+          omp_cores
           );
 
         for(int i=0; i < fused_clouds.size(); i++)

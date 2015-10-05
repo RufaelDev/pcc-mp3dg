@@ -11,18 +11,15 @@ PCL_ADD_DOC("${SUBSYS_NAME}")
 if(build)
     set(srcs
         src/compression_eval.cpp
-        src/compression_eval_omp.cpp
         )
 
     set(incs
         "include/pcl/${SUBSYS_NAME}/compression_eval.h"
-        "include/pcl/${SUBSYS_NAME}/compression_eval_omp.h"
 	"include/pcl/${SUBSYS_NAME}/reverie_mesh.h"
         )
 
     set(impl_incs
         "include/pcl/${SUBSYS_NAME}/impl/compression_eval_impl.hpp"
-        "include/pcl/${SUBSYS_NAME}/impl/compression_eval_omp_impl.hpp"
 	"include/pcl/${SUBSYS_NAME}/impl/reverie_mesh_impl.hpp"
         )
 
@@ -40,7 +37,7 @@ if(build)
       set(PROG_NAME "pcl_${prog_name}")
       message("PROG_NAME=" ${PROG_NAME})
       PCL_ADD_EXECUTABLE(${PROG_NAME} ${SUBSYS_NAME} ${prog_src} ${incs} ${impl_incs})
-      target_link_libraries(${PROG_NAME} pcl_common pcl_sample_consensus pcl_search pcl_kdtree pcl_octree pcl_io pcl_io_ply)
+      target_link_libraries(${PROG_NAME} pcl_common pcl_sample_consensus pcl_search pcl_kdtree pcl_octree pcl_io pcl_io_ply pcl_filters)
 #     PCL_MAKE_PKGCONFIG("${LIB_NAME}" "${SUBSYS_NAME}" "${SUBSYS_DESC}" "${SUBSYS_DEPS}" "" "" "" "")
     endforeach (prog_src ${srcs})    # Install include files
     PCL_ADD_INCLUDES("${SUBSYS_NAME}" "${SUBSYS_NAME}" ${incs})

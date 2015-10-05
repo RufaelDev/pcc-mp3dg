@@ -58,9 +58,26 @@ namespace pcl{
     */
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
     template<typename PointT> boost::shared_ptr<OctreePointCloudCodecV2<PointT> >
-    generatePCLOctreeCodecV2(int nr_bits_base_layer, int nr_bits_enh_layer, int nr_bits_colors, int i_frame_rate, int color_coding_type, bool do_centroid_coding, bool scalable_arg, bool conn_arg, int jpeg_value)
+    generatePCLOctreeCodecV2(int nr_bits_base_layer, int nr_bits_enh_layer, int nr_bits_colors, int i_frame_rate, int color_coding_type, bool do_centroid_coding, bool scalable_arg, bool conn_arg, int jpeg_value,int num_threads)
     {
-      return boost::shared_ptr<OctreePointCloudCodecV2<PointT> >(new OctreePointCloudCodecV2<PointT>(
+      return num_threads > 0 ? 
+        boost::shared_ptr<OctreePointCloudCodecV2OMP<PointT> >(new OctreePointCloudCodecV2OMP<PointT>(
+        MANUAL_CONFIGURATION,
+        false,
+        std::pow( 2.0, -1.0 *(nr_bits_base_layer + nr_bits_enh_layer) ),
+        std::pow( 2.0, -1.0 *(nr_bits_base_layer)),
+        true /* no intra voxel coding in this first version of the codec ok */,
+        i_frame_rate,
+        nr_bits_colors ? true : false,
+        nr_bits_colors,
+        color_coding_type,
+        do_centroid_coding ,
+        scalable_arg,
+        conn_arg,
+        jpeg_value,
+        num_threads
+        ))
+        : boost::shared_ptr<OctreePointCloudCodecV2<PointT> >(new OctreePointCloudCodecV2<PointT>(
         MANUAL_CONFIGURATION,
         false,
         std::pow( 2.0, -1.0 *(nr_bits_base_layer + nr_bits_enh_layer) ),

@@ -116,7 +116,7 @@ namespace pcl{
 				macro_block_count++;
 			}
 #if defined(_OPENMP)
-			omp_set_num_threads(4);
+			omp_set_num_threads(num_threads_);
 #endif//defined(_OPENMP)
 //#pragma omp barrier // wait until all threads finished
 #pragma omp parallel for shared(p_info_list,p_result_list)
