@@ -36,8 +36,8 @@
  * $Id$
  *
  */
-#ifndef COMPRESSION_EVAL_H
-#define COMPRESSION_EVAL_H
+#ifndef COMPRESSION_EVAL_OMP_H
+#define COMPRESSION_EVAL_OMP_H
 
 #include <pcl/io/pcd_io.h>
 #include <pcl/io/ply_io.h>
@@ -46,8 +46,8 @@
 #include <pcl/console/time.h>
 
 #include <pcl/compression/octree_pointcloud_compression.h>
-#include <pcl/cloud_codec_v2/point_cloud_codec_v2.h>
-#include <pcl/cloud_codec_v2/impl/point_cloud_codec_v2_impl.hpp>
+#include <pcl/cloud_codec_v2/point_cloud_codec_v2_omp.h>
+#include <pcl/cloud_codec_v2/impl/point_cloud_codec_v2_omp_impl.hpp>
 
 namespace pcl{
 
@@ -57,15 +57,10 @@ namespace pcl{
 		\brief helper function to generate octree cloud codecs based 
 		on the number of bits in the base and enhancement layer
 	*/
-    template<typename PointT> boost::shared_ptr<OctreePointCloudCodecV2<PointT> >
-	  generatePCLOctreeCodecV2(int nr_bits_base_layer, int nr_bits_enh_layer, int nr_bits_colors, int i_frame_rate = 0, int color_coding_type = 0, bool do_centroid_coding = true, int jpeg_value=75, bool scalable_arg=true, bool conn_arg=false);
-	
-    // function to log occupancy codes frequencies
-    void
-    logOccupancyCodesFrequencies(std::vector<std::vector<char>> & occupancy_codes,
-    std::ostream &output_file);
-  }
+    template<typename PointT> boost::shared_ptr<OctreePointCloudCodecV2OMP<PointT> >
+	  generatePCLOctreeCodecV2OMP(int nr_bits_base_layer, int nr_bits_enh_layer, int nr_bits_colors, int i_frame_rate = 0, int color_coding_type = 0, bool do_centroid_coding = true);
+	}
 
 }
 
-#endif
+#endif // COMPRESSION_EVAL_OMP_H

@@ -75,10 +75,10 @@ namespace pcl
       {
       }
 
-      /** \brief Encode differential point information for a subset of points from point cloud
-      * \param indexVector_arg indices defining a subset of points from points cloud
+      /** \brief Encode differential point information for a single point
+      * The result is stored in the differnetial point vector
       * \param referencePoint_arg coordinates of reference point
-      * \param inputCloud_arg input point cloud
+      * \param idxPoint input point
       */
       void
       encodePoint (const double* referencePoint_arg, const PointT &idxPoint)
@@ -97,13 +97,11 @@ namespace pcl
       }
 
       /** \brief Decode differential point information
-      * \param outputCloud_arg output point cloud
+      * \param outputPoint_arg output point
       * \param referencePoint_arg coordinates of reference point
-      * \param beginIdx_arg index indicating first point to be assiged with color information
-      * \param endIdx_arg index indicating last point to be assiged with color information
       */
       void
-      decodePoint (PointT &outputPoint, const double* referencePoint_arg)
+      decodePoint (PointT &outputPoint_arg, const double* referencePoint_arg)
       {
         // retrieve differential point information
         const unsigned char& diffX = static_cast<unsigned char> (*(this->pointDiffDataVectorIterator_++));
@@ -111,7 +109,7 @@ namespace pcl
         const unsigned char& diffZ = static_cast<unsigned char> (*(this->pointDiffDataVectorIterator_++));
 
         // retrieve point from point cloud
-        PointT& point = outputPoint;
+        PointT& point = outputPoint_arg;
 
         // decode point position
         point.x = static_cast<float> (referencePoint_arg[0] + diffX * this->pointCompressionResolution_);

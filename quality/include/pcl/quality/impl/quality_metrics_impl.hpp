@@ -61,7 +61,7 @@ namespace pcl{
 
   namespace quality{
     
-	/**!
+	/**
 	\brief helper function to convert RGB to YUV
 	*/
 
@@ -75,11 +75,11 @@ namespace pcl{
 	}
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////
-	/**! 
+	/**
 	* function to compute quality metric with bit settings
 	* @param cloud_a original cloud 
     * @param cloud_b decoded cloud
-    * @param return: updated quality metric
+    * @param qual_metric return updated quality metric
 	* \note PointT typename of point used in point cloud
 	* \author Rufael Mekuria (rufael.mekuria@cwi.nl)
 	*/

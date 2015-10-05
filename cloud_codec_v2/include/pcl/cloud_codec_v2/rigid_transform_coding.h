@@ -46,7 +46,7 @@ namespace pcl{
   namespace io
   {
      /** \brief @b Rigid Transofrm Coding class
-    * \note This class encodes a rigid transform in 12 bytes (6 shorts)
+    * \note This class encodes a rigid transform in 12 or 14 bytes (6 or 7 shorts)
     * \author Rufael Mekuria rufael.mekuria@cwi.nl
     */
     template<typename Scalar=float> class RigidTransformCoding{

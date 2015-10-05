@@ -47,7 +47,7 @@ namespace pcl{
   namespace quality{
   
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////
-	/**! 
+	/*!
 	* \brief 
 	*  struct to store achieved coding performance for official evaluation by MPEG committee (3DG)
 	* \author Rufael Mekuria (rufael.mekuria@cwi.nl)
@@ -82,7 +82,7 @@ namespace pcl{
 	void print_csv_line (const std::string &compression_setting_arg, std::ostream &csv_ostream);
   };
 
-  //! brief compute the quality metric, we assume the cloud_a is the original (for colors we only compare the original to the lossy cloud)
+  //! \brief compute the quality metric, we assume the cloud_a is the original (for colors we only compare the original to the lossy cloud)
   template<typename PointT> void
   computeQualityMetric (pcl::PointCloud<PointT>  &cloud_a, pcl::PointCloud<PointT>  &cloud_b, QualityMetric & qual_metric );
   }

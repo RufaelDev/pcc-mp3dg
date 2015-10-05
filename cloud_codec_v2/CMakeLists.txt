@@ -15,6 +15,7 @@ if(build)
 
     set(incs
 		"include/pcl/${SUBSYS_NAME}/point_cloud_codec_v2.h"
+		"include/pcl/${SUBSYS_NAME}/point_cloud_codec_v2_omp.h"
 		"include/pcl/${SUBSYS_NAME}/point_coding_v2.h"
 		"include/pcl/${SUBSYS_NAME}/color_coding_jpeg.h"
 		"include/pcl/${SUBSYS_NAME}/snake_grid_mapping.h"
@@ -25,6 +26,7 @@ if(build)
 
     set(impl_incs
 		"include/pcl/${SUBSYS_NAME}/impl/point_cloud_codec_v2_impl.hpp"
+		"include/pcl/${SUBSYS_NAME}/impl/point_cloud_codec_v2_omp_impl.hpp"
 		"include/pcl/${SUBSYS_NAME}/impl/quaternion_coding_impl.hpp"
 		"include/pcl/${SUBSYS_NAME}/impl/rigid_transform_coding_impl.hpp"
         )
