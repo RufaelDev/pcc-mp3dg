@@ -250,7 +250,7 @@ int
     ("radius_outlier_filter",po::value<int>()->default_value(0), " K neighbours for radius outlier filter ")
     ("radius_size",po::value<double>()->default_value(0.01), " radius outlier filter, maximum radius ")
     ("jpeg_value",po::value<int>()->default_value(75), " jpeg quality parameter ")
-    ("scalable", po::value<int>()->default_value(1), " create scalable bitstream ")
+    ("scalable", po::value<int>()->default_value(0), " create scalable bitstream ")
     ("omp_cores",po::value<int>()->default_value(0), " number of omp cores () = default and no omp)")
     ;
   // Check if required file 'parameter_config.txt' is present

@@ -116,6 +116,7 @@ namespace pcl{
 				macro_block_count++;
 			}
 #if defined(_OPENMP)
+      std::cout << " the number of threads is " << num_threads_ << std::endl;
 			omp_set_num_threads(num_threads_);
 #endif//defined(_OPENMP)
 //#pragma omp barrier // wait until all threads finished
