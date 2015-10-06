@@ -74,7 +74,7 @@ namespace pcl{
 	
     // function to log occupancy codes frequencies
     void
-    logOccupancyCodesFrequencies(std::vector<std::vector<char>> & occupancy_codes,
+    logOccupancyCodesFrequencies(std::vector<std::vector<char> > & occupancy_codes,
     std::ostream &output_file);
   }
 
