@@ -61,9 +61,20 @@ namespace pcl
     /** \brief Edge Properties stored in the adjacency graph.*/
     struct EdgeProperties
     {
+      /** \brief Desribes the difference of normals of the two supervoxels being connected*/
+      float normal_difference;
+      
+      /** \brief Desribes if a connection is convex or concave*/
       bool is_convex;
+      
+      /** \brief Describes if a connection is valid for the segment growing. Usually convex connections are and concave connection are not. Due to k-concavity a convex connection can be invalidated*/
+      bool is_valid;
+      
+      /** \brief Additional member used for the CPC algorithm. If edge has already induced a cut, it should be ignored for further cutting.*/
+      bool used_for_cutting;
+      
       EdgeProperties () :
-      is_convex (false)
+      normal_difference (0), is_convex (false), is_valid (false), used_for_cutting (false) 
       {
       }
     };
@@ -100,16 +111,15 @@ namespace pcl
       void
       relabelCloud (pcl::PointCloud<pcl::PointXYZL> &labeled_cloud_arg);
       
-      /** \brief Segments smaller than segment_size are assigned to label of largest neighbor.
-       *  \param[in] min_segment_size_arg Segments smaller than this size will be filtered
-       *  \note Currently this runs multiple times, until no segment < min_segment_size is found. Could be faster.  */
+      /** \brief Segments smaller than segment_size are merged to the label of largest neighbor.
+       *  \param[in] min_segment_size_arg Segments smaller than this size will be merged */
       void
-      removeSmallSegments (uint32_t min_segment_size_arg);
+      mergeSmallSegments (uint32_t min_segment_size_arg);
 
-      /** \brief Get map<SegmentID, std::vector<SuperVoxel IDs> >
+      /** \brief Get map<SegmentID, std::set<SuperVoxel IDs> >
        *  \param[out] segment_supervoxel_map_arg The output container. On error the map is empty. */
       inline void
-      getSegmentSupervoxelMap (std::map<uint32_t, std::vector<uint32_t> >& segment_supervoxel_map_arg) const
+      getSegmentSupervoxelMap (std::map<uint32_t, std::set<uint32_t> >& segment_supervoxel_map_arg) const
       {
         if (grouping_data_valid_)
         {
@@ -118,7 +128,7 @@ namespace pcl
         else
         {
           PCL_WARN ("[pcl::LCCPSegmentation::getSegmentMap] WARNING: Call function segment first. Nothing has been done. \n");
-          segment_supervoxel_map_arg = std::map<boost::uint32_t, std::vector<boost::uint32_t> > ();
+          segment_supervoxel_map_arg = std::map<uint32_t, std::set<uint32_t> > ();
         }
       }
       
@@ -136,7 +146,7 @@ namespace pcl
         else
         {
           PCL_WARN ("[pcl::LCCPSegmentation::getSegmentAdjacencyMap] WARNING: Call function segment first. Nothing has been done. \n");
-          segment_adjacency_map_arg = std::map<boost::uint32_t, std::set<boost::uint32_t> > ();
+          segment_adjacency_map_arg = std::map<uint32_t, std::set<uint32_t> > ();
         }
       }
       
@@ -205,7 +215,7 @@ namespace pcl
         k_factor_ = k;
       }
 
-    private:
+    protected:
 
       /** \brief Compute the adjacency of the segments */
       void
@@ -218,12 +228,18 @@ namespace pcl
       prepareSegmentation (const std::map<uint32_t, typename pcl::Supervoxel<PointT>::Ptr> &supervoxel_clusters_arg,
                            const std::multimap<uint32_t, uint32_t> &label_adjacency_arg);
 
+
+      /** Perform depth search on the graph and recursively group all supervoxels with convex connections
+       *  \note The vertices in the supervoxel adjacency list are the supervoxel centroids */
+      void
+      doGrouping ();
+      
       /** \brief Assigns neighbors of the query point to the same group as the query point. Recursive part of groupSupervoxels (..). Grouping is done by a depth-search of nodes in the adjacency-graph.
        *  \param[in] queryPointID ID of point whose neighbors will be considered for grouping
        *  \param[in] group_label ID of the group/segment the queried point belongs to  */
       void
-      recursiveGrouping (VertexID const &queryPointID,
-                         unsigned int const group_label);
+      recursiveSegmentGrowing (VertexID const &queryPointID,
+                               unsigned int const group_label);
 
       /** \brief Calculates convexity of edges and saves this to the adjacency graph.
        *  \param[in] adjacency_list_arg The supervoxel adjacency list*/
@@ -238,10 +254,12 @@ namespace pcl
       /** \brief Returns true if the connection between source and target is convex.
        *  \param[in] source_label_arg Label of one Supervoxel connected to the edge that should be checked
        *  \param[in] target_label_arg Label of the other Supervoxel connected to the edge that should be checked
+       *  \param[out] normal_angle The angle between source and target
        *  \return True if connection is convex */
       bool
       connIsConvex (uint32_t source_label_arg,
-                    uint32_t target_label_arg);
+                    uint32_t target_label_arg,
+                    float &normal_angle);
 
       ///  *** Parameters *** ///
 
@@ -267,7 +285,7 @@ namespace pcl
       float voxel_resolution_;
 
       /** \brief Factor used for k-convexity */
-      unsigned int k_factor_;
+      uint32_t k_factor_;
 
       /** \brief Stores which SuperVoxel labels were already visited during recursive grouping.    processed_[sv_Label] = false (default)/true (already processed) */
       std::map<uint32_t, bool> processed_;
@@ -281,10 +299,10 @@ namespace pcl
       /** \brief Storing relation between original SuperVoxel Labels and new segmantion labels. svLabel_segLabel_map_[old_labelID] = new_labelID */
       std::map<uint32_t, uint32_t> sv_label_to_seg_label_map_;
 
-      /** \brief map < Segment Label, std::vector< SuperVoxel Labels> > */
-      std::map<uint32_t, std::vector<uint32_t> > seg_label_to_sv_list_map_;
+      /** \brief map <Segment Label, std::set <SuperVoxel Labels> > */
+      std::map<uint32_t, std::set<uint32_t> > seg_label_to_sv_list_map_;
 
-      /** \brief map < SegmentID, std::vector< Neighboring segment labels> > */
+      /** \brief map < SegmentID, std::set< Neighboring segment labels> > */
       std::map<uint32_t, std::set<uint32_t> > seg_label_to_neighbor_set_map_;
 
   };

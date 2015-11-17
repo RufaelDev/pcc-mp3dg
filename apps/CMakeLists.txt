@@ -87,7 +87,7 @@ if(build)
 
     endif (QT4_FOUND AND VTK_USE_QVTK)
 
-    if (OPENNI_FOUND AND BUILD_OPENNI)
+    if (WITH_OPENNI)
 
 #      PCL_ADD_EXECUTABLE_OPT_BUNDLE(pcl_openni_grab_frame "${SUBSYS_NAME}" src/openni_grab_frame.cpp)
 #      target_link_libraries(pcl_openni_grab_frame pcl_common pcl_io pcl_visualization)
@@ -199,7 +199,7 @@ if(build)
 
       PCL_ADD_EXECUTABLE_OPT_BUNDLE(pcl_openni_klt "${SUBSYS_NAME}" src/openni_klt.cpp)
       target_link_libraries(pcl_openni_klt pcl_common pcl_io pcl_visualization pcl_tracking)
-    endif() # OPENNI_FOUND + BUILD_OPENNI
+    endif() # WITH_OPENNI
 
   endif() # VTK_FOUND
 
@@ -219,13 +219,15 @@ if(build)
     add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/${subdir}")
   endforeach(subdir)
 
-  set(incs
-    "include/pcl/${SUBSYS_NAME}/dominant_plane_segmentation.h"
-    "include/pcl/${SUBSYS_NAME}/timer.h"
-    ${incs}
-    )
-  set(impl_incs "include/pcl/${SUBSYS_NAME}/impl/dominant_plane_segmentation.hpp")
-  set(srcs "src/dominant_plane_segmentation.cpp" ${srcs})
+  if(QHULL_FOUND)
+      set(incs
+        "include/pcl/${SUBSYS_NAME}/dominant_plane_segmentation.h"
+        "include/pcl/${SUBSYS_NAME}/timer.h"
+        ${incs}
+        )
+      set(impl_incs "include/pcl/${SUBSYS_NAME}/impl/dominant_plane_segmentation.hpp")
+      set(srcs "src/dominant_plane_segmentation.cpp" ${srcs})
+  endif()
 
   set(LIB_NAME "pcl_${SUBSYS_NAME}")
   PCL_ADD_LIBRARY("${LIB_NAME}" "${SUBSYS_NAME}" ${srcs} ${impl_incs} ${incs})
@@ -236,3 +238,4 @@ if(build)
   PCL_ADD_INCLUDES("${SUBSYS_NAME}" "${SUBSYS_NAME}/impl" ${impl_incs})
 
 endif(build)
+

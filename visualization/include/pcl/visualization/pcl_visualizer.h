@@ -579,6 +579,18 @@ namespace pcl
                    double r = 1.0, double g = 1.0, double b = 1.0,
                    const std::string &id = "", int viewport = 0);
 
+        /** \brief Check if the cloud, shape, or coordinate with the given id was already added to this vizualizer.
+          * \param[in] id the id of the cloud, shape, or coordinate to check
+          * \return true if a cloud, shape, or coordinate with the specified id was found
+          */
+        inline bool
+        contains(const std::string &id) const
+        {
+          return (cloud_actor_map_->find (id) != cloud_actor_map_->end () ||
+                  shape_actor_map_->find (id) != shape_actor_map_->end () ||
+                  coordinate_actor_map_->find (id) != coordinate_actor_map_-> end());
+        }
+
         /** \brief Add the estimated surface normals of a Point Cloud to screen.
           * \param[in] cloud the input point cloud dataset containing XYZ data and normals
           * \param[in] level display only every level'th point (default: 100)
@@ -1553,7 +1565,7 @@ namespace pcl
                    int viewport = 0);
 
         /** \brief Add a cone from a set of given model coefficients
-          * \param[in] coefficients the model coefficients (point_on_axis, axis_direction, radiu)
+          * \param[in] coefficients the model coefficients (see \ref pcl::visualization::createCone)
           * \param[in] id the cone id/name (default: "cone")
           * \param[in] viewport (optional) the id of the new viewport (default: 0)
           */
@@ -1563,7 +1575,7 @@ namespace pcl
                  int viewport = 0);
 
         /** \brief Add a cube from a set of given model coefficients
-          * \param[in] coefficients the model coefficients (Tx, Ty, Tz, Qx, Qy, Qz, Qw, width, height, depth)
+          * \param[in] coefficients the model coefficients (see \ref pcl::visualization::createCube)
           * \param[in] id the cube id/name (default: "cube")
           * \param[in] viewport (optional) the id of the new viewport (default: 0)
           */
@@ -1847,6 +1859,12 @@ namespace pcl
           */
         void
         setUseVbos (bool use_vbos);
+
+        /** \brief Set the ID of a cloud or shape to be used for LUT display
+          * \param[in] id The id of the cloud/shape look up table to be displayed
+          * The look up table is displayed by pressing 'u' in the PCLVisualizer */
+        void
+        setLookUpTableID (const std::string id);
 
         /** \brief Create the internal Interactor object. */
         void

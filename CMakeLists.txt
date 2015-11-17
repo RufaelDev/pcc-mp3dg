@@ -1,6 +1,12 @@
 ### ---[ PCL global CMake
 cmake_minimum_required(VERSION 2.8 FATAL_ERROR)
 
+if(POLICY CMP0017)
+  # Do not include files in CMAKE_MODULE_PATH from files
+  # in CMake module directory. Fix MXE build
+  cmake_policy(SET CMP0017 NEW)
+endif()
+
 if(POLICY CMP0048)
   cmake_policy(SET CMP0048 OLD) # do not use VERSION option in project() command
 endif()
@@ -68,12 +74,6 @@ MARK_AS_ADVANCED(
 SET(CMAKE_BUILD_TYPE "${CMAKE_BUILD_TYPE}" CACHE STRING
     "Choose the type of build, options are: None Debug Release RelWithDebInfo MinSizeRel Maintainer."
     FORCE)
-
-# ---[ Android check
-if (ANDROID)
-  set (PCL_SHARED_LIBS OFF)
-  message ("PCL shared libs on Android must be: ${PCL_SHARED_LIBS}")
-endif()
 
 include("${PCL_SOURCE_DIR}/cmake/pcl_verbosity.cmake")
 include("${PCL_SOURCE_DIR}/cmake/pcl_targets.cmake")
@@ -239,8 +239,7 @@ if(OPENMP_FOUND)
 else(OPENMP_FOUND)
   message (STATUS "Not found OpenMP")
 endif()
-# Boost (required)
-include("${PCL_SOURCE_DIR}/cmake/pcl_find_boost.cmake")
+
 # Eigen (required)
 find_package(Eigen REQUIRED)
 include_directories(SYSTEM ${EIGEN_INCLUDE_DIRS})
@@ -262,67 +261,14 @@ if(WITH_LIBUSB)
   endif(LIBUSB_1_FOUND)
 endif(WITH_LIBUSB)
 
-# OpenNI
-option(WITH_OPENNI "OpenNI driver support" TRUE)
-if(WITH_OPENNI)
-  find_package(OpenNI)
-  if (OPENNI_FOUND)
-    set(HAVE_OPENNI ON)
-    include_directories(SYSTEM ${OPENNI_INCLUDE_DIRS})
-  endif(OPENNI_FOUND)
-endif(WITH_OPENNI)
-
-# OpenNI 2
-option(WITH_OPENNI2 "OpenNI 2 driver support" TRUE)
-if(WITH_OPENNI2)
-  find_package(OpenNI2)
-  if (OPENNI2_FOUND)
-    set(HAVE_OPENNI2 ON)
-    include_directories(SYSTEM ${OPENNI2_INCLUDE_DIRS})
-  endif(OPENNI2_FOUND)
-endif(WITH_OPENNI2)
-
-# Fotonic (FZ_API)
-option(WITH_FZAPI "Build Fotonic Camera support" TRUE)
-if(WITH_FZAPI)
-  find_package(FZAPI)
-  if (FZAPI_FOUND)
-    set(HAVE_FZAPI ON)
-    include_directories(SYSTEM "${FZAPI_INCLUDE_DIR}")
-  endif(FZAPI_FOUND)
-endif(WITH_FZAPI)
-
-# JPEG
-# tested with CMake 3.2.2, Xcode 6.3.2 (MacOSX 10.10.3), Visual Studio 12.0 (Windows 8.1), c++ 4.8 (Ubuntu 14.04)
-option(WITH_JPEG "Build with JPEG support" TRUE)
-if(WITH_JPEG)
-  find_package(JPEG)
-  if (JPEG_FOUND)
-    message("mp3dg jpeg found, havejpeg is on")
-    set(HAVE_JPEG ON)
-  endif(JPEG_FOUND)
-endif(WITH_JPEG)
-
-# IDS-Imaging - Ensenso
-option(WITH_ENSENSO "Build IDS-Imaging Ensenso's camera support" TRUE)
-if(WITH_ENSENSO)
-  set(ENSENSO_ABI_DIR "ENSENSO_ABI_DIR-NOTFOUND" CACHE PATH "directory of Ensenso ABI")
-  find_package(Ensenso) # FindEnsenso.cmake
-  if (ENSENSO_FOUND)
-    set(HAVE_ENSENSO ON)
-    include_directories(SYSTEM "${ENSENSO_INCLUDE_DIRS}")
-  endif(ENSENSO_FOUND)
-endif(WITH_ENSENSO)
-
-# Intel Perceptional Computing Interface (PXCAPI)
-option(WITH_PXCAPI "Build PXC Device support" TRUE)
-if(WITH_PXCAPI)
-  find_package(PXCAPI)
-  if (PXCAPI_FOUND)
-    set(HAVE_PXCAPI ON)
-    include_directories(SYSTEM ${PXCAPI_INCLUDE_DIRS})
-  endif(PXCAPI_FOUND)
-endif(WITH_PXCAPI)
+# Dependencies for different grabbers
+PCL_ADD_GRABBER_DEPENDENCY("OpenNI" "OpenNI grabber support")
+PCL_ADD_GRABBER_DEPENDENCY("OpenNI2" "OpenNI2 grabber support")
+PCL_ADD_GRABBER_DEPENDENCY("FZAPI" "Fotonic camera support")
+PCL_ADD_GRABBER_DEPENDENCY("Ensenso" "IDS-Imaging Ensenso camera support")
+PCL_ADD_GRABBER_DEPENDENCY("davidSDK" "David Vision Systems SDK support")
+PCL_ADD_GRABBER_DEPENDENCY("PXCAPI" "Intel PXC device support")
+PCL_ADD_GRABBER_DEPENDENCY("DSSDK" "DepthSense SDK support")
 
 # metslib
 if (PKG_CONFIG_FOUND)
@@ -347,6 +293,18 @@ if(WITH_PNG)
   endif(PNG_FOUND)
 endif(WITH_PNG)
 
+# JPEG
+# tested with CMake 3.2.2, Xcode 6.3.2 (MacOSX 10.10.3), Visual Studio 12.0 (Windows 8.1), c++ 4.8 (Ubuntu 14.04)
+option(WITH_JPEG "Build with JPEG support" TRUE)
+if(WITH_JPEG)
+  find_package(JPEG)
+  if (JPEG_FOUND)
+#X  message("mp3dg jpeg found, havejpeg is on")
+    set(HAVE_JPEG ON)
+    include_directories("${JPEG_INCLUDE_DIR}")
+  endif(JPEG_FOUND)
+endif(WITH_JPEG)
+
 # Qhull
 option(WITH_QHULL "Include convex-hull operations" TRUE)
 if(WITH_QHULL)
@@ -354,6 +312,9 @@ if(WITH_QHULL)
     set(QHULL_USE_STATIC ON)
   endif(NOT PCL_SHARED_LIBS OR WIN32)
   find_package(Qhull)
+  if(QHULL_FOUND)
+    include_directories(${QHULL_INCLUDE_DIRS})
+  endif(QHULL_FOUND)
 endif(WITH_QHULL)
 
 # Cuda
@@ -364,16 +325,17 @@ endif(WITH_CUDA)
 
 option(WITH_QT "Build QT Front-End" TRUE)
 if(WITH_QT)
-  # Find Qt4
-  find_package(Qt4)
-  if (QT4_FOUND)
-    include("${QT_USE_FILE}")
-  endif (QT4_FOUND)
-
-  # Find QT5
-  if(NOT QT4_FOUND)
-      include(cmake/pcl_find_qt5.cmake)
-  endif(NOT QT4_FOUND)
+  set(PCL_QT_VERSION 5 CACHE STRING "Which QT version to use")
+  if("${PCL_QT_VERSION}" STREQUAL "4")
+    find_package(Qt4)
+    if (QT4_FOUND)
+      include("${QT_USE_FILE}")
+    endif (QT4_FOUND)
+  elseif("${PCL_QT_VERSION}" STREQUAL "5")
+    include(cmake/pcl_find_qt5.cmake)
+  else()
+    message(SEND_ERROR "PCL_QT_VERSION must be 4 or 5")
+  endif()
 endif(WITH_QT)
 
 # Find VTK
@@ -385,9 +347,7 @@ if(WITH_VTK AND NOT ANDROID)
     if (PCL_SHARED_LIBS OR
         (NOT (PCL_SHARED_LIBS) AND NOT (VTK_BUILD_SHARED_LIBS)))
       set(VTK_FOUND TRUE)
-      find_library (QVTK_LIBRARY_DEBUG NAMES "@QVTK_LIBRARY_DEBUG_NAME@")
-      find_library (QVTK_LIBRARY_RELEASE NAMES "@QVTK_LIBRARY_RELEASE_NAME@")
-      set(QVTK_LIBRARY optimized ${QVTK_LIBRARY_RELEASE} debug ${QVTK_LIBRARY_DEBUG}) 
+      find_package (QVTK)
       if (${VTK_MAJOR_VERSION} VERSION_LESS "6.0")
          message(STATUS "VTK found (include: ${VTK_INCLUDE_DIRS}, lib: ${VTK_LIBRARY_DIRS})")
          link_directories(${VTK_LIBRARY_DIRS})
@@ -424,6 +384,9 @@ option(WITH_OPENGL "Support for OpenGL" TRUE)
 if(WITH_OPENGL)
   include("${PCL_SOURCE_DIR}/cmake/pcl_find_gl.cmake")
 endif(WITH_OPENGL)
+
+# Boost (required)
+include("${PCL_SOURCE_DIR}/cmake/pcl_find_boost.cmake")
 
 ### ---[ Create the config.h file
 set(pcl_config_h_in "${CMAKE_CURRENT_SOURCE_DIR}/pcl_config.h.in")
