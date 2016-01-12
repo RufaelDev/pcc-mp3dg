@@ -1,5 +1,5 @@
 set(SUBSYS_NAME quality)
-set(SUBSYS_DESC "Compression Evaluation Suite for Evaluation of Point Cloud Codec")
+set(SUBSYS_DESC "Compression Quality Evaluation Suite for Evaluation of Point Cloud Codecs”)
 set(SUBSYS_DEPS common sample_consensus search kdtree octree filters features io geometry)
 
 set(build TRUE)
