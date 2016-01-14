@@ -1,3 +1,5 @@
+cmake_minimum_required(VERSION 2.8)
+
 set(SUBSYS_NAME compression_eval)
 set(SUBSYS_DESC "Compression Evaluation Suite for Evaluation of Point Cloud Codec")
 set(SUBSYS_DEPS common sample_consensus search kdtree octree filters features io geometry cloud_codec_v2 registration quality cloud_codec_v2)
