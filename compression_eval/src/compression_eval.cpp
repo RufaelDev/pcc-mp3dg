@@ -736,7 +736,9 @@ int
                   icp_convergence_percentage[i+1] = l_codec_encoder->getMacroBlockConvergencePercentage();
 
                   // decode the pframe
+                  tt.tic();
                   l_codec_encoder->decodePointCloudDeltaFrame(decoded_cloud_base, out_d,p_frame_idat, p_frame_pdat);
+                  pframe_quality.decoding_time_ms = tt.toc();
 
                   // compute the quality of the resulting predictive frame
                   computeQualityMetric<pcl::PointXYZRGB>(*fused_clouds[i+1],*out_d, pframe_quality);
@@ -831,7 +833,7 @@ int
                   l_triang[0] = 0;
                   l_triang[1] = 1;
                   l_triang[2] = 2;
-				  Nano3D::Mesh m((unsigned int) out_d->size(), mdat, 1, l_triang);
+                  Nano3D::Mesh m((unsigned int) out_d->size(), mdat, 1, l_triang);
 
                   Eigen::Vector4f l_range_scale =assigned_bbs[i].max_xyz - assigned_bbs[i].min_xyz;
 
