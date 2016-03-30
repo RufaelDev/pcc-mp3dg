@@ -18,11 +18,11 @@ PCL_ADD_TEST (io_grabbers test_grabbers
 
 PCL_ADD_TEST (io_jpeg test_jpeg_io
               FILES test_jpeg_io.cpp
-              LINK_WITH pcl_gtest pcl_io pcl_common pcl_cloud_codec_v2 ${LIBJPEG_STATIC_LIB} 
-              ARGUMENTS "${PCL_SOURCE_DIR}/test/jpeg_sequences")			  
-			  
-			  
-# Uses VTK readers to verify            
+              LINK_WITH pcl_gtest pcl_io pcl_common ${LIBJPEG_STATIC_LIB}
+              ARGUMENTS "${PCL_SOURCE_DIR}/test/jpeg_sequences")
+
+
+# Uses VTK readers to verify
 if (VTK_FOUND AND NOT ANDROID)
   PCL_ADD_TEST (io_ply_mesh_io test_ply_mesh_io
                 FILES test_ply_mesh_io.cpp
