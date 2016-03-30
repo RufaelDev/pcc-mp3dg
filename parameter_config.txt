@@ -17,3 +17,5 @@ radius_outlier_filter=0
 radius_size=0.1
 jpeg_value=85
 omp_cores=4
+algorithm=V2
+show_statistics=true
