@@ -218,13 +218,14 @@ script for point cloud codec evaluation by MPEG committee
 int
   main (int argc, char** argv)
 {
-  print_info ("Load a Folder of Point Clouds\n ", argv[0]);
+  print_info ("Load a Folder of Point Clouds\n");
 
   if (argc < 2)
   {
     printHelp (argc, argv);
     return (-1);
   }
+  
 
   ////////////////// parse configuration settings from required file ..//parameter_config.txt ///////////////////
   boost::program_options::options_description desc;
@@ -251,17 +252,23 @@ int
     ("radius_size",po::value<double>()->default_value(0.01), " radius outlier filter, maximum radius ")
     ("jpeg_value",po::value<int>()->default_value(75), " jpeg quality parameter ")
     ("scalable", po::value<int>()->default_value(0), " create scalable bitstream ")
-    ("omp_cores",po::value<int>()->default_value(0), " number of omp cores () = default and no omp)")
+    ("omp_cores",po::value<int>()->default_value(0), " number of omp cores (0=default, no omp)")
+    ("show_statistics",po::value<bool>()->default_value(false), " show coding statistcs (=false)")
+    ("algorithm",po::value<string>()->default_value("V2"), " compression algorithm ('V1' or 'V2'")
+  
     ;
   // Check if required file 'parameter_config.txt' is present
+  bool use_parent = true;
   ifstream in_conf("..//parameter_config.txt");
     if (in_conf.fail()) {
+      use_parent = false;
       in_conf.open("parameter_config.txt");
       if (in_conf.fail()) {
         print_info (" Required file 'parameter_config.txt' not found in '%s' or its parent.\n", boost::filesystem::current_path().string().c_str());
         return (-1);
       }
   }
+  print_info ("Using '%s%s%s'\n", boost::filesystem::current_path().c_str(),use_parent?"../":"/","parameter_config.txt");
   po::variables_map vm;
   po::store(po::parse_config_file(in_conf, desc), vm);
   po::notify(vm);
@@ -284,6 +291,7 @@ int
   bool create_scalable = static_cast<bool>(vm["scalable"].as<int>());
   int jpeg_value = vm["jpeg_value"].as<int>();
   int omp_cores = vm["omp_cores"].as<int>();
+  bool show_statistics = vm["show_statistics"].as<bool>();
   ////////////////// ~end parse configuration file  /////////////////////////////////////
 
   ////////////////// LOADING CLOUDS INTO MEMORY /////////////////////////////////////
@@ -375,501 +383,483 @@ int
   std::vector<bool> aligned_flags(fused_clouds.size()); // flags to check if a cloud is aligned 
   /////////////////////////////////////////////////////////////////////////////////////
 
-  /////////////// NORMALIZE CLOUDS ///////////////////////////////////////////////////////
+  string algorithm = vm["algorithm"].as<string>();
+  //   PointCloudEncoder = new pcl::io::OctreePointCloudCompression<pcl::PointXYZRGBA> (compressionProfile, showStatistics);
+  //   PointCloudDecoder = new pcl::io::OctreePointCloudCompression<pcl::PointXYZRGBA> ();
 
+  if (algorithm == "V1") {
+    int cb = 0, ct = 0, ob = 0;
 #if __cplusplus >= 201103L
-  struct bounding_box
-  {
-    Eigen::Vector4f min_xyz;
-    Eigen::Vector4f max_xyz;
-  };
-#endif//__cplusplus
-
-  // initial bounding box
-  min_pt_bb[0]= 1000;
-  min_pt_bb[1]= 1000;
-  min_pt_bb[2]= 1000;
-
-  max_pt_bb[0]= -1000;
-  max_pt_bb[1]= -1000;
-  max_pt_bb[2]= -1000;
-
-  vector<bounding_box> assigned_bbs(fused_clouds.size());
-
-  for(int k=0;k<fused_clouds.size();k++){
-    /*
-    Eigen::Vector4f min_pt;
-    Eigen::Vector4f max_pt;
-
-    pcl::getMinMax3D<pcl::PointXYZRGB>(*(fused_clouds[k]),min_pt,max_pt);
-
-    bb_out << "[ " << min_pt.x() << "," << min_pt.y() << "," << min_pt.z() << "]    [" << max_pt.x() << "," << max_pt.y() << "," << max_pt.z() <<"]" << endl;
-
-    // check if min fits bounding box, otherwise adapt the bounding box
-    if( !((min_pt.x() > min_pt_bb.x()) && (min_pt.y() > min_pt_bb.y()) && (min_pt.z() > min_pt_bb.z())))
-    {
-    is_bb_init = false;
-    }
-
-    // check if max fits bounding box, otherwise adapt the bounding box
-    if(!((max_pt.x() < max_pt_bb.x()) && (max_pt.y() < max_pt_bb.y()) && (max_pt.z() < max_pt_bb.z())))
-    {
-    is_bb_init = false;
-    }
-
-
-    if(!is_bb_init)
-    {
-    // initialize the bounding box, with bb_expand_factor extra
-    assigned_bbs[k].min_xyz[0] = min_pt[0] - bb_expand_factor*abs(max_pt[0] - min_pt[0]);
-    assigned_bbs[k].min_xyz[1] = min_pt[1] - bb_expand_factor*abs(max_pt[1] - min_pt[1]);
-    assigned_bbs[k].min_xyz[2] = min_pt[2] - bb_expand_factor*abs(max_pt[2] - min_pt[2]);
-
-    min_pt_bb=assigned_bbs[k].min_xyz ;
-
-    assigned_bbs[k].max_xyz[0] = max_pt[0] + bb_expand_factor*abs(max_pt[0] - min_pt[0]);
-    assigned_bbs[k].max_xyz[1] = max_pt[1] + bb_expand_factor*abs(max_pt[1] - min_pt[1]);
-    assigned_bbs[k].max_xyz[2] = max_pt[2] + bb_expand_factor*abs(max_pt[2] - min_pt[2]);
-
-    max_pt_bb=assigned_bbs[k].max_xyz;
-
-    is_bb_init = true;
-    bb_align_count++;
-    cout << "re-intialized bounding box !!! " << endl;
-    aligned_flags[k] = false;
-    }
-    else
-    {
-    assigned_bbs[k].min_xyz= min_pt_bb;
-    assigned_bbs[k].max_xyz= max_pt_bb;
-    aligned_flags[k] = true;
-    }
-
-    Eigen::Vector4f dyn_range = assigned_bbs[k].max_xyz - assigned_bbs[k].min_xyz;
-
-    for(int j=0; j < fused_clouds[k]->size();j++)
-    {
-    // offset the minimum value
-    fused_clouds[k]->at(j).x-=assigned_bbs[k].min_xyz[0];
-    fused_clouds[k]->at(j).y-=assigned_bbs[k].min_xyz[1];
-    fused_clouds[k]->at(j).z-=assigned_bbs[k].min_xyz[2];
-
-    // dynamic range
-    fused_clouds[k]->at(j).x/=dyn_range[0];
-    fused_clouds[k]->at(j).y/=dyn_range[1];
-    fused_clouds[k]->at(j).z/=dyn_range[2];
-    }
-
-    // bounding box is expanded
-    Eigen::Vector4f min_pt_res;
-    Eigen::Vector4f max_pt_res;
-
-    pcl::getMinMax3D<pcl::PointXYZRGB>(*(fused_clouds[k]),min_pt_res,max_pt_res);
-
-    assert(min_pt_res[0] >= 0);
-    assert(min_pt_res[1] >= 0);
-    assert(min_pt_res[2] >= 0);
-
-    assert(max_pt_res[0] <= 1);
-    assert(max_pt_res[1] <= 1);
-    assert(max_pt_res[2] <= 1);
-    */
-    Eigen::Vector4f min_pt;
-    Eigen::Vector4f max_pt;
-
-    pcl::getMinMax3D<pcl::PointXYZRGB>(*(fused_clouds[k]),min_pt,max_pt);
-
-    bb_out << "[ " << min_pt.x() << "," << min_pt.y() << "," << min_pt.z() << "]    [" << max_pt.x() << "," << max_pt.y() << "," << max_pt.z() <<"]" << endl;
-
-    // check if min fits bounding box, otherwise adapt the bounding box
-    if( !( (min_pt.x() > min_pt_bb.x()) && (min_pt.y() > min_pt_bb.y()) && (min_pt.z() > min_pt_bb.z())))
-    {
-      is_bb_init = false;
-    }
-
-    // check if max fits bounding box, otherwise adapt the bounding box
-    if(!((max_pt.x() < max_pt_bb.x()) && (max_pt.y() < max_pt_bb.y()) && (max_pt.z() < max_pt_bb.z())))
-    {
-      is_bb_init = false;
-    }
-
-
-    if(!is_bb_init)
-    {
-      aligned_flags[k] = false;
-      bb_align_count++;
-      // initialize the bounding box, with bb_expand_factor extra
-      min_pt_bb[0] = min_pt[0] - bb_expand_factor*abs(max_pt[0] - min_pt[0]);
-      min_pt_bb[1] = min_pt[1] - bb_expand_factor*abs(max_pt[1] - min_pt[1]);
-      min_pt_bb[2] = min_pt[2] - bb_expand_factor*abs(max_pt[2] - min_pt[2]);
-
-      max_pt_bb[0] = max_pt[0] + bb_expand_factor*abs(max_pt[0] - min_pt[0]);
-      max_pt_bb[1] = max_pt[1] + bb_expand_factor*abs(max_pt[1] - min_pt[1]);
-      max_pt_bb[2] = max_pt[2] + bb_expand_factor*abs(max_pt[2] - min_pt[2]);
-
-      is_bb_init = true;
-
-      cout << "re-intialized bounding box !!! " << endl;
-    }
-    else 
-      aligned_flags[k] = true;
-
-#if __cplusplus >= 201103L
-    auto dyn_range = max_pt_bb - min_pt_bb;
+    auto pcl_encoder = new pcl::io::OctreePointCloudCompression<pcl::PointXYZRGB> (
 #else
-    Eigen::Vector4f  dyn_range = max_pt_bb - min_pt_bb;
+    pcl::io::OctreePointCloudCompression<pcl::PointXYZRGB>* pcl_encoder = new pcl::io::OctreePointCloudCompression<pcl::PointXYZRGB> (
+#endif//__cplusplus < 201103L
+         MANUAL_CONFIGURATION,
+         show_statistics,
+         std::pow( 2.0, -1.0 * ( octree_bit_settings[ob] + enh_bit_settings)),
+         std::pow( 2.0, -1.0 * ( octree_bit_settings[ob])),
+         false,  //doVoxelGridDownDownSampling
+         0, // i_frame_rate
+         color_bit_settings[cb] ? true : false, // doColorEncoding
+         color_bit_settings[cb]
+      );
+#if __cplusplus >= 201103L
+    auto pcl_decoder = new pcl::io::OctreePointCloudCompression<pcl::PointXYZRGB> (
+#else
+    OctreePointCloudCompression<pcl::PointXYZRGB>* pcl_decoder = new pcl::io::OctreePointCloudCompression<pcl::PointXYZRGB> (
+#endif//__cplusplus < 201103L
+         MANUAL_CONFIGURATION,
+         show_statistics,
+         std::pow( 2.0, -1.0 * ( octree_bit_settings[ob] + enh_bit_settings)),
+         std::pow( 2.0, -1.0 * ( octree_bit_settings[ob])),
+         false,  //doVoxelGridDownDownSampling
+         0, // i_frame_rate,
+         color_bit_settings[cb] ? true : false, // doColorEncoding
+         color_bit_settings[cb]
+    );
+    pcl::quality::QualityMetric achieved_quality;
+    string o_log_csv = vm["output_csv_file"].as<string>();
+#if __cplusplus >= 201103L
+    ofstream res_base_ofstream(o_log_csv);
+#else
+    ofstream res_base_ofstream(o_log_csv.c_str());
 #endif//__cplusplus >= 201103L
 
-    assigned_bbs[k].max_xyz = max_pt_bb;
-    assigned_bbs[k].min_xyz = min_pt_bb;
-
-    for(int j=0; j < fused_clouds[k]->size();j++)
+    for(int i=0; i < fused_clouds.size(); i++)
     {
-      // offset the minimum value
-      fused_clouds[k]->at(j).x-=min_pt_bb[0];
-      fused_clouds[k]->at(j).y-=min_pt_bb[1];
-      fused_clouds[k]->at(j).z-=min_pt_bb[2];
+      // stringstream to store compressed point cloud
+      std::stringstream compressedData;
+      // output pointcloud
+      pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloudOut (new pcl::PointCloud<pcl::PointXYZRGB> ());
+      
+      // compress point cloud
+      pcl_encoder->encodePointCloud (fused_clouds[i], compressedData);
+      
+      // decompress point cloud
+      pcl_decoder->decodePointCloud (compressedData, cloudOut);
+      
+      // compute quality metric
+      computeQualityMetric<pcl::PointXYZRGB>(*fused_clouds[i], *cloudOut, achieved_quality);
 
-      // dynamic range
-      fused_clouds[k]->at(j).x/=dyn_range[0];
-      fused_clouds[k]->at(j).y/=dyn_range[1];
-      fused_clouds[k]->at(j).z/=dyn_range[2];
+      // store the parameters in a string to store them in the .csv file
+      stringstream compression_arg_ss;
+      compression_arg_ss << octree_bit_settings[ob] << "_"<<  color_bit_settings[cb]
+      << "_colort-" << color_coding_types[ct] << "_centroid-" << (keep_centroid ? "yes" : "no");
+      
+      // print the evaluation results to the output .csv file
+      achieved_quality.print_csv_line(compression_arg_ss.str(), res_base_ofstream);
     }
+  } else if (algorithm == "V2") {
+  /////////////// NORMALIZE CLOUDS ///////////////////////////////////////////////////////
+
+    // initial bounding box
+    min_pt_bb[0]= 1000;
+    min_pt_bb[1]= 1000;
+    min_pt_bb[2]= 1000;
+
+    max_pt_bb[0]= -1000;
+    max_pt_bb[1]= -1000;
+    max_pt_bb[2]= -1000;
+
+    vector<bounding_box> assigned_bbs(fused_clouds.size());
+
+    for(int k=0;k<fused_clouds.size();k++){
+
+      Eigen::Vector4f min_pt;
+      Eigen::Vector4f max_pt;
+
+      pcl::getMinMax3D<pcl::PointXYZRGB>(*(fused_clouds[k]),min_pt,max_pt);
+      
+      bb_out << "[ " << min_pt.x() << "," << min_pt.y() << "," << min_pt.z() << "]    [" << max_pt.x() << "," << max_pt.y() << "," << max_pt.z() <<"]" << endl;
+
+      // check if min fits bounding box, otherwise adapt the bounding box
+      if( !( (min_pt.x() > min_pt_bb.x()) && (min_pt.y() > min_pt_bb.y()) && (min_pt.z() > min_pt_bb.z())))
+      {
+        is_bb_init = false;
+      }
+
+      // check if max fits bounding box, otherwise adapt the bounding box
+      if(!((max_pt.x() < max_pt_bb.x()) && (max_pt.y() < max_pt_bb.y()) && (max_pt.z() < max_pt_bb.z())))
+      {
+        is_bb_init = false;
+      }
+
+      if(!is_bb_init)
+      {
+        aligned_flags[k] = false;
+        bb_align_count++;
+        // initialize the bounding box, with bb_expand_factor extra
+        min_pt_bb[0] = min_pt[0] - bb_expand_factor*abs(max_pt[0] - min_pt[0]);
+        min_pt_bb[1] = min_pt[1] - bb_expand_factor*abs(max_pt[1] - min_pt[1]);
+        min_pt_bb[2] = min_pt[2] - bb_expand_factor*abs(max_pt[2] - min_pt[2]);
+
+        max_pt_bb[0] = max_pt[0] + bb_expand_factor*abs(max_pt[0] - min_pt[0]);
+        max_pt_bb[1] = max_pt[1] + bb_expand_factor*abs(max_pt[1] - min_pt[1]);
+        max_pt_bb[2] = max_pt[2] + bb_expand_factor*abs(max_pt[2] - min_pt[2]);
+
+        is_bb_init = true;
+
+        cout << "re-intialized bounding box !!! " << endl;
+      }
+      else
+        aligned_flags[k] = true;
+
+#if __cplusplus >= 201103L
+      auto dyn_range = max_pt_bb - min_pt_bb;
+#else
+      Eigen::Vector4f  dyn_range = max_pt_bb - min_pt_bb;
+#endif//__cplusplus >= 201103L
+
+      assigned_bbs[k].max_xyz = max_pt_bb;
+      assigned_bbs[k].min_xyz = min_pt_bb;
+
+      for(int j=0; j < fused_clouds[k]->size();j++)
+      {
+        // offset the minimum value
+        fused_clouds[k]->at(j).x-=min_pt_bb[0];
+        fused_clouds[k]->at(j).y-=min_pt_bb[1];
+        fused_clouds[k]->at(j).z-=min_pt_bb[2];
+        
+        // dynamic range
+        fused_clouds[k]->at(j).x/=dyn_range[0];
+        fused_clouds[k]->at(j).y/=dyn_range[1];
+        fused_clouds[k]->at(j).z/=dyn_range[2];
+      }
 
 
-    // bounding box is expanded
+      // bounding box is expanded
 
-    Eigen::Vector4f min_pt_res;
-    Eigen::Vector4f max_pt_res;
+      Eigen::Vector4f min_pt_res;
+      Eigen::Vector4f max_pt_res;
 
-    pcl::getMinMax3D<pcl::PointXYZRGB>(*(fused_clouds[k]),min_pt_res,max_pt_res);
+      pcl::getMinMax3D<pcl::PointXYZRGB>(*(fused_clouds[k]),min_pt_res,max_pt_res);
 
-    assert(min_pt_res[0] >= 0);
-    assert(min_pt_res[1] >= 0);
-    assert(min_pt_res[2] >= 0);
+      assert(min_pt_res[0] >= 0);
+      assert(min_pt_res[1] >= 0);
+      assert(min_pt_res[2] >= 0);
 
-    assert(max_pt_res[0] <= 1);
-    assert(max_pt_res[1] <= 1);
-    assert(max_pt_res[2] <= 1);
-  }
+      assert(max_pt_res[0] <= 1);
+      assert(max_pt_res[1] <= 1);
+      assert(max_pt_res[2] <= 1);
+    }
 
   /////////////// END NORMALIZE CLOUDS ///////////////////////////////////////////////////////
 
   /////////////// PREPARE OUTPUT CSV FILE AND CODEC PARAMTER SETTINGS /////////////////////////
-  string o_log_csv = vm["output_csv_file"].as<string>();
+    string o_log_csv = vm["output_csv_file"].as<string>();
 #if __cplusplus >= 201103L
-  ofstream res_base_ofstream(o_log_csv);
+    ofstream res_base_ofstream(o_log_csv);
 #else
-  ofstream res_base_ofstream(o_log_csv.c_str());
+    ofstream res_base_ofstream(o_log_csv.c_str());
 #endif//__cplusplus >= 201103L
-  string p_log_csv = vm["pframe_quality_log"].as<string>();
+    string p_log_csv = vm["pframe_quality_log"].as<string>();
 #if __cplusplus >= 201103L
-  ofstream res_p_ofstream(p_log_csv);
+    ofstream res_p_ofstream(p_log_csv);
 #else
-  ofstream res_p_ofstream(p_log_csv.c_str());
+    ofstream res_p_ofstream(p_log_csv.c_str());
 #endif//__cplusplus >= 201103L
-  ofstream res_enh_ofstream("results_enh.csv");
+    ofstream res_enh_ofstream("results_enh.csv");
 
-  // print the headers
-  QualityMetric::print_csv_header(res_base_ofstream);
-  QualityMetric::print_csv_header(res_p_ofstream);
+    // print the headers
+    QualityMetric::print_csv_header(res_base_ofstream);
+    QualityMetric::print_csv_header(res_p_ofstream);
 
   /////////////// END PREPARE OUTPUT CSV FILE AND CODEC PARAMTER SETTINGS /////////////////////////
 
-  if(testbbalign){
-    std::cout << " re-alligned " << bb_align_count << " frames out of " << fused_clouds.size() <<" frames" << std::endl;
-    return true;
-  }
+    if(testbbalign){
+      std::cout << " re-alligned " << bb_align_count << " frames out of " << fused_clouds.size() <<" frames" << std::endl;
+      return true;
+    }
   //////////////////////////////////////////////////////////////////////////
 
-  // base layer resolution
-  for(int ct=0; ct < color_coding_types.size();ct++ ){
+    // base layer resolution
+    for(int ct=0; ct < color_coding_types.size();ct++ ){
 
-    vector<float> icp_convergence_percentage(fused_clouds.size()); // field store the percentage of converged macroblocks
-    vector<float> shared_macroblock_percentages(fused_clouds.size()); // field to store the percentage of macroblocks shared with the previous frame
+      vector<float> icp_convergence_percentage(fused_clouds.size()); // field store the percentage of converged macroblocks
+      vector<float> shared_macroblock_percentages(fused_clouds.size()); // field to store the percentage of macroblocks shared with the previous frame
 
-    // enh layer resolution
-    for(int ob=0; ob < octree_bit_settings.size(); ob++){
+      // enh layer resolution
+      for(int ob=0; ob < octree_bit_settings.size(); ob++){
 
-      // color resolution
-      for(int cb=0; cb < color_bit_settings.size(); cb++){
+        // color resolution
+        for(int cb=0; cb < color_bit_settings.size(); cb++){
 
-        // store the parameters in a string to store them in the .csv file
-        stringstream compression_arg_ss; 
-        compression_arg_ss << octree_bit_settings[ob] << "_"  
-          <<  color_bit_settings[cb] 
-        << "_colort-" << color_coding_types[ct] << "_centroid-" << (keep_centroid ? "yes" : "no");
+          // store the parameters in a string to store them in the .csv file
+          stringstream compression_arg_ss;
+          compression_arg_ss << octree_bit_settings[ob] << "_"<<  color_bit_settings[cb]
+            << "_colort-" << color_coding_types[ct] << "_centroid-" << (keep_centroid ? "yes" : "no");
 
-        ////////////// ASSESMENT: ENCODE, DECODE AND RECORD THE ACHIEVED QUALITY //////////////////
+          ////////////// ASSESMENT: ENCODE, DECODE AND RECORD THE ACHIEVED QUALITY //////////////////
 
-        // declare codecs outside the mesh iterator loop to test double buffering
+          // declare codecs outside the mesh iterator loop to test double buffering
 
-        //! encode the fused cloud with and without colors
+          //! encode the fused cloud with and without colors
 #if __cplusplus >= 201103L
-        auto l_codec_encoder = generatePCLOctreeCodecV2<PointXYZRGB>(
+          auto l_codec_encoder = generatePCLOctreeCodecV2<PointXYZRGB>(
 #else
-        boost::shared_ptr<OctreePointCloudCodecV2<PointXYZRGB> > l_codec_encoder = generatePCLOctreeCodecV2<PointXYZRGB>(
+          boost::shared_ptr<OctreePointCloudCodecV2<PointXYZRGB> > l_codec_encoder = generatePCLOctreeCodecV2<PointXYZRGB>(
 #endif//__cplusplus < 201103L
-          octree_bit_settings[ob],
-          enh_bit_settings,
-          color_bit_settings[cb],
-          0,
-          color_coding_types[ct],
-          keep_centroid,
-          (bool) create_scalable,
-          false,
-          jpeg_value,
-          omp_cores
+            octree_bit_settings[ob],
+            enh_bit_settings,
+            color_bit_settings[cb],
+            0,
+            color_coding_types[ct],
+            keep_centroid,
+            (bool) create_scalable,
+            false,
+            jpeg_value,
+            omp_cores,
+            show_statistics
           );
+          // set the macroblocksize for inter prediction
+          l_codec_encoder->setMacroblockSize(macroblocksize);
 
-        // set the macroblocksize for inter prediction
-        l_codec_encoder->setMacroblockSize(macroblocksize);
-
-        // initialize structures for decoding base and enhancement layers
+          // initialize structures for decoding base and enhancement layers
 #if __cplusplus >= 201103L
-        auto l_codec_decoder_base = generatePCLOctreeCodecV2<PointXYZRGB>(
+          auto l_codec_decoder_base = generatePCLOctreeCodecV2<PointXYZRGB>(
 #else
-        boost::shared_ptr<OctreePointCloudCodecV2<PointXYZRGB> > l_codec_decoder_base = generatePCLOctreeCodecV2<PointXYZRGB>(
+          boost::shared_ptr<OctreePointCloudCodecV2<PointXYZRGB> > l_codec_decoder_base = generatePCLOctreeCodecV2<PointXYZRGB>(
 #endif//__cplusplus >= 201103L
-          octree_bit_settings[ob],
-          enh_bit_settings,
-          color_bit_settings[cb],
-          0,
-          color_coding_types[ct],
-          keep_centroid,
-          (bool) create_scalable,
-          false,
-          jpeg_value,
-          omp_cores
+            octree_bit_settings[ob],
+            enh_bit_settings,
+            color_bit_settings[cb],
+            0,
+            color_coding_types[ct],
+            keep_centroid,
+            (bool) create_scalable,
+            false,
+            jpeg_value,
+            omp_cores,
+            show_statistics
           );
 
-        for(int i=0; i < fused_clouds.size(); i++)
-        {
-          // structs for storing the achieved quality
-          TicToc tt;
-          pcl::quality::QualityMetric achieved_quality;
-          pcl::quality::QualityMetric pframe_quality;
-
-          //! full compression into stringstreams, base and enhancement layers, with and without colors
-          stringstream l_output_base;
-
-          /////////////////////////////////////////////////////////////
-          //! do the encoding
-          tt.tic ();
-          l_codec_encoder->encodePointCloud(fused_clouds[i] ,l_output_base);
-          achieved_quality.encoding_time_ms = tt.toc();
-
-          // code for testing frequencies of occupancy codes, removed from source
-          /*stringstream out_name;
-          out_name << "occupancy_log_";
-          out_name << i;
-          ofstream output_file_i = ofstream(out_name.str().c_str());
-          
-          if(output_file_i.good()){
-            logOccupancyCodesFrequencies(l_codec_encoder->getCodedLayers(), output_file_i);
-            output_file_i.close();
-          }*/
-         
-          ////////////////////////////////////////////////////////////
-
-          ////////////////////////////////////////////////////////////////
-          // store and display the partial bytes sizes
-          uint64_t *c_sizes = l_codec_encoder->getPerformanceMetrics();
-          achieved_quality.byte_count_octree_layer = c_sizes[0];
-          achieved_quality.byte_count_centroid_layer = c_sizes[1];
-          achieved_quality.byte_count_color_layer= c_sizes[2];
-          ////////////////////////////////////////////////////////////////
-
-          cout << " octreeCoding " << (achieved_quality.compressed_size=l_output_base.tellp()) << " bytes  base layer  " << endl;
-          //////////////////////////////////////////////////////////////
-
-          // start decoding and computing quality metrics
-          stringstream oc(l_output_base.str());
-          colorOctreeCodec::PointCloudPtr decoded_cloud_base = colorOctreeCodec::PointCloudPtr(new colorOctreeCodec::PointCloud);
-
-          // do the decoding base layer
-          cout << "starting decoding the point cloud \n" << endl;
-          tt.tic ();
-          l_codec_decoder_base->decodePointCloud(oc,decoded_cloud_base);
-          achieved_quality.decoding_time_ms = tt.toc ();
-          cout << "finished decoding the point cloud \n" << endl;
-          // end do the decoding base layer
-
-          // compute quality metric
-          computeQualityMetric<pcl::PointXYZRGB>(*fused_clouds[i],*decoded_cloud_base, achieved_quality);
-
-          //////////////////// octree delta frame encoding /////////////////////
-          // predicted frame, lossy prediction with artefacts that need to be assessed
-          boost::shared_ptr<pcl::PointCloud<PointXYZRGB> > out_d(new pcl::PointCloud<PointXYZRGB>());
-          if(do_delta_coding){
-
-            if(i+1 < aligned_flags.size())
-
-              if(aligned_flags[i+1]){ // only do delta coding when frames are aligned
-                cout << " delta coding frame nr " << i + 1 << endl;
-                if(i < (fused_clouds.size() -1)) 
-                {
-                  // icp offset coding
-                  l_codec_encoder->setDoICPColorOffset(do_icp_color_offset);
-
-                  stringstream p_frame_pdat;
-                  stringstream p_frame_idat;
-                  // code a delta frame, either use original or simplified cloud for ICP
-                  tt.tic();
-
-                  // test function that encodes and generates the predicted frame, commented out as we will use encoder and decoder functions instead
-                  //l_codec_encoder->generatePointCloudDeltaFrame(icp_on_original ? fused_clouds[i] : l_codec_encoder->getOutputCloud(),
-                  // );
-                  boost::shared_ptr<pcl::PointCloud<PointXYZRGB> > out_n(new pcl::PointCloud<PointXYZRGB>());
-                  l_codec_encoder->encodePointCloudDeltaFrame (icp_on_original ? fused_clouds[i] : l_codec_encoder->getOutputCloud(),
-                    fused_clouds[i+1],out_n, p_frame_idat, p_frame_pdat, (int) icp_on_original,false);
-
-                  pframe_quality.encoding_time_ms = tt.toc();
-                  pframe_quality.byte_count_octree_layer = p_frame_idat.tellp();
-                  pframe_quality.byte_count_centroid_layer = p_frame_pdat.tellp();
-                  pframe_quality.compressed_size = p_frame_idat.tellp() + p_frame_pdat.tellp();
-                  pframe_quality.byte_count_color_layer= 0;
-
-                  cout << " encoded a predictive frame: coded " << p_frame_idat.tellp() << " bytes intra and " << p_frame_pdat.tellp()  << " inter frame encoded " <<endl;
-
-                  shared_macroblock_percentages[i+1] = l_codec_encoder->getMacroBlockPercentage();
-                  icp_convergence_percentage[i+1] = l_codec_encoder->getMacroBlockConvergencePercentage();
-
-                  // decode the pframe
-                  tt.tic();
-                  l_codec_encoder->decodePointCloudDeltaFrame(decoded_cloud_base, out_d,p_frame_idat, p_frame_pdat);
-                  pframe_quality.decoding_time_ms = tt.toc();
-
-                  // compute the quality of the resulting predictive frame
-                  computeQualityMetric<pcl::PointXYZRGB>(*fused_clouds[i+1],*out_d, pframe_quality);
-                  pframe_quality.print_csv_line(compression_arg_ss.str(), res_p_ofstream);
-                }
-                // store the quality metrics for the p cloud
-              }
-          }
-          ///////////////////////////////////////////////////////////////////////
-
-          if(write_out_ply )
+          for(int i=0; i < fused_clouds.size(); i++)
           {
-            // we write output in the reverie mesh format, that allows us to render in reverie for subjective testing
-            bool write_rev_format = true;
-            if(!write_rev_format ){
-              // write the .ply file by converting to point cloud2 and then to polygon mesh
-              pcl::PCLPointCloud2::Ptr cloud2(new pcl::PCLPointCloud2());
-              pcl::toPCLPointCloud2( *decoded_cloud_base, *cloud2);
-              pcl::PLYWriter writer;
-              writer.write("ct_" +
-                boost::lexical_cast<string>(ct) + 
-                "ob_" +
-                boost::lexical_cast<string>(ob) + 
-                "_cb_" +
-                boost::lexical_cast<string>(cb) + 
-                "_mesh_nr_" +
-                boost::lexical_cast<string>(i) +
-                "_out.ply", cloud2
-                );
-              // end writing .ply
-            }
-            else{
-              ///////////////////////////////////////////////////////
-              float *mdat=new float[9*decoded_cloud_base->size()];
-              unsigned int *l_triang = new unsigned int[3];
+            // structs for storing the achieved quality
+            TicToc tt;
+            pcl::quality::QualityMetric achieved_quality;
+            pcl::quality::QualityMetric pframe_quality;
 
-              l_triang[0] = 0;
-              l_triang[1] = 1;
-              l_triang[2] = 2;
+            //! full compression into stringstreams, base and enhancement layers, with and without colors
+            stringstream l_output_base;
 
-              Eigen::Vector4f l_range_scale =assigned_bbs[i].max_xyz - assigned_bbs[i].min_xyz;
+            /////////////////////////////////////////////////////////////
+            //! do the encoding
+            tt.tic ();
+            l_codec_encoder->encodePointCloud(fused_clouds[i] ,l_output_base);
+            achieved_quality.encoding_time_ms = tt.toc();
 
-              Nano3D::Mesh m((unsigned int) decoded_cloud_base->size(),mdat,1,l_triang);
-              for(int l=0; l<decoded_cloud_base->size();l++)
-              {
-                mdat[9*l] = (*decoded_cloud_base)[l].x * l_range_scale[0]  + assigned_bbs[i].min_xyz[0];
-                mdat[9*l+1] = (*decoded_cloud_base)[l].y * l_range_scale[1] + assigned_bbs[i].min_xyz[1];
-                mdat[9*l+2] = (*decoded_cloud_base)[l].z * l_range_scale[2] + assigned_bbs[i].min_xyz[2];
-                mdat[9*l+3] = 0;
-                mdat[9*l+4] = 0;
-                mdat[9*l+5] = 0;
-                mdat[9*l+6] = (*decoded_cloud_base)[l].r;
-                mdat[9*l+7] = (*decoded_cloud_base)[l].g;
-                mdat[9*l+8] = (*decoded_cloud_base)[l].b; 
-              }
-              //////////////////////////////////////////////////////
-              m.recomputeSmoothVertexNormals(.3);
-              m.storePLY("rev_ct_" +
-                boost::lexical_cast<string>(ct) + 
-                "ob_" +
-                boost::lexical_cast<string>(ob) + 
-                "_cb_" +
-                boost::lexical_cast<string>(cb) + 
-                "_mesh_nr_" +
-                boost::lexical_cast<string>(i) +
-                "_out.ply",false);
-            }
-            // write predictively decoded frames
-            if(i+1 < aligned_flags.size())
-              if(do_delta_coding && aligned_flags[i+1])
-              {
-                if(!write_rev_format ){
-                  pcl::PCLPointCloud2::Ptr cloud2d(new pcl::PCLPointCloud2());
-                  pcl::toPCLPointCloud2( *out_d, *cloud2d);
-                  pcl::PLYWriter writer;
-                  writer.write("ct_" +
-                    boost::lexical_cast<string>(ct) + 
-                    "ob_" +
-                    boost::lexical_cast<string>(ob) + 
-                    "_cb_" +
-                    boost::lexical_cast<string>(cb) + 
-                    "_mesh_nr_" +
-                    boost::lexical_cast<string>(i+1) +
-                    "_out_predicted.ply", cloud2d
-                    );
-                }
-                else
-                {
-                  ///////////////////////////////////////////////////////
-                  float *mdat=new float[9*out_d->size()];
-                  unsigned int *l_triang = new unsigned int[3];
-                  l_triang[0] = 0;
-                  l_triang[1] = 1;
-                  l_triang[2] = 2;
-                  Nano3D::Mesh m((unsigned int) out_d->size(), mdat, 1, l_triang);
+            // code for testing frequencies of occupancy codes, removed from source
+            /*stringstream out_name;
+             out_name << "occupancy_log_";
+             out_name << i;
+             ofstream output_file_i = ofstream(out_name.str().c_str());
+          
+             if(output_file_i.good()){
+               logOccupancyCodesFrequencies(l_codec_encoder->getCodedLayers(), output_file_i);
+               output_file_i.close();
+             }*/
+         
+            ////////////////////////////////////////////////////////////
 
-                  Eigen::Vector4f l_range_scale =assigned_bbs[i].max_xyz - assigned_bbs[i].min_xyz;
+            ////////////////////////////////////////////////////////////////
+            // store and display the partial bytes sizes
+            uint64_t *c_sizes = l_codec_encoder->getPerformanceMetrics();
+            achieved_quality.byte_count_octree_layer = c_sizes[0];
+            achieved_quality.byte_count_centroid_layer = c_sizes[1];
+            achieved_quality.byte_count_color_layer= c_sizes[2];
+            ////////////////////////////////////////////////////////////////
 
-                  for(int l=0; l<out_d->size();l++)
+            cout << " octreeCoding " << (achieved_quality.compressed_size=l_output_base.tellp()) << " bytes  base layer  " << endl;
+            //////////////////////////////////////////////////////////////
+
+            // start decoding and computing quality metrics
+            stringstream oc(l_output_base.str());
+            colorOctreeCodec::PointCloudPtr decoded_cloud_base = colorOctreeCodec::PointCloudPtr(new colorOctreeCodec::PointCloud);
+
+            // do the decoding base layer
+            cout << "starting decoding the point cloud \n" << endl;
+            tt.tic ();
+            l_codec_decoder_base->decodePointCloud(oc,decoded_cloud_base);
+            achieved_quality.decoding_time_ms = tt.toc ();
+            cout << "finished decoding the point cloud \n" << endl;
+            // end do the decoding base layer
+
+            // compute quality metric
+            computeQualityMetric<pcl::PointXYZRGB>(*fused_clouds[i],*decoded_cloud_base, achieved_quality);
+
+            //////////////////// octree delta frame encoding /////////////////////
+            // predicted frame, lossy prediction with artefacts that need to be assessed
+            boost::shared_ptr<pcl::PointCloud<PointXYZRGB> > out_d(new pcl::PointCloud<PointXYZRGB>());
+            if(do_delta_coding){
+
+              if(i+1 < aligned_flags.size())
+
+                if(aligned_flags[i+1]){ // only do delta coding when frames are aligned
+                  cout << " delta coding frame nr " << i + 1 << endl;
+                  if(i < (fused_clouds.size() -1))
                   {
-                    mdat[9*l] = (*out_d)[l].x * l_range_scale[0]  + assigned_bbs[i].min_xyz[0];
-                    mdat[9*l+1] = (*out_d)[l].y * l_range_scale[1]  + assigned_bbs[i].min_xyz[1];
-                    mdat[9*l+2] = (*out_d)[l].z* l_range_scale[2]  + assigned_bbs[i].min_xyz[2];
-                    mdat[9*l+3] = 0;
-                    mdat[9*l+4] = 0;
-                    mdat[9*l+5] = 0;
-                    mdat[9*l+6] = (*out_d)[l].r;
-                    mdat[9*l+7] = (*out_d)[l].g;
-                    mdat[9*l+8] = (*out_d)[l].b; 
-                  }
-                  //////////////////////////////////////////////////////
-                  m.recomputeSmoothVertexNormals(.3);
-                  m.storePLY("prev_ct_" +
-                    boost::lexical_cast<string>(ct) + 
-                    "ob_" +
-                    boost::lexical_cast<string>(ob) + 
-                    "_cb_" +
-                    boost::lexical_cast<string>(cb) + 
-                    "_mesh_nr_" +
-                    boost::lexical_cast<string>(i + 1) +
-                    "_out_predicted.ply",false);
-                }
-              }
+                    // icp offset coding
+                    l_codec_encoder->setDoICPColorOffset(do_icp_color_offset);
 
+                    stringstream p_frame_pdat;
+                    stringstream p_frame_idat;
+                    // code a delta frame, either use original or simplified cloud for ICP
+                    tt.tic();
+
+                    // test function that encodes and generates the predicted frame, commented out as we will use encoder and decoder functions instead
+                    //l_codec_encoder->generatePointCloudDeltaFrame(icp_on_original ? fused_clouds[i] : l_codec_encoder->getOutputCloud(),
+                    // );
+                    boost::shared_ptr<pcl::PointCloud<PointXYZRGB> > out_n(new pcl::PointCloud<PointXYZRGB>());
+                    l_codec_encoder->encodePointCloudDeltaFrame (icp_on_original ? fused_clouds[i] : l_codec_encoder->  getOutputCloud(),
+                      fused_clouds[i+1],out_n, p_frame_idat, p_frame_pdat, (int) icp_on_original,false);
+
+                    pframe_quality.encoding_time_ms = tt.toc();
+                    pframe_quality.byte_count_octree_layer = p_frame_idat.tellp();
+                    pframe_quality.byte_count_centroid_layer = p_frame_pdat.tellp();
+                    pframe_quality.compressed_size = p_frame_idat.tellp() + p_frame_pdat.tellp();
+                    pframe_quality.byte_count_color_layer= 0;
+
+                    cout << " encoded a predictive frame: coded " << p_frame_idat.tellp() << " bytes intra and " <<   p_frame_pdat.tellp()  << " inter frame encoded " <<endl;
+
+                    shared_macroblock_percentages[i+1] = l_codec_encoder->getMacroBlockPercentage();
+                    icp_convergence_percentage[i+1] = l_codec_encoder->getMacroBlockConvergencePercentage();
+
+                    // decode the pframe
+                    tt.tic();
+                    l_codec_encoder->decodePointCloudDeltaFrame(decoded_cloud_base, out_d,p_frame_idat, p_frame_pdat);
+                    pframe_quality.decoding_time_ms = tt.toc();
+
+                    // compute the quality of the resulting predictive frame
+                    computeQualityMetric<pcl::PointXYZRGB>(*fused_clouds[i+1],*out_d, pframe_quality);
+                    pframe_quality.print_csv_line(compression_arg_ss.str(), res_p_ofstream);
+                  }
+                // store the quality metrics for the p cloud
+                }
+            }
+            ///////////////////////////////////////////////////////////////////////
+
+            if(write_out_ply )
+            {
+              // we write output in the reverie mesh format, that allows us to render in reverie for subjective testing
+              bool write_rev_format = true;
+              if(!write_rev_format ){
+                // write the .ply file by converting to point cloud2 and then to polygon mesh
+                pcl::PCLPointCloud2::Ptr cloud2(new pcl::PCLPointCloud2());
+                pcl::toPCLPointCloud2( *decoded_cloud_base, *cloud2);
+                pcl::PLYWriter writer;
+                writer.write("ct_" +
+                  boost::lexical_cast<string>(ct) +
+                  "ob_" +
+                  boost::lexical_cast<string>(ob) +
+                  "_cb_" +
+                  boost::lexical_cast<string>(cb) +
+                  "_mesh_nr_" +
+                  boost::lexical_cast<string>(i) +
+                  "_out.ply", cloud2
+                );
+                // end writing .ply
+              }
+              else{
+                ///////////////////////////////////////////////////////
+                float *mdat=new float[9*decoded_cloud_base->size()];
+                unsigned int *l_triang = new unsigned int[3];
+
+                l_triang[0] = 0;
+                l_triang[1] = 1;
+                l_triang[2] = 2;
+
+                Eigen::Vector4f l_range_scale =assigned_bbs[i].max_xyz - assigned_bbs[i].min_xyz;
+
+                Nano3D::Mesh m((unsigned int) decoded_cloud_base->size(),mdat,1,l_triang);
+                for(int l=0; l<decoded_cloud_base->size();l++)
+                {
+                  mdat[9*l] = (*decoded_cloud_base)[l].x * l_range_scale[0]  + assigned_bbs[i].min_xyz[0];
+                  mdat[9*l+1] = (*decoded_cloud_base)[l].y * l_range_scale[1] + assigned_bbs[i].min_xyz[1];
+                  mdat[9*l+2] = (*decoded_cloud_base)[l].z * l_range_scale[2] + assigned_bbs[i].min_xyz[2];
+                  mdat[9*l+3] = 0;
+                  mdat[9*l+4] = 0;
+                  mdat[9*l+5] = 0;
+                  mdat[9*l+6] = (*decoded_cloud_base)[l].r;
+                  mdat[9*l+7] = (*decoded_cloud_base)[l].g;
+                  mdat[9*l+8] = (*decoded_cloud_base)[l].b;
+                }
+                //////////////////////////////////////////////////////
+                m.recomputeSmoothVertexNormals(.3);
+                m.storePLY("rev_ct_" +
+                  boost::lexical_cast<string>(ct) +
+                  "ob_" +
+                  boost::lexical_cast<string>(ob) +
+                  "_cb_" +
+                  boost::lexical_cast<string>(cb) +
+                  "_mesh_nr_" +
+                  boost::lexical_cast<string>(i) +
+                  "_out.ply",false);
+              }
+              // write predictively decoded frames
+              if(i+1 < aligned_flags.size())
+                if(do_delta_coding && aligned_flags[i+1])
+                {
+                  if(!write_rev_format ){
+                    pcl::PCLPointCloud2::Ptr cloud2d(new pcl::PCLPointCloud2());
+                    pcl::toPCLPointCloud2( *out_d, *cloud2d);
+                    pcl::PLYWriter writer;
+                    writer.write("ct_" +
+                      boost::lexical_cast<string>(ct) +
+                      "ob_" +
+                      boost::lexical_cast<string>(ob) +
+                      "_cb_" +
+                      boost::lexical_cast<string>(cb) +
+                      "_mesh_nr_" +
+                      boost::lexical_cast<string>(i+1) +
+                      "_out_predicted.ply", cloud2d
+                    );
+                  }
+                  else
+                  {
+                    ///////////////////////////////////////////////////////
+                    float *mdat=new float[9*out_d->size()];
+                    unsigned int *l_triang = new unsigned int[3];
+                    l_triang[0] = 0;
+                    l_triang[1] = 1;
+                    l_triang[2] = 2;
+                    Nano3D::Mesh m((unsigned int) out_d->size(), mdat, 1, l_triang);
+
+                    Eigen::Vector4f l_range_scale =assigned_bbs[i].max_xyz - assigned_bbs[i].min_xyz;
+
+                    for(int l=0; l<out_d->size();l++)
+                    {
+                      mdat[9*l] = (*out_d)[l].x * l_range_scale[0]  + assigned_bbs[i].min_xyz[0];
+                      mdat[9*l+1] = (*out_d)[l].y * l_range_scale[1]  + assigned_bbs[i].min_xyz[1];
+                      mdat[9*l+2] = (*out_d)[l].z* l_range_scale[2]  + assigned_bbs[i].min_xyz[2];
+                      mdat[9*l+3] = 0;
+                      mdat[9*l+4] = 0;
+                      mdat[9*l+5] = 0;
+                      mdat[9*l+6] = (*out_d)[l].r;
+                      mdat[9*l+7] = (*out_d)[l].g;
+                      mdat[9*l+8] = (*out_d)[l].b;
+                    }
+                    //////////////////////////////////////////////////////
+                    m.recomputeSmoothVertexNormals(.3);
+                    m.storePLY("prev_ct_" +
+                      boost::lexical_cast<string>(ct) +
+                      "ob_" +
+                      boost::lexical_cast<string>(ob) +
+                      "_cb_" +
+                      boost::lexical_cast<string>(cb) +
+                      "_mesh_nr_" +
+                      boost::lexical_cast<string>(i + 1) +
+                      "_out_predicted.ply",false);
+                  }
+                }
+            }
+            // ~ write predictively encoded frames
+            // print the evaluation results to the output .cs file
+            achieved_quality.print_csv_line(compression_arg_ss.str(), res_base_ofstream);
           }
-          // ~ write predictively encoded frames
-          // print the evaluation results to the output .cs file
-          achieved_quality.print_csv_line(compression_arg_ss.str(), res_base_ofstream);
+          ////////////// END ASSESMENT //////////////////
         }
-        ////////////// END ASSESMENT //////////////////
-      }
+      } // (algorithm == "V2")
       // report convergence and shared macroblock statistics
       double av_macroblock_sharing=0;
       double av_convergence_percentage=0;
@@ -890,5 +880,5 @@ int
   }
 
   ////////////// END FOR //////////////////	
-  return (-1);
+  return (0);
 }
