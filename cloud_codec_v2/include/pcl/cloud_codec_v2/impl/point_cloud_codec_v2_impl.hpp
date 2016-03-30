@@ -1,4 +1,4 @@
-/*
+           /*
 * Software License Agreement (BSD License)
 *
 *  Point Cloud Library (PCL) - www.pointclouds.org
@@ -87,7 +87,6 @@ namespace pcl{
 
       // make sure cloud contains points
       if (leaf_count_>0) {
-
         // color field analysis
         cloud_with_color_ = false;
         std::vector<pcl::PCLPointField> fields;
@@ -164,25 +163,7 @@ namespace pcl{
 
         if (b_show_statistics_) // todo update for codec v2
         {
-          float bytes_per_XYZ = static_cast<float> (compressed_point_data_len_) / static_cast<float> (point_count_);
-          float bytes_per_color = static_cast<float> (compressed_color_data_len_) / static_cast<float> (point_count_);
-
-          PCL_INFO ("*** POINTCLOUD ENCODING ***\n");
-          PCL_INFO ("Frame ID: %d\n", frame_ID_);
-          if (i_frame_)
-            PCL_INFO ("Encoding Frame: Intra frame\n");
-          else
-            PCL_INFO ("Encoding Frame: Prediction frame\n");
-          PCL_INFO ("Number of encoded points: %ld\n", point_count_);
-          PCL_INFO ("XYZ compression percentage: %f%%\n", bytes_per_XYZ / (3.0f * sizeof(float)) * 100.0f);
-          PCL_INFO ("XYZ bytes per point: %f bytes\n", bytes_per_XYZ);
-          PCL_INFO ("Color compression percentage: %f%%\n", bytes_per_color / (sizeof (int)) * 100.0f);
-          PCL_INFO ("Color bytes per point: %f bytes\n", bytes_per_color);
-          PCL_INFO ("Size of uncompressed point cloud: %f kBytes\n", static_cast<float> (point_count_) * (sizeof (int) + 3.0f  * sizeof (float)) / 1024);
-          PCL_INFO ("Size of compressed point cloud: %d kBytes\n", (compressed_point_data_len_ + compressed_color_data_len_) / (1024));
-          PCL_INFO ("Total bytes per point: %f\n", bytes_per_XYZ + bytes_per_color);
-          PCL_INFO ("Total compression percentage: %f\n", (bytes_per_XYZ + bytes_per_color) / (sizeof (int) + 3.0f * sizeof(float)) * 100.0f);
-          PCL_INFO ("Compression ratio: %f\n\n", static_cast<float> (sizeof (int) + 3.0f * sizeof (float)) / static_cast<float> (bytes_per_XYZ + bytes_per_color));
+          print_statistics("*** V2 POINTCLOUD ENCODING ***\n");
         }
       } else {
         if (b_show_statistics_)
@@ -267,7 +248,7 @@ namespace pcl{
       output_->is_dense = false;
 
       //! todo update for cloud codecV2
-      if (b_show_statistics_)
+      if (0)//b_show_statistics_)
       {
         float bytes_per_XYZ = static_cast<float> (compressed_point_data_len_) / static_cast<float> (point_count_);
         float bytes_per_color = static_cast<float> (compressed_color_data_len_) / static_cast<float> (point_count_);
@@ -288,8 +269,8 @@ namespace pcl{
         PCL_INFO ("Total bytes per point: %d bytes\n", static_cast<int> (bytes_per_XYZ + bytes_per_color));
         PCL_INFO ("Total compression percentage: %f%%\n", (bytes_per_XYZ + bytes_per_color) / (sizeof (int) + 3.0f * sizeof (float)) * 100.0f);
         PCL_INFO ("Compression ratio: %f\n\n", static_cast<float> (sizeof (int) + 3.0f * sizeof (float)) / static_cast<float> (bytes_per_XYZ + bytes_per_color));
-      }
-    }
+	  }
+	}
 
     /*!
     * \brief  helper function to compute the delta frames
@@ -713,7 +694,7 @@ namespace pcl{
       OctreePointCloudCodecV2<PointT,LeafT,BranchT,OctreeT> intra_coder 
         (
         MANUAL_CONFIGURATION,
-        false,
+        b_show_statistics_,
         point_resolution_,
         octree_resolution_,
         true,
