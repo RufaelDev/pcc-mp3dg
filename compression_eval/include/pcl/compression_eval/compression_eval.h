@@ -71,6 +71,7 @@ namespace pcl{
       bool keep_conn=false,
       int jpeg_value=75,
       int num_threads=0);
+      bool show_statistics;
 	
     // function to log occupancy codes frequencies
     void
