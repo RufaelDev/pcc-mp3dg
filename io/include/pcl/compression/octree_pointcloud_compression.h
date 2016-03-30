@@ -310,8 +310,10 @@ namespace pcl
         const unsigned char color_bit_resolution_;
 
         std::size_t object_count_;
-
-      };
+      
+    public:
+        void print_statistics(std::string info);
+       };
 
     // define frame identifier
     template<typename PointT, typename LeafT, typename BranchT, typename OctreeT>
