@@ -307,6 +307,7 @@ namespace pcl{
         using pcl::octree::OctreePointCloud<PointT, LeafT, BranchT, OctreeT>::min_z_;
         using pcl::octree::OctreePointCloud<PointT, LeafT, BranchT, OctreeT>::resolution_;
         using pcl::octree::OctreePointCloud<PointT, LeafT, BranchT, OctreeT>::setInputCloud;
+        using pcl::io::OctreePointCloudCompression<PointT, LeafT, BranchT, OctreeT>::print_statistics;
         using pcl::io::OctreePointCloudCompression<PointT, LeafT, BranchT, OctreeT>::b_show_statistics_;
         using pcl::io::OctreePointCloudCompression<PointT, LeafT, BranchT, OctreeT>::binary_tree_data_vector_;
         using pcl::io::OctreePointCloudCompression<PointT, LeafT, BranchT, OctreeT>::cloud_with_color_;
