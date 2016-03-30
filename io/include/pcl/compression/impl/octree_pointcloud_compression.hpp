@@ -133,6 +133,10 @@ namespace pcl
 
         // apply entropy coding to the content of all data vectors and send data to output stream
         this->entropyEncoding (compressed_tree_data_out_arg);
+        
+        if (b_show_statistics_) {
+          print_statistics("*** POINTCLOUD ENCODING ***");
+        }
 
         // prepare for next frame
         this->switchBuffers ();
@@ -140,29 +144,6 @@ namespace pcl
 
         // reset object count
         object_count_ = 0;
-
-        if (b_show_statistics_)
-        {
-          float bytes_per_XYZ = static_cast<float> (compressed_point_data_len_) / static_cast<float> (point_count_);
-          float bytes_per_color = static_cast<float> (compressed_color_data_len_) / static_cast<float> (point_count_);
-
-          PCL_INFO ("*** POINTCLOUD ENCODING ***\n");
-          PCL_INFO ("Frame ID: %d\n", frame_ID_);
-          if (i_frame_)
-            PCL_INFO ("Encoding Frame: Intra frame\n");
-          else
-            PCL_INFO ("Encoding Frame: Prediction frame\n");
-          PCL_INFO ("Number of encoded points: %ld\n", point_count_);
-          PCL_INFO ("XYZ compression percentage: %f%%\n", bytes_per_XYZ / (3.0f * sizeof(float)) * 100.0f);
-          PCL_INFO ("XYZ bytes per point: %f bytes\n", bytes_per_XYZ);
-          PCL_INFO ("Color compression percentage: %f%%\n", bytes_per_color / (sizeof (int)) * 100.0f);
-          PCL_INFO ("Color bytes per point: %f bytes\n", bytes_per_color);
-          PCL_INFO ("Size of uncompressed point cloud: %f kBytes\n", static_cast<float> (point_count_) * (sizeof (int) + 3.0f  * sizeof (float)) / 1024);
-          PCL_INFO ("Size of compressed point cloud: %d kBytes\n", (compressed_point_data_len_ + compressed_color_data_len_) / (1024));
-          PCL_INFO ("Total bytes per point: %f\n", bytes_per_XYZ + bytes_per_color);
-          PCL_INFO ("Total compression percentage: %f\n", (bytes_per_XYZ + bytes_per_color) / (sizeof (int) + 3.0f * sizeof(float)) * 100.0f);
-          PCL_INFO ("Compression ratio: %f\n\n", static_cast<float> (sizeof (int) + 3.0f * sizeof (float)) / static_cast<float> (bytes_per_XYZ + bytes_per_color));
-        }
       } else {
         if (b_show_statistics_)
         PCL_INFO ("Info: Dropping empty point cloud\n");
@@ -225,27 +206,9 @@ namespace pcl
       output_->width = static_cast<uint32_t> (cloud_arg->points.size ());
       output_->is_dense = false;
 
-      if (b_show_statistics_)
+      if (0)//b_show_statistics_)
       {
-        float bytes_per_XYZ = static_cast<float> (compressed_point_data_len_) / static_cast<float> (point_count_);
-        float bytes_per_color = static_cast<float> (compressed_color_data_len_) / static_cast<float> (point_count_);
-
-        PCL_INFO ("*** POINTCLOUD DECODING ***\n");
-        PCL_INFO ("Frame ID: %d\n", frame_ID_);
-        if (i_frame_)
-          PCL_INFO ("Encoding Frame: Intra frame\n");
-        else
-          PCL_INFO ("Encoding Frame: Prediction frame\n");
-        PCL_INFO ("Number of encoded points: %ld\n", point_count_);
-        PCL_INFO ("XYZ compression percentage: %f%%\n", bytes_per_XYZ / (3.0f * sizeof (float)) * 100.0f);
-        PCL_INFO ("XYZ bytes per point: %f bytes\n", bytes_per_XYZ);
-        PCL_INFO ("Color compression percentage: %f%%\n", bytes_per_color / (sizeof (int)) * 100.0f);
-        PCL_INFO ("Color bytes per point: %f bytes\n", bytes_per_color);
-        PCL_INFO ("Size of uncompressed point cloud: %f kBytes\n", static_cast<float> (point_count_) * (sizeof (int) + 3.0f * sizeof (float)) / 1024.0f);
-        PCL_INFO ("Size of compressed point cloud: %f kBytes\n", static_cast<float> (compressed_point_data_len_ + compressed_color_data_len_) / 1024.0f);
-        PCL_INFO ("Total bytes per point: %d bytes\n", static_cast<int> (bytes_per_XYZ + bytes_per_color));
-        PCL_INFO ("Total compression percentage: %f%%\n", (bytes_per_XYZ + bytes_per_color) / (sizeof (int) + 3.0f * sizeof (float)) * 100.0f);
-        PCL_INFO ("Compression ratio: %f\n\n", static_cast<float> (sizeof (int) + 3.0f * sizeof (float)) / static_cast<float> (bytes_per_XYZ + bytes_per_color));
+        print_statistics("*** POINTCLOUD DECODING ***\n");
       }
     }
 
@@ -558,6 +521,30 @@ namespace pcl
           color_coder_.setDefaultColor (output_, output_->points.size () - pointCount,
                                        output_->points.size (), point_color_offset_);
       }
+    }
+    //////////////////////////////////////////////////////////////////////////////////////////////
+    template<typename PointT, typename LeafT, typename BranchT, typename OctreeT> void
+    OctreePointCloudCompression<PointT, LeafT, BranchT, OctreeT>::print_statistics(std::string info)
+    {
+      float bytes_per_XYZ = static_cast<float> (compressed_point_data_len_) / static_cast<float> (point_count_);
+      float bytes_per_color = static_cast<float> (compressed_color_data_len_) / static_cast<float> (point_count_);
+      
+      PCL_INFO ("%s\n", info.c_str());
+      PCL_INFO ("Frame ID: %d\n", frame_ID_);
+      if (i_frame_)
+        PCL_INFO ("Encoding Frame: Intra frame\n");
+      else
+        PCL_INFO ("Encoding Frame: Prediction frame\n");
+      PCL_INFO ("Number of encoded points: %ld\n", point_count_);
+      PCL_INFO ("XYZ compression percentage: %f%%\n",  bytes_per_XYZ / (3.0f * sizeof (float)) * 100.0f);
+      PCL_INFO ("XYZ bytes per point: %f bytes\n", bytes_per_XYZ);
+      PCL_INFO ("Color compression percentage: %f%%\n", bytes_per_color / (sizeof (int)) * 100.0f);
+      PCL_INFO ("Color bytes per point: %f bytes\n", bytes_per_color);
+      PCL_INFO ("Size of uncompressed point cloud: %f kBytes\n", static_cast<float> (point_count_) * (sizeof (int) + 3.0f * sizeof (float)) / 1024.0f);
+      PCL_INFO ("Size of compressed point cloud: %d kBytes\n",  static_cast<float> (compressed_point_data_len_ + compressed_color_data_len_) / 1024.0f);
+      PCL_INFO ("Total bytes per point: %f\n", bytes_per_XYZ + bytes_per_color);
+      PCL_INFO ("Total compression percentage: %f\n", (bytes_per_XYZ + bytes_per_color) / (sizeof (int) + 3.0f * sizeof (float)) * 100.0f);
+      PCL_INFO ("Compression ratio: %f\n\n", static_cast<float> (sizeof (int) + 3.0f * sizeof (float)) / static_cast<float> (bytes_per_XYZ + bytes_per_color));
     }
   }
 }
