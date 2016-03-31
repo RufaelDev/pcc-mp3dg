@@ -190,7 +190,7 @@ bool
             if( it->name == "rgb")
               mdata.has_colors = true;
             if( it->name == "normal_x")
-              mdata.has_colors = true;
+              mdata.has_normals = true;
             if( it->name == "x")
               mdata.has_coords = true;
           }
