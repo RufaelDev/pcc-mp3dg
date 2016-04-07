@@ -541,7 +541,7 @@ namespace pcl
       PCL_INFO ("Color compression percentage: %f%%\n", bytes_per_color / (sizeof (int)) * 100.0f);
       PCL_INFO ("Color bytes per point: %f bytes\n", bytes_per_color);
       PCL_INFO ("Size of uncompressed point cloud: %f kBytes\n", static_cast<float> (point_count_) * (sizeof (int) + 3.0f * sizeof (float)) / 1024.0f);
-      PCL_INFO ("Size of compressed point cloud: %d kBytes\n",  static_cast<float> (compressed_point_data_len_ + compressed_color_data_len_) / 1024.0f);
+      PCL_INFO ("Size of compressed point cloud: %f kBytes\n",  static_cast<float> (compressed_point_data_len_ + compressed_color_data_len_) / 1024.0f);
       PCL_INFO ("Total bytes per point: %f\n", bytes_per_XYZ + bytes_per_color);
       PCL_INFO ("Total compression percentage: %f\n", (bytes_per_XYZ + bytes_per_color) / (sizeof (int) + 3.0f * sizeof (float)) * 100.0f);
       PCL_INFO ("Compression ratio: %f\n\n", static_cast<float> (sizeof (int) + 3.0f * sizeof (float)) / static_cast<float> (bytes_per_XYZ + bytes_per_color));
