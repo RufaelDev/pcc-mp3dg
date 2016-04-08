@@ -366,11 +366,11 @@ int
         std::size_t or_number_of_points = fused_clouds[i]->size();
 
         // swap the pointer
-         IndicesConstPtr indices_rem = rorfilter.getRemovedIndices ();
+        IndicesConstPtr indices_rem = rorfilter.getRemovedIndices ();
         // fused_clouds[i]->erase(indices_rem->begin(),indices_rem->end());
         // The resulting cloud_out contains all points of cloud_in that have 4 or less neighbors within the 0.1 search radius
         fused_clouds[i] = l_ptr;
-        std::cout << "filtered out a total of: " << indices_rem->size() << "outliers" <<std::endl;
+        std::cout << "filtered out a total of: " << indices_rem->size() << " outliers" <<std::endl;
         // The indices_rem array indexes all points of cloud_in that have 5 or more neighbors within the 0.1 search radius
       }
     }
@@ -742,7 +742,7 @@ int
             if(write_out_ply )
             {
               // we write output in the reverie mesh format, that allows us to render in reverie for subjective testing
-              bool write_rev_format = true;
+              bool write_rev_format = false; //true;
               if(!write_rev_format ){
                 // write the .ply file by converting to point cloud2 and then to polygon mesh
                 pcl::PCLPointCloud2::Ptr cloud2(new pcl::PCLPointCloud2());
