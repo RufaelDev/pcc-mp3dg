@@ -140,6 +140,7 @@ if(build)
       PCL_ADD_EXECUTABLE_OPT_BUNDLE(pcl_openni_boundary_estimation "${SUBSYS_NAME}" src/openni_boundary_estimation.cpp)
       target_link_libraries(pcl_openni_boundary_estimation pcl_common pcl_io pcl_filters pcl_visualization pcl_segmentation pcl_sample_consensus pcl_features pcl_surface)
 
+      include_directories("${CMAKE_CURRENT_SOURCE_DIR}/../2d/include")
       PCL_ADD_EXECUTABLE_OPT_BUNDLE(pcl_openni_organized_edge_detection "${SUBSYS_NAME}" src/openni_organized_edge_detection.cpp)
       target_link_libraries(pcl_openni_organized_edge_detection pcl_common pcl_io pcl_features pcl_visualization)
 
