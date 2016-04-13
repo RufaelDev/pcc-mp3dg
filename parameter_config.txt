@@ -1,21 +1,22 @@
-#configuration file for testing the color encoding
+#configuration file for testing the color encoding, w.outlier_removal (Jogging data set)
 octree_bit_settings=11
-color_bit_settings=8
-color_coding_types= 1 # color coding types 1=grid 2=lines
+color_bit_settings=8 # values to test for the enhancement 
+color_coding_types=2 # color coding types 1=grid 2=lines
 enh_bit_settings = 0
 keep_centroid=0 # option for keeping centroid instead of voxel centers only
-bb_expand_factor=0.20#  expansion factor used to keep bounding box constant over time
-output_csv_file=intra_frame_quality_atDifferentLoDsJPEGi7.csv
-write_output_ply=0
+bb_expand_factor=6.4 #  expansion factor used to keep bounding box constant over time
+output_csv_file=intra_frame_quality.csv
+write_output_ply=1
 do_delta_frame_coding=1
-icp_on_original=0
-pframe_quality_log=predictive_quality_4core.csv
+icp_on_original=1
+code_color_off=1
+pframe_quality_log=predictive_quality.csv
 macroblocksize=16
 testbbalign=0
-code_color_off=0
-radius_outlier_filter=0
-radius_size=0.1
+radius_outlier_filter=2
+radius_size=0.01
 jpeg_value=85
 omp_cores=4
-algorithm=V2
 show_statistics=true
+algorithm=V2
+
