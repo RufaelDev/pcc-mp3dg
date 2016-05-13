@@ -119,7 +119,7 @@ namespace pcl{
           pointResolution_arg,
           octreeResolution_arg,
           doVoxelGridDownDownSampling_arg,
-		  iFrameRate_arg, 
+          iFrameRate_arg,
           doColorEncoding_arg,
           colorBitResolution_arg), 
           color_coding_type_(colorCodingType_arg), 
@@ -202,6 +202,20 @@ namespace pcl{
           return shared_macroblock_convergence_percentage_;
         };
 
+      /** \brief
+       *  \param point_clouds: an array of pointers to point_clouds to be inspected and modified
+       * by \ref pcl_outlier_filter. A point in a cloud is considered an outlier, if there are
+       * less than 'num_points' other points in that cloud within distance 'radius'
+       */
+      static void
+      remove_outliers (vector<PointCloudPtr> point_clouds, int num_points, double radius, unsigned int debug_level=0);
+      /** \brief
+       *  \param point_clouds: an array of pointers to point_clouds to be inspected and modified
+       * to normalize their bouding boxes s.t. they effectivly can be used for interframe coding.
+       */
+      static void
+      normalize_pointclouds (vector<PointCloudPtr> point_clouds);
+      
         //! function for coding an enhancement layer
        // virtual void 
        // encodeEnhancementLayer(const PointCloudConstPtr &cloud_arg, std::ostream& compressed_tree_data_out_arg);

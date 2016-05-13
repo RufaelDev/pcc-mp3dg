@@ -43,6 +43,7 @@
 #include <pcl/cloud_codec_v2/point_cloud_codec_v2.h>
 #include <pcl/compression/point_coding.h>
 #include <pcl/compression/impl/octree_pointcloud_compression.hpp>
+#include <pcl/filters/radius_outlier_removal.h>
 
 //includes to do the ICP procedures
 #include <pcl/point_types.h>
@@ -1611,6 +1612,42 @@ namespace pcl{
         }
       }
     };
+    /** \brief
+     *  \param point_clouds: an array of pointers to point_clouds to be inspected and modified
+     * by \ref pcl_outlier_filter.
+     */
+    template<typename PointT,  typename LeafT, typename BranchT, typename OctreeT> void OctreePointCloudCodecV2<PointT, LeafT, BranchT, OctreeT>::remove_outliers (vector<PointCloudPtr> point_clouds, int min_points, double radius, unsigned int debug_level)
+    {
+      // apply a radius filter to remove outliers
+      typedef OctreePointCloudCompression<PointXYZRGB> colorOctreeCodec;
+      if(min_points > 0)
+      {
+        for(int i=0;i<point_clouds.size();i++){
+          colorOctreeCodec::PointCloudPtr l_ptr= colorOctreeCodec::PointCloudPtr(new colorOctreeCodec::PointCloud());
+          pcl::RadiusOutlierRemoval<PointT> rorfilter (true); // Initializing with true will allow us to  extract the removed indices
+          rorfilter.setInputCloud (point_clouds[i]);
+          rorfilter.setRadiusSearch (radius);
+          rorfilter.setMinNeighborsInRadius (min_points);
+          rorfilter.setNegative (false);
+          rorfilter.filter (*l_ptr);
+        
+          // swap the pointer
+          IndicesConstPtr indices_rem = rorfilter.getRemovedIndices ();
+          // point_§clouds[i]->erase(indices_rem->begin(),indices_rem->end());
+          // The resulting cloud_out contains all points of cloud_in that have 'min_points' or more neighbors within the 'radius' search area
+          point_clouds[i] = l_ptr;
+          if (debug_level > 2) {
+            std::cout << "filtered out a total of: " << indices_rem->size() << " outliers" <<std::endl;
+          }
+          // The indices_rem array indexes all points of cloud_in that have less than 'min_points' neighbors  within the 0.1 'radius' search area
+        }
+      }
+    }
+    /** \brief
+     *  \param point_clouds: an array of pointers to point_clouds to be inspected and modified
+     * to normalize their bouding boxes s.t. they effectivly can be used for interframe coding.
+     */
+    template<typename PointT, typename LeafT, typename BranchT, typename OctreeT> void OctreePointCloudCodecV2<PointT, LeafT, BranchT, OctreeT>::normalize_pointclouds(vector<PointCloudPtr> point_clouds) {}
   }
 }
 #endif
