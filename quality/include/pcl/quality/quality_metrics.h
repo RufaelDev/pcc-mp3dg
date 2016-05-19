@@ -84,7 +84,7 @@ namespace pcl{
 
   //! \brief compute the quality metric, we assume the cloud_a is the original (for colors we only compare the original to the lossy cloud)
   template<typename PointT> void
-  computeQualityMetric (pcl::PointCloud<PointT>  &cloud_a, pcl::PointCloud<PointT>  &cloud_b, QualityMetric & qual_metric );
+    computeQualityMetric (pcl::PointCloud<PointT>  &cloud_a, pcl::PointCloud<PointT>  &cloud_b, QualityMetric & qual_metric );
   }
 }
 #endif

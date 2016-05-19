@@ -53,7 +53,7 @@
 #include <pcl/quality/impl/quality_metrics_impl.hpp>
 
 #include <boost/program_options.hpp>
-#include<boost/program_options/parsers.hpp>
+#include <boost/program_options/parsers.hpp>
 
 #include <assert.h>
 #include <sstream>
@@ -243,7 +243,7 @@ int
     ("output_csv_file", po::value<string>()->default_value("intra_frame_quality.csv")," output .csv file ")
     ("write_output_ply", po::value<int>()->default_value(1)," write output as .ply files")
     ("do_delta_frame_coding", po::value<int>()->default_value(1)," do_delta_frame_coding ")
-    ("icp_on_original", po::value<int>()->default_value(0)," icp_on_original ")
+    ("icp_on_original", po::value<int>()->default_value(0)," icp_on_original ") // iterative closest point
     ("pframe_quality_log",po::value<string>()->default_value("predictive_quality.csv"), " write the quality results of predictive coding of p frames")
     ("macroblocksize",po::value<int>()->default_value(16), " size of macroblocks used for predictive frame (has to be a power of 2)")
     ("testbbalign",po::value<int>()->default_value(0), " set this option to test allignements only ")
@@ -272,9 +272,10 @@ int
   po::variables_map vm;
   po::store(po::parse_config_file(in_conf, desc), vm);
   po::notify(vm);
-  bb_expand_factor = vm["bb_expand_factor"].as<double>();  ////////////////// ~end parse configuration file  /////////////////////////////////////
+   ////////////////// end parse configuration file  /////////////////////////////////////
 
   ////////////// FOR EACH PARAMETER SETTING DO ASSESMENT //////////////////
+  bb_expand_factor = vm["bb_expand_factor"].as<double>();
   int enh_bit_settings = vm["enh_bit_settings"].as<int>();
   vector<int> octree_bit_settings = vm["octree_bit_settings"].as<vector<int> >();
   vector<int> color_bit_settings =  vm["color_bit_settings"].as<vector<int> >();
@@ -386,7 +387,9 @@ int
   string algorithm = vm["algorithm"].as<string>();
   //   PointCloudEncoder = new pcl::io::OctreePointCloudCompression<pcl::PointXYZRGBA> (compressionProfile, showStatistics);
   //   PointCloudDecoder = new pcl::io::OctreePointCloudCompression<pcl::PointXYZRGBA> ();
-
+  
+  vector<bounding_box> assigned_bbs(fused_clouds.size());
+  
   if (algorithm == "V1") {
     int cb = 0, ct = 0, ob = 0;
 #if __cplusplus >= 201103L
@@ -460,8 +463,6 @@ int
     max_pt_bb[0]= -1000;
     max_pt_bb[1]= -1000;
     max_pt_bb[2]= -1000;
-
-    vector<bounding_box> assigned_bbs(fused_clouds.size());
 
     for(int k=0;k<fused_clouds.size();k++){
 

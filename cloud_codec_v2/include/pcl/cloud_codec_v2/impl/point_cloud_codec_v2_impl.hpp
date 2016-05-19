@@ -1616,7 +1616,7 @@ namespace pcl{
      *  \param point_clouds: an array of pointers to point_clouds to be inspected and modified
      * by \ref pcl_outlier_filter.
      */
-    template<typename PointT,  typename LeafT, typename BranchT, typename OctreeT> void OctreePointCloudCodecV2<PointT, LeafT, BranchT, OctreeT>::remove_outliers (vector<PointCloudPtr> point_clouds, int min_points, double radius, unsigned int debug_level)
+    template<typename PointT,  typename LeafT, typename BranchT, typename OctreeT> void OctreePointCloudCodecV2<PointT, LeafT, BranchT, OctreeT>::remove_outliers (vector<PointCloudPtr> &point_clouds, int min_points, double radius, unsigned int debug_level)
     {
       // apply a radius filter to remove outliers
       typedef OctreePointCloudCompression<PointXYZRGB> colorOctreeCodec;
@@ -1647,7 +1647,101 @@ namespace pcl{
      *  \param point_clouds: an array of pointers to point_clouds to be inspected and modified
      * to normalize their bouding boxes s.t. they effectivly can be used for interframe coding.
      */
-    template<typename PointT, typename LeafT, typename BranchT, typename OctreeT> void OctreePointCloudCodecV2<PointT, LeafT, BranchT, OctreeT>::normalize_pointclouds(vector<PointCloudPtr> point_clouds) {}
+    template<typename PointT, typename LeafT, typename BranchT, typename OctreeT> void OctreePointCloudCodecV2<PointT, LeafT, BranchT, OctreeT>::normalize_pointclouds(vector<PointCloudPtr> &point_clouds, vector<BoundingBox> &bounding_boxes, double bb_expand_factor, unsigned int debug_level)
+    {
+      Eigen::Vector4f min_pt_bb;
+      Eigen::Vector4f max_pt_bb;
+      bool is_bb_init = false;
+      int bb_align_count=0;
+      std::vector<bool> aligned_flags(point_clouds.size()); // flags to check if a cloud is aligned
+      
+      // initial bounding box
+      min_pt_bb[0]= 1000;
+      min_pt_bb[1]= 1000;
+      min_pt_bb[2]= 1000;
+      
+      max_pt_bb[0]= -1000;
+      max_pt_bb[1]= -1000;
+      max_pt_bb[2]= -1000;
+      
+      for(int k=0;k<point_clouds.size();k++){
+        Eigen::Vector4f min_pt;
+        Eigen::Vector4f max_pt;
+        
+        pcl::getMinMax3D<pcl::PointXYZRGB>(*point_clouds[k],min_pt,max_pt);
+        
+//        bb_out << "[ " << min_pt.x() << "," << min_pt.y() << "," << min_pt.z() << "]    [" << max_pt.x() << "," << max_pt.y() << "," << max_pt.z() <<"]" << endl;
+        
+        // check if min fits bounding box, otherwise adapt the bounding box
+        if( !( (min_pt.x() > min_pt_bb.x()) && (min_pt.y() > min_pt_bb.y()) && (min_pt.z() > min_pt_bb.z())))
+        {
+          is_bb_init = false;
+        }
+        
+        // check if max fits bounding box, otherwise adapt the bounding box
+        if(!((max_pt.x() < max_pt_bb.x()) && (max_pt.y() < max_pt_bb.y()) && (max_pt.z() < max_pt_bb.z())))
+        {
+          is_bb_init = false;
+        }
+        
+        if(!is_bb_init)
+        {
+          aligned_flags[k] = false;
+          bb_align_count++;
+          // initialize the bounding box, with bb_expand_factor extra
+          min_pt_bb[0] = min_pt[0] - bb_expand_factor*abs(max_pt[0] - min_pt[0]);
+          min_pt_bb[1] = min_pt[1] - bb_expand_factor*abs(max_pt[1] - min_pt[1]);
+          min_pt_bb[2] = min_pt[2] - bb_expand_factor*abs(max_pt[2] - min_pt[2]);
+          
+          max_pt_bb[0] = max_pt[0] + bb_expand_factor*abs(max_pt[0] - min_pt[0]);
+          max_pt_bb[1] = max_pt[1] + bb_expand_factor*abs(max_pt[1] - min_pt[1]);
+          max_pt_bb[2] = max_pt[2] + bb_expand_factor*abs(max_pt[2] - min_pt[2]);
+          
+          is_bb_init = true;
+          
+          cout << "re-intialized bounding box !!! " << endl;
+        }
+        else
+          aligned_flags[k] = true;
+        
+#if __cplusplus >= 201103L
+        auto dyn_range = max_pt_bb - min_pt_bb;
+#else
+        Eigen::Vector4f  dyn_range = max_pt_bb - min_pt_bb;
+#endif//__cplusplus >= 201103L
+        
+        bounding_boxes[k].max_xyz = max_pt_bb;
+        bounding_boxes[k].min_xyz = min_pt_bb;
+        
+        for(int j=0; j < point_clouds[k]->size();j++)
+        {
+          // offset the minimum value
+          point_clouds[k]->at(j).x-=min_pt_bb[0];
+          point_clouds[k]->at(j).y-=min_pt_bb[1];
+          point_clouds[k]->at(j).z-=min_pt_bb[2];
+          
+          // dynamic range
+          point_clouds[k]->at(j).x/=dyn_range[0];
+          point_clouds[k]->at(j).y/=dyn_range[1];
+          point_clouds[k]->at(j).z/=dyn_range[2];
+        }
+        
+        // bounding box is expanded
+        
+        Eigen::Vector4f min_pt_res;
+        Eigen::Vector4f max_pt_res;
+        
+        pcl::getMinMax3D<pcl::PointXYZRGB>(*(point_clouds[k]),min_pt_res,max_pt_res);
+        
+        assert(min_pt_res[0] >= 0);
+        assert(min_pt_res[1] >= 0);
+        assert(min_pt_res[2] >= 0);
+        
+        assert(max_pt_res[0] <= 1);
+        assert(max_pt_res[1] <= 1);
+        assert(max_pt_res[2] <= 1);
+      }
+    }
   }
 }
 #endif

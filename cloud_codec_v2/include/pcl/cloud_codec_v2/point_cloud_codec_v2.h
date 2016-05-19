@@ -61,6 +61,11 @@ namespace pcl{
     * \author Rufael Mekuria (rufael.mekuria@cwi.nl)
     */
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    struct BoundingBox
+    {
+      Eigen::Vector4f min_xyz;
+      Eigen::Vector4f max_xyz;
+    };
 
     template<typename PointT, typename LeafT = OctreeContainerPointIndices,
       typename BranchT = OctreeContainerEmpty,
@@ -208,13 +213,13 @@ namespace pcl{
        * less than 'num_points' other points in that cloud within distance 'radius'
        */
       static void
-      remove_outliers (vector<PointCloudPtr> point_clouds, int num_points, double radius, unsigned int debug_level=0);
+      remove_outliers (vector<PointCloudPtr> &point_clouds, int num_points, double radius, unsigned int debug_level=0);
       /** \brief
        *  \param point_clouds: an array of pointers to point_clouds to be inspected and modified
        * to normalize their bouding boxes s.t. they effectivly can be used for interframe coding.
        */
       static void
-      normalize_pointclouds (vector<PointCloudPtr> point_clouds);
+      normalize_pointclouds (vector<PointCloudPtr> &point_clouds, vector<BoundingBox> &bouding_boxes, double bb_expand_factor, unsigned int debug_level=0);
       
         //! function for coding an enhancement layer
        // virtual void 

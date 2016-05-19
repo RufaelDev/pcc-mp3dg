@@ -94,7 +94,7 @@ namespace pcl{
 		tt.tic ();
 
 		// compare A to B
-		pcl::search::KdTree<PointT> tree_b;
+    pcl::search::KdTree<PointT> tree_b;
 		tree_b.setInputCloud (cloud_b.makeShared ());
 		
 		// geometric differences A -> B
@@ -147,7 +147,7 @@ namespace pcl{
 		}
 
 		// compare geometry of B to A (needed for symmetric metric)
-		pcl::search::KdTree<PointT> tree_a;
+    pcl::search::KdTree<PointT> tree_a;
 		tree_a.setInputCloud (cloud_a.makeShared ());
 		float max_dist_b = -std::numeric_limits<float>::max ();
 		double rms_dist_b = 0;
