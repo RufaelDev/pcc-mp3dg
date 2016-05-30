@@ -45,12 +45,12 @@ namespace pcl{
 
   namespace io
   {
-     /** \brief @b Rigid Transofrm Coding class
+    /** \brief @b Rigid Transofrm Coding class
     * \note This class encodes a rigid transform in 12 or 14 bytes (6 or 7 shorts)
     * \author Rufael Mekuria rufael.mekuria@cwi.nl
     */
     template<typename Scalar=float> class RigidTransformCoding{
-       
+
        // static member functions for encoding and decoding
        public:
 
@@ -58,7 +58,7 @@ namespace pcl{
         compressRigidTransform(const Eigen::Matrix<Scalar, 4, 4> &tr_in, 
                                std::vector<int16_t> &comp_dat_out,
                                Eigen::Quaternion<Scalar> &quat_in);
-        
+
         static bool 
         deCompressRigidTransform(const std::vector<int16_t> &comp_dat_in, 
                                  Eigen::Matrix<Scalar, 4, 4> &tr_out, 

@@ -7,8 +7,8 @@
 
 namespace pcl{
 
-  namespace octree{    
-     /**!
+  namespace octree{
+    /**!
     \brief class for doing mapping of vector of rgb values into an image grid and back via a zigzag pattern
     \author Rufael Mekuria rufael.mekuria@cwi.nl
     */
@@ -26,7 +26,7 @@ namespace pcl{
         //! 
         SnakeGridIterator(int dim_w, int dim_h)
           : dim_w_(dim_w) , dim_h_(dim_h)
-        {	
+        {
           w_pos = 0;
           h_pos = 0;
           macro_block_pos_w = 0;
@@ -84,7 +84,7 @@ namespace pcl{
       */
       SnakeGridMapping(int dim_w, int dim_h)
         : dim_w_(dim_w) , dim_h_(dim_h), l_it(dim_w,dim_h)
-      {	
+      {
       };
 
       /**!
@@ -95,7 +95,7 @@ namespace pcl{
         {
           if(i % dim_w_ == 0)
             printf("\n");
-          printf(" %3d, ",result_[3 * i]);	
+          printf(" %3d, ",result_[3 * i]);
         }
       }
 

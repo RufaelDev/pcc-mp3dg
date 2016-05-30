@@ -57,7 +57,7 @@ namespace pcl{
     class OctreePointCloudCodecV2OMP : public OctreePointCloudCodecV2<PointT,LeafT,BranchT,OctreeT>
     {
       public:
-   
+
         // public typedefs, copied from original implementation by Julius Kammerl
        typedef typename OctreePointCloudCodecV2<PointT, LeafT, BranchT, OctreeT>::PointCloud PointCloud;
        typedef typename OctreePointCloudCodecV2<PointT, LeafT, BranchT, OctreeT>::PointCloudPtr PointCloudPtr;
@@ -70,7 +70,7 @@ namespace pcl{
 
         typedef typename OctreeT::LeafNode LeafNode;
         typedef typename OctreeT::BranchNode BranchNode;
-	/*
+  /*
         typedef OctreePointCloudCodecV2<PointT, LeafT, BranchT, Octree2BufBase<LeafT, BranchT> > RealTimeStreamCompression;
         typedef OctreePointCloudCodecV2<PointT, LeafT, BranchT, OctreeBase<LeafT, BranchT> > SinglePointCloudCompressionLowMemory;
       */
@@ -94,7 +94,7 @@ namespace pcl{
           const double pointResolution_arg = 0.001,
           const double octreeResolution_arg = 0.01,
           bool doVoxelGridDownDownSampling_arg = false,
-	  const unsigned int iFrameRate_arg = 0, /* NO PCL P Frames in this version of the codec !! */
+    const unsigned int iFrameRate_arg = 0, /* NO PCL P Frames in this version of the codec !! */
           bool doColorEncoding_arg = true,
           const unsigned char colorBitResolution_arg = 6,
           const unsigned char colorCodingType_arg = 0,
@@ -109,7 +109,7 @@ namespace pcl{
           pointResolution_arg,
           octreeResolution_arg,
           doVoxelGridDownDownSampling_arg,
-	  iFrameRate_arg, 
+    iFrameRate_arg, 
           doColorEncoding_arg,
           colorBitResolution_arg, 
           colorCodingType_arg, 
@@ -201,7 +201,7 @@ namespace pcl{
 //      using pcl::io::OctreePointCloudCompression<PointT, LeafT, BranchT, OctreeT>::i_frame_counter_;
 //      using pcl::io::OctreePointCloudCompression<PointT, LeafT, BranchT, OctreeT>::
 //      using pcl::octree::OctreePointCloud<PointT, LeafT, BranchT, OctreeT>::
-*/      
+*/
        //! number of omp threads
        int num_threads_;
     };

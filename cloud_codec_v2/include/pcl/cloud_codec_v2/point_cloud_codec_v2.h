@@ -110,7 +110,7 @@ namespace pcl{
           const double pointResolution_arg = 0.001,
           const double octreeResolution_arg = 0.01,
           bool doVoxelGridDownDownSampling_arg = false,
-		  const unsigned int iFrameRate_arg = 0, /* NO PCL P Frames in this version of the codec !! */
+      const unsigned int iFrameRate_arg = 0, /* NO PCL P Frames in this version of the codec !! */
           bool doColorEncoding_arg = true,
           const unsigned char colorBitResolution_arg = 6,
           const unsigned char colorCodingType_arg = 0,
@@ -186,7 +186,7 @@ namespace pcl{
         virtual void
         decodePointCloudDeltaFrame(const PointCloudConstPtr &icloud_arg, PointCloudPtr &out_cloud_arg, 
         std::istream& i_coded_data, std::istream& p_coded_data);
-        
+      
         //! function to return performance metric
         uint64_t *
         getPerformanceMetrics()

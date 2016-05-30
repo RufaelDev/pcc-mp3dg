@@ -54,7 +54,7 @@ namespace pcl{
 
         static bool 
         compressQuaternion(Eigen::Quaternion<float> &quat_in, int16_t *comp_dat);
-        
+
         static bool 
         deCompressQuaternion(int16_t *comp_dat, Eigen::Quaternion<float> &quat_out);
     };
