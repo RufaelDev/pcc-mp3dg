@@ -49,6 +49,7 @@
 
 // added for cloud codec v2
 #include <pcl/cloud_codec_v2/point_coding_v2.h>
+#include <pcl/cloud_codec_v2/plane_proj_point_coding.h>
 #include <pcl/cloud_codec_v2/color_coding_jpeg.h>
 
 namespace pcl{
@@ -265,6 +266,8 @@ namespace pcl{
         bool do_connectivity_encoding_;   //! encode the connectivity (not yet implemented)
 
         PointCodingV2<PointT> centroid_coder_; //! centroid encoding
+		
+		PlaneProjCoding<PointT> planeProj_coder_; //! initialize the plane projection coder
 
         ColorCodingJPEG<PointT> jp_color_coder_; //! new color coding via jpeg
 

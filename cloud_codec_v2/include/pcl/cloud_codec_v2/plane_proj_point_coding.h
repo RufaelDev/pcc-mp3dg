@@ -56,6 +56,9 @@ namespace pcl
       * \note typename: PointT: type of point used in pointcloud
       * \author Rufael Mekuria rufael@unified-streaming.com
       */
+	// value to signal plane projection coding in the color types
+	const int PLANE_PROJ_CODING = 5;
+	 
     template<typename PointT>
     class PlaneProjCoding
     {
@@ -71,7 +74,7 @@ namespace pcl
           pointCompressionResolution_ (0.001f) // 1mm
         {
         }
-
+        
         /** \brief Empty class constructor. */
         virtual
         ~PlaneProjCoding ()

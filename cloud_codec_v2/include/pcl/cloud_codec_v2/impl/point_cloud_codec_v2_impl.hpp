@@ -1325,20 +1325,33 @@ namespace pcl{
       // points detail encoding
       if (!do_voxel_grid_enDecoding_)
       {
-        // encode amount of points within voxel
-        point_count_data_vector_.push_back (static_cast<int> (leafIdx.size ()));
+		if(color_coding_type_ != PLANE_PROJ_CODING)
+		{
+          // encode amount of points within voxel
+          point_count_data_vector_.push_back (static_cast<int> (leafIdx.size ()));
 
-        // differentially encode points to lower voxel corner
-        point_coder_.encodePoints (leafIdx, lowerVoxelCorner, input_);
+          // differentially encode points to lower voxel corner
+          point_coder_.encodePoints (leafIdx, lowerVoxelCorner, input_);
 
-        if (cloud_with_color_) {
-          // encode color of points
-          if(!color_coding_type_) {
-            color_coder_.encodePoints (leafIdx, point_color_offset_, input_);
-          } else {
-            jp_color_coder_.encodePoints (leafIdx, point_color_offset_, input_);
+          if (cloud_with_color_) {
+            // encode color of points
+            if(!color_coding_type_) {
+              color_coder_.encodePoints (leafIdx, point_color_offset_, input_);
+            } 
+			else {
+              jp_color_coder_.encodePoints (leafIdx, point_color_offset_, input_);
+            }
           }
-        }
+		}
+		else
+		{
+		  // encode amount of points within voxel
+          point_count_data_vector_.push_back (static_cast<int> (leafIdx.size ()));
+
+          // code the contained points using the plane projection method
+          planeProj_coder_.encodePoints (leafIdx, lowerVoxelCorner, input_);	
+			
+		}
       }
       else // centroid or voxelgrid encoding
       {
@@ -1402,14 +1415,17 @@ namespace pcl{
         // increase point cloud by amount of voxel points
         for (i = 0; i < pointCount; i++)
           output_->points.push_back (newPoint);
-
-        // calculcate position of lower voxel corner
-        lowerVoxelCorner[0] = static_cast<double> (key_arg.x) * resolution_ + min_x_;
-        lowerVoxelCorner[1] = static_cast<double> (key_arg.y) * resolution_ + min_y_;
-        lowerVoxelCorner[2] = static_cast<double> (key_arg.z) * resolution_ + min_z_;
-
-        // decode differentially encoded points
-        point_coder_.decodePoints (output_, lowerVoxelCorner, cloudSize, cloudSize + pointCount);
+         
+		
+          // calculcate position of lower voxel corner
+          lowerVoxelCorner[0] = static_cast<double> (key_arg.x) * resolution_ + min_x_;
+          lowerVoxelCorner[1] = static_cast<double> (key_arg.y) * resolution_ + min_y_;
+          lowerVoxelCorner[2] = static_cast<double> (key_arg.z) * resolution_ + min_z_;
+        
+		if(color_coding_type_ != PLANE_PROJ_CODING)    // decode differentially encoded points
+          point_coder_.decodePoints (output_, lowerVoxelCorner, cloudSize, cloudSize + pointCount);
+		else
+			planeProj_coder_.decodePoints (output_, lowerVoxelCorner, cloudSize, cloudSize + pointCount);
       }
       else
       {
@@ -1529,19 +1545,37 @@ namespace pcl{
         uint64_t point_diff_data_vector_size;
         uint64_t point_diff_color_data_vector_size;
 
-        // encode amount of points per voxel
-        pointCountDataVector_size = point_count_data_vector_.size();
-        compressed_tree_data_out_arg2.write (reinterpret_cast<const char*> (&pointCountDataVector_size), 
+		if(color_coding_type_ != PLANE_PROJ_CODING)
+		{
+          // encode amount of points per voxel
+          pointCountDataVector_size = point_count_data_vector_.size();
+          compressed_tree_data_out_arg2.write (reinterpret_cast<const char*> (&pointCountDataVector_size), 
           sizeof (pointCountDataVector_size));
-        compressed_point_data_len_ += entropy_coder_.encodeIntVectorToStream(point_count_data_vector_,
+          compressed_point_data_len_ += entropy_coder_.encodeIntVectorToStream(point_count_data_vector_,
           compressed_tree_data_out_arg2);
 
-        // encode differential point information
-        std::vector<char>& point_diff_data_vector = point_coder_.getDifferentialDataVector();
-        point_diff_data_vector_size = point_diff_data_vector.size ();
-        compressed_tree_data_out_arg2.write (reinterpret_cast<const char*> (&point_diff_data_vector_size), sizeof (point_diff_data_vector_size));
-        compressed_point_data_len_ += entropy_coder_.encodeCharVectorToStream(point_diff_data_vector, compressed_tree_data_out_arg2);
+          // encode differential point information
+          std::vector<char>& point_diff_data_vector = point_coder_.getDifferentialDataVector();
+          point_diff_data_vector_size = point_diff_data_vector.size ();
+          compressed_tree_data_out_arg2.write (reinterpret_cast<const char*> (&point_diff_data_vector_size), sizeof (point_diff_data_vector_size));
+          compressed_point_data_len_ += entropy_coder_.encodeCharVectorToStream(point_diff_data_vector, compressed_tree_data_out_arg2);
+        }
+		else
+		{
+		  // encode amount of points per voxel
+          pointCountDataVector_size = point_count_data_vector_.size();
+          compressed_tree_data_out_arg2.write (reinterpret_cast<const char*> (&pointCountDataVector_size), 
+          sizeof (pointCountDataVector_size));
+          compressed_point_data_len_ += entropy_coder_.encodeIntVectorToStream(point_count_data_vector_,
+          compressed_tree_data_out_arg2);
 
+          // encode plane projected point information
+          std::vector<char>& plane_proj_data_vector =  planeProj_coder_.getPlaneDataVector();
+          plane_proj_data_vector_size = plane_proj_data_vector.size ();
+          compressed_tree_data_out_arg2.write (reinterpret_cast<const char*> (&plane_proj_data_vector_size), sizeof (plane_proj_data_vector_size));
+          compressed_point_data_len_ += entropy_coder_.encodeCharVectorToStream(plane_proj_data_vector, compressed_tree_data_out_arg2);	
+			
+		}
         if (cloud_with_color_)
         {
           // encode differential color information
