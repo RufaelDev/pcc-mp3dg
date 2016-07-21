@@ -1544,6 +1544,7 @@ namespace pcl{
         uint64_t pointCountDataVector_size;
         uint64_t point_diff_data_vector_size;
         uint64_t point_diff_color_data_vector_size;
+		uint64_t plane_proj_data_vector_size;
 
 		if(color_coding_type_ != PLANE_PROJ_CODING)
 		{

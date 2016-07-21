@@ -22,7 +22,7 @@ if(build)
 		"include/pcl/${SUBSYS_NAME}/color_coding_jpeg.h"
 		"include/pcl/${SUBSYS_NAME}/quaternion_coding.h"
 		"include/pcl/${SUBSYS_NAME}/rigid_transform_coding.h"
-		"include/pcl/${SUBSYS_NAME}/plane_proje_point_coding.h"
+		"include/pcl/${SUBSYS_NAME}/plane_proj_point_coding.h"
         )
 
     set(impl_incs
