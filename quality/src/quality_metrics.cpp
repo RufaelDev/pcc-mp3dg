@@ -34,3 +34,5 @@
  *  POSSIBILITY OF SUCH DAMAGE.
  *
  */
+#include <pcl/quality/quality_metrics.h>
+#include <pcl/quality/impl/quality_metrics_impl.hpp>
