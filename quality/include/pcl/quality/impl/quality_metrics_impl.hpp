@@ -197,7 +197,7 @@ namespace pcl{
 
 		// calculate max energy of point
 		float l_max_geom_signal_energy = l_max_signal.x * l_max_signal.x 
-			+ l_max_signal.y + l_max_signal.y + l_max_signal.z * l_max_signal.z ;
+			+ l_max_signal.y * l_max_signal.y + l_max_signal.z * l_max_signal.z ;
 
 		float peak_signal_to_noise_ratio =  10 * std::log10( l_max_geom_signal_energy / (dist_rms * dist_rms));
 
