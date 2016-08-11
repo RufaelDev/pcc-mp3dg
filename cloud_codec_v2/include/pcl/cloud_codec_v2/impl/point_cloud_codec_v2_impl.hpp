@@ -867,7 +867,7 @@ namespace pcl{
       }  
 
       /* encode all the points that could not be predicted 
-      from the previous coded frame in i frame manner with cluod_codec_v2 */
+      from the previous coded frame in i frame manner with cloud_codec_v2 */
       OctreePointCloudCodecV2<PointT,LeafT,BranchT,OctreeT> intra_coder 
         (
         MANUAL_CONFIGURATION,
@@ -1157,7 +1157,7 @@ namespace pcl{
       comp_dat_size+=color_coder.encodeCharVectorToStream(color_vector, compressed_tree_data_out_arg);
     }
 
-    //! function for coding an enhancment layer
+    //! function for decoding an enhancment layer
     template<typename PointT, typename LeafT, typename BranchT, typename OctreeT> void
       OctreePointCloudCodecV2<PointT, LeafT, BranchT, OctreeT>::decodeEnhancementLayer(std::istream& compressed_tree_data_in_arg, PointCloudPtr &cloud_arg, PointCloudPtr &cloud_arg_enh)
     {      
@@ -1577,7 +1577,7 @@ namespace pcl{
         point_avg_color_data_vector.resize (static_cast<std::size_t> (point_avg_color_data_vector_size));
         compressed_color_data_len_ += entropy_coder_.decodeStreamToCharVector(compressed_tree_data_in_arg1,	point_avg_color_data_vector);
       }
-
+/* no enhancement layer encoding/decoding TBD
       //! check if the enhancement layer has been received
       compressed_tree_data_in_arg2.peek();
       if(compressed_tree_data_in_arg2.good() && (! compressed_tree_data_in_arg2.eof()) )
@@ -1611,6 +1611,7 @@ namespace pcl{
           compressed_color_data_len_ += entropy_coder_.decodeStreamToCharVector (compressed_tree_data_in_arg2, pointDiffColorDataVector);
         }
       }
+  no enhancement layer encoding/decoding TBD */
     };
     /*! \brief
     *  \param point_clouds: an array of pointers to point_clouds to be inspected and modified
