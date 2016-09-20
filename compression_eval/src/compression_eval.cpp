@@ -855,7 +855,7 @@ int
                 }
             }
             // ~ write predictively encoded frames
-            // print the evaluation results to the output .cs file
+            // print the evaluation results to the output .csv file
             achieved_quality.print_csv_line(compression_arg_ss.str(), res_base_ofstream);
           }
           ////////////// END ASSESMENT //////////////////
