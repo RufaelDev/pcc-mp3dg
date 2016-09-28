@@ -40,6 +40,8 @@
 #define COMPRESSION_EVAL_IMPL_HPP
 
 #include <pcl/compression_eval/compression_eval.h>
+#include <pcl/common/common.h>
+#include <pcl/common/eigen.h>
 
 namespace pcl{
 
@@ -123,6 +125,57 @@ namespace pcl{
         output_file << std::endl;
       }
     }
+
+	// class for running the MPEG Compression eval testbench
+	class PCL_EXPORTS CompressionEval {
+		////////////////////////////////////////////////////////////////////////////////////////////////////////////
+		/**!
+		* \struct to store meshes metadata for official evaluation by MPEG committee
+		* \author Rufael Mekuria (rufael.mekuria@cwi.nl)
+		*/
+		////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	    public:
+		struct compression_eval_mesh_meta_data
+		{
+			string original_file_name;
+			size_t original_file_size;
+			bool has_coords;
+			bool has_normals;
+			bool has_colors;
+			bool has_texts;
+			bool has_conn;
+			compression_eval_mesh_meta_data()
+				: has_coords(true), has_normals(false), has_colors(false), has_texts(false), has_conn(false)
+			{}
+		};
+
+	    public:
+		  ///////////////  Bounding Box Logging /////////////////////////	
+		  // log information on the bounding boxes, which is critical for alligning clouds in time
+		  ofstream bb_out;
+		  Eigen::Vector4f min_pt_bb;
+		  Eigen::Vector4f max_pt_bb;
+		  bool is_bb_init;
+		  double bb_expand_factor;
+		// default constructor
+		CompressionEval()
+			  : bb_out("bounding_box_pre_mesh.txt"), is_bb_init(false), bb_expand_factor(0.10)
+		{};
+
+		int
+		printHelp(int, char **argv);
+
+		bool
+		loadPLYMesh(const string &filename, pcl::PolygonMesh &mesh);
+
+        bool
+        loadPLYFolder(const string &folder_name,
+          vector<pcl::PolygonMesh> &meshes,
+          vector<compression_eval_mesh_meta_data> &meshes_meta_data);
+
+        int 
+		run(int argc, char** argv);
+	};
   }
 }
 

@@ -76,6 +76,8 @@ namespace pcl{
     void
     logOccupancyCodesFrequencies(std::vector<std::vector<char> > & occupancy_codes,
     std::ostream &output_file);
+
+	//class CompressionEval;
   }
 
 }

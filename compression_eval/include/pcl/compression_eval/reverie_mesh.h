@@ -19,6 +19,10 @@
 #include <algorithm>
 #include <string>
 
+#include <pcl/common/common.h>
+#include <pcl/common/eigen.h>
+
+
 // --------------------------------------------------------------------------
 //
 // Copyright(C) 2007-2013

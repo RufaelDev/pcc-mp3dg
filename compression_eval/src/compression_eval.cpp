@@ -38,9 +38,7 @@
 #include <iostream>
 #include <fstream>
 #include <vector>
-
 #include <cmath>
-#include <pcl/compression_eval/compression_eval.h>
 
 // dependency on the reverie mesh, allows rendering in reverie framework
 #include <pcl/compression_eval/reverie_mesh.h>
@@ -75,19 +73,28 @@ namespace po = boost::program_options;
 * \author Rufael Mekuria (rufael.mekuria@cwi.nl)
 */
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-struct compression_eval_mesh_meta_data
-{
-  string original_file_name;
-  size_t original_file_size;
-  bool has_coords;
-  bool has_normals;
-  bool has_colors;
-  bool has_texts;
-  bool has_conn;
-  compression_eval_mesh_meta_data()
-    : has_coords(true),  has_normals(false), has_colors(false), has_texts(false), has_conn(false)
-  {}
-};
+//struct compression_eval_mesh_meta_data
+//{
+//  string original_file_name;
+//  size_t original_file_size;
+//  bool has_coords;
+//  bool has_normals;
+//  bool has_colors;
+//  bool has_texts;
+//  bool has_conn;
+//  compression_eval_mesh_meta_data()
+//    : has_coords(true),  has_normals(false), has_colors(false), has_texts(false), has_conn(false)
+//  {}
+//};
+
+///////////////  Bounding Box Logging /////////////////////////	
+// log information on the bounding boxes, which is critical for alligning clouds in time
+// ofstream bb_out("bounding_box_pre_mesh.txt");
+// Eigen::Vector4f min_pt_bb;
+// Eigen::Vector4f max_pt_bb;
+// bool is_bb_init = false;
+// double bb_expand_factor = 0.10;
+/////////////// END CODEC PARAMETER SETTINGS /////////////////////////
 
 //! explicit instantiation of the octree compression modules from pcl
 //template class OctreePointCloudCodecV2<PointXYZRGB>;
@@ -98,24 +105,18 @@ template class PCL_EXPORTS pcl::io::OctreePointCloudCompression<pcl::PointXYZRGB
 typedef OctreePointCloudCompression<PointXYZ> pointsOnlyOctreeCodec;
 typedef OctreePointCloudCompression<PointXYZRGB> colorOctreeCodec;
 typedef OctreePointCloudCodecV2<PointXYZRGB> colorOctreeCodecV2;
-///////////////  Bounding Box Logging /////////////////////////	
-// log information on the bounding boxes, which is critical for alligning clouds in time
-ofstream bb_out("bounding_box_pre_mesh.txt");
-Eigen::Vector4f min_pt_bb;
-Eigen::Vector4f max_pt_bb;
-bool is_bb_init=false;
-double bb_expand_factor = 0.10;
-/////////////// END CODEC PARAMETER SETTINGS /////////////////////////
 
-void
-  printHelp (int, char **argv)
+
+int
+CompressionEval::printHelp (int, char **argv)
 {
   print_error ("Syntax is: %s input_dir1 input_dir2 ............ input_dirN\n put the parameter_config.txt", argv[0]);
+  return 0;
 }
 
 //! function for loading a mesh file
 bool
-  loadPLYMesh (const string &filename, pcl::PolygonMesh &mesh)
+CompressionEval::loadPLYMesh (const string &filename, pcl::PolygonMesh &mesh)
 {
   TicToc tt;
   print_highlight ("Loading "); 
@@ -139,7 +140,7 @@ bool
 
 //! function for loading a mesh files in a folder
 bool
-  loadPLYFolder(const string &folder_name, vector<pcl::PolygonMesh> &meshes, vector<compression_eval_mesh_meta_data> &meshes_meta_data){
+CompressionEval::loadPLYFolder(const string &folder_name, vector<pcl::PolygonMesh> &meshes, vector<compression_eval_mesh_meta_data> &meshes_meta_data){
 
     // check if folder is directory
     if(!boost::filesystem::is_directory(folder_name)){
@@ -216,7 +217,7 @@ script for point cloud codec evaluation by MPEG committee
 */
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 int
-  main (int argc, char** argv)
+CompressionEval::run(int argc, char** argv)
 {
   print_info ("Load a Folder of Point Clouds\n ", argv[0]);
 
