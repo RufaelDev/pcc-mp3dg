@@ -42,6 +42,9 @@
 #include <pcl/compression_eval/compression_eval.h>
 #include <pcl/common/common.h>
 #include <pcl/common/eigen.h>
+#include <boost/program_options.hpp>
+#include <iostream>
+#include <fstream>
 
 namespace pcl{
 
@@ -149,6 +152,13 @@ namespace pcl{
 			{}
 		};
 
+		struct bounding_box
+		{
+			Eigen::Vector4f min_xyz;
+			Eigen::Vector4f max_xyz;
+		};
+
+
 	    public:
 		  ///////////////  Bounding Box Logging /////////////////////////	
 		  // log information on the bounding boxes, which is critical for alligning clouds in time
@@ -175,6 +185,71 @@ namespace pcl{
 
         int 
 		run(int argc, char** argv);
+
+		int
+	    loadConfig(void);
+
+		int
+		loadClouds(int argc, char** argv);
+
+		int
+	    fuseClouds();
+
+		int
+	    preFilterClouds();
+
+		int
+		allignBBClouds();
+
+		int
+		run_eval(int argc,char **argv);
+
+	    protected: 
+
+         ////////////// configuration  //////////////////
+		 boost::program_options::variables_map vm;
+		 boost::program_options::options_description desc;
+		 int enh_bit_settings;
+		 vector<int> octree_bit_settings;
+		 vector<int> color_bit_settings;
+         vector<int> color_coding_types;
+		 bool keep_centroid;
+		 int write_out_ply;
+		 int do_delta_coding;
+		 int icp_on_original;
+		 int macroblocksize;
+		 int testbbalign;  // testing the bounding box alignment algorithm
+		 bool do_icp_color_offset;
+		 int do_radius_align;
+		 double rad_size;
+		 bool create_scalable;
+		 int jpeg_value;
+		 int omp_cores;
+
+		 ////////////// clouds //////////////////
+		 vector<int> ply_folder_indices;
+
+		 // store all loaded meshes in a vector and store all metadata separately (optional)
+		 vector<vector<pcl::PolygonMesh> > meshes;
+		 vector<vector<compression_eval_mesh_meta_data> > meshes_meta_data;
+
+		 // data structures for storing the fused meshes
+		 vector<boost::shared_ptr<pcl::PointCloud<PointXYZRGB> > > fused_clouds;
+		 vector<compression_eval_mesh_meta_data> fused_clouds_meta_data;
+
+		 // bb allign
+		 int bb_align_count;
+		 std::vector<bool> aligned_flags;
+		 std::vector<bounding_box> assigned_bbs;
+
+		 // stream statistics
+		 ofstream res_p_ofstream;
+		 ofstream res_base_ofstream;
+	     ofstream res_enh_ofstream;
+
+		 // bounding box is expanded
+		 Eigen::Vector4f min_pt_res;
+		 Eigen::Vector4f max_pt_res;
 	};
   }
 }
