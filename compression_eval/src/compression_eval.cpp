@@ -181,11 +181,7 @@ bool
             mdata.has_conn = false;
 
           //! check the fields in the point cloud to detect properties of the mesh
-#if __cplusplus >= 201103L
-          for( auto it = meshes.back().cloud.fields.begin(); it != meshes.back().cloud.fields.end(); ++it)
-#else
           for( std::vector<pcl::PCLPointField>::iterator it = meshes.back().cloud.fields.begin(); it != meshes.back().cloud.fields.end(); ++it)
-#endif//__cplusplus >= 201103L
           {
             if( it->name == "rgb")
               mdata.has_colors = true;
@@ -392,11 +388,7 @@ int
   
   if (algorithm == "V1") {
     int cb = 0, ct = 0, ob = 0;
-#if __cplusplus >= 201103L
-    auto pcl_encoder = new pcl::io::OctreePointCloudCompression<pcl::PointXYZRGB> (
-#else
     pcl::io::OctreePointCloudCompression<pcl::PointXYZRGB>* pcl_encoder = new pcl::io::OctreePointCloudCompression<pcl::PointXYZRGB> (
-#endif//__cplusplus < 201103L
          MANUAL_CONFIGURATION,
          show_statistics,
          std::pow( 2.0, -1.0 * ( octree_bit_settings[ob] + enh_bit_settings)),
@@ -406,11 +398,7 @@ int
          color_bit_settings[cb] ? true : false, // doColorEncoding
          color_bit_settings[cb]
       );
-#if __cplusplus >= 201103L
-    auto pcl_decoder = new pcl::io::OctreePointCloudCompression<pcl::PointXYZRGB> (
-#else
     OctreePointCloudCompression<pcl::PointXYZRGB>* pcl_decoder = new pcl::io::OctreePointCloudCompression<pcl::PointXYZRGB> (
-#endif//__cplusplus < 201103L
          MANUAL_CONFIGURATION,
          show_statistics,
          std::pow( 2.0, -1.0 * ( octree_bit_settings[ob] + enh_bit_settings)),
@@ -422,11 +410,7 @@ int
     );
     pcl::quality::QualityMetric achieved_quality;
     string o_log_csv = vm["output_csv_file"].as<string>();
-#if __cplusplus >= 201103L
-    ofstream res_base_ofstream(o_log_csv);
-#else
     ofstream res_base_ofstream(o_log_csv.c_str());
-#endif//__cplusplus >= 201103L
 
     for(int i=0; i < fused_clouds.size(); i++)
     {
@@ -505,11 +489,7 @@ int
       else
         aligned_flags[k] = true;
 
-#if __cplusplus >= 201103L
-      auto dyn_range = max_pt_bb - min_pt_bb;
-#else
       Eigen::Vector4f  dyn_range = max_pt_bb - min_pt_bb;
-#endif//__cplusplus >= 201103L
 
       assigned_bbs[k].max_xyz = max_pt_bb;
       assigned_bbs[k].min_xyz = min_pt_bb;
@@ -548,17 +528,9 @@ int
 
   /////////////// PREPARE OUTPUT CSV FILE AND CODEC PARAMTER SETTINGS /////////////////////////
     string o_log_csv = vm["output_csv_file"].as<string>();
-#if __cplusplus >= 201103L
-    ofstream res_base_ofstream(o_log_csv);
-#else
     ofstream res_base_ofstream(o_log_csv.c_str());
-#endif//__cplusplus >= 201103L
     string p_log_csv = vm["pframe_quality_log"].as<string>();
-#if __cplusplus >= 201103L
-    ofstream res_p_ofstream(p_log_csv);
-#else
     ofstream res_p_ofstream(p_log_csv.c_str());
-#endif//__cplusplus >= 201103L
     ofstream res_enh_ofstream("results_enh.csv");
 
     // print the headers
@@ -595,11 +567,7 @@ int
           // declare codecs outside the mesh iterator loop to test double buffering
 
           //! encode the fused cloud with and without colors
-#if __cplusplus >= 201103L
-          auto l_codec_encoder = generatePCLOctreeCodecV2<PointXYZRGB>(
-#else
           boost::shared_ptr<OctreePointCloudCodecV2<PointXYZRGB> > l_codec_encoder = generatePCLOctreeCodecV2<PointXYZRGB>(
-#endif//__cplusplus < 201103L
             octree_bit_settings[ob],
             enh_bit_settings,
             color_bit_settings[cb],
@@ -616,11 +584,7 @@ int
           l_codec_encoder->setMacroblockSize(macroblocksize);
 
           // initialize structures for decoding base and enhancement layers
-#if __cplusplus >= 201103L
-          auto l_codec_decoder_base = generatePCLOctreeCodecV2<PointXYZRGB>(
-#else
           boost::shared_ptr<OctreePointCloudCodecV2<PointXYZRGB> > l_codec_decoder_base = generatePCLOctreeCodecV2<PointXYZRGB>(
-#endif//__cplusplus >= 201103L
             octree_bit_settings[ob],
             enh_bit_settings,
             color_bit_settings[cb],

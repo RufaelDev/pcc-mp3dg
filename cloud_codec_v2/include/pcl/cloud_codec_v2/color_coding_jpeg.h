@@ -215,11 +215,7 @@ namespace pcl{
         //! map the colors to jpeg via a zigzag scan and code them as a single jpeg
         SnakeGridMapping<char,uint8_t> m(l_mapped_im.width ,l_mapped_im.height);
         std::vector<uint8_t> &res = m.doMapping(in_vec);
-#if __cplusplus >= 201103L
-        l_mapped_im.data = std::move(res);
-#else
         l_mapped_im.data = res;
-#endif//__cplusplus < 201103L
 
         io::JPEGWriter<uint8_t>::writeJPEG(l_mapped_im,out_data,jpeg_quality_);
         return;
@@ -233,11 +229,7 @@ namespace pcl{
 
         SnakeGridMapping<uint8_t,char> un_m(im_out.width,im_out.height);
         std::vector<char> res2 = un_m.undoSnakeGridMapping(im_out.data);
-#if __cplusplus >= 201103L
-        in_vec = std::move(res2);
-#else
         in_vec = res2;
-#endif//__cplusplus < 201103L
 
       }
 
@@ -265,11 +257,7 @@ namespace pcl{
           std::copy((char *) in_vec.data(),
                     (char *) in_vec.data() + 3 * pixel_count, 
                     (char *) line_dat.data());
-#if __cplusplus >= 201103L
-          im_in.data = std::move(line_dat);
-#else
           im_in.data = line_dat;
-#endif//__cplusplus < 201103L
 
             io::JPEGWriter<uint8_t>::writeJPEG(im_in,cdat.clines[0],jpeg_quality_);
         }
@@ -282,11 +270,7 @@ namespace pcl{
             std::copy((char *) in_vec.data() + 3 * 2048 * i,
                       (char *) in_vec.data() + 3 * 2048 * (i+1), 
                       (char *) line_dat.data());
-#if __cplusplus >= 201103L
-            im_in.data = std::move(line_dat);
-#else
             im_in.data = line_dat;
-#endif//__cplusplus < 201103L
             io::JPEGWriter<uint8_t>::writeJPEG(im_in,cdat.clines[i],jpeg_quality_);
           }
           else
@@ -295,11 +279,7 @@ namespace pcl{
             std::copy((char *)   in_vec.data() + 3 * 2048 * i,
                       (char *)   in_vec.data() + in_vec.size(), 
                       (char *)   line_dat.data());
-#if __cplusplus >= 201103L
-            im_in.data = std::move(line_dat);
-#else
             im_in.data = line_dat;
-#endif//__cplusplus < 201103L
             im_in.width = (uint32_t) im_in.data.size() / 3;
             io::JPEGWriter<uint8_t>::writeJPEG(im_in,cdat.clines[i],jpeg_quality_);
           }

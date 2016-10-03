@@ -47,6 +47,5 @@
 
 int main(int argc, char * argv[]) {
   evaluate_compression_impl<PointXYZRGB> evaluator(argc, argv);
-  cout << "__cplusplus=" << __cplusplus << endl;
   return evaluator.evaluate() == true ? 0 : -1;
 }

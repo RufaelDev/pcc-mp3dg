@@ -70,13 +70,6 @@ namespace po = boost::program_options;
 #include <pcl/cloud_codec_v2/point_cloud_codec_v2.h>
 #include <pcl/cloud_codec_v2/point_cloud_codec_v2_omp.h>
 
-#if __cplusplus >= 201103L
-template<typename T>
-using PointCloudT = pcl::PointCloud<T>;
-
-template<typename T>
-using PointCloudPtrT = boost::shared_ptr<PointCloudT<T> >;
-#endif//__cplusplus >= 201103L
 
 #define WITH_VTK 31
 #ifdef  WITH_VTK
@@ -111,17 +104,6 @@ class evaluate_compression_impl : evaluate_compression {
     int viewer_decoded_window_position_[2];
 #endif//WITH_VTK
   
-#if __cplusplus >= 201103L
-    void do_outlier_removal (std::vector<PointCloudPtrT<PointT> >& group);
-    void do_bounding_box_normalization (std::vector<PointCloudPtrT<PointT> >& group);
-    void do_encoding (PointCloudPtrT<PointT> pointcloud, stringstream* coded_stream, QualityMetric & achieved_quality);
-    void do_decoding (stringstream* coded_stream, PointCloudPtrT<PointT> pointcloud, QualityMetric & qualityMetric);
-    void do_delta_encoding (PointCloudPtrT<PointT> i_cloud, PointCloudPtrT<PointT> p_cloud, PointCloudPtrT<PointT> output_cloud, stringstream* i_stream, stringstream* p_stream, QualityMetric & qualityMetric);
-    void do_delta_decoding (std::stringstream* i_stream,std::stringstream* p_stream, PointCloudPtrT<PointT> i_cloud, PointCloudPtrT<PointT> out_cloud, QualityMetric & qualityMetric);
-
-    void do_quality_computation (PointCloudPtrT<PointT> & reference_pointcloud, PointCloudPtrT<PointT> & pointcloud, QualityMetric & quality_metric);
-  void do_outputs (std::string path, PointCloudPtrT<PointT> pointcloud, QualityMetric & qualityMetric);
-#else
     void do_outlier_removal (std::vector<boost::shared_ptr<pcl::PointCloud<PointT> > >& pointcloud);
     void do_bounding_box_normalization (std::vector<boost::shared_ptr<pcl::PointCloud<PointT> > >& pointcloud);
     void do_encoding (boost::shared_ptr<pcl::PointCloud<PointT> > point_cloud, stringstream* coded_stream, QualityMetric & achieved_quality);
@@ -130,7 +112,6 @@ class evaluate_compression_impl : evaluate_compression {
     void do_delta_decoding (stringstream* i_stream, stringstream* p_stream, boost::shared_ptr<pcl::PointCloud<PointT> > i_cloud, boost::shared_ptr<pcl::PointCloud<PointT> > out_cloud, QualityMetric & qualityMetric);
     void do_quality_computation (boost::shared_ptr<pcl::PointCloud<PointT> > & pointcloud, boost::shared_ptr<pcl::PointCloud<PointT> > &reference_pointcloud, QualityMetric & quality_metric);
     void do_outputs (std::string path, boost::shared_ptr<pcl::PointCloud<PointT> > pointcloud, QualityMetric & qualityMetric);
-#endif//__cplusplus >= 201103L
     // V1 (common) settings
     boost::shared_ptr<pcl::io::OctreePointCloudCompression<PointT> > encoder_V1_;
     boost::shared_ptr<pcl::io::OctreePointCloudCompression<PointT> > decoder_V1_;
@@ -139,11 +120,7 @@ class evaluate_compression_impl : evaluate_compression {
     boost::shared_ptr<pcl::io::OctreePointCloudCodecV2<PointT> > decoder_V2_;
   
     bool evaluate (); // TBD need catch exceptions
-#if __cplusplus >= 201103L
-    void do_visualization (PointCloudPtrT<PointT> original_pointcloud, PointCloudPtrT<PointT> decoded_pointcloud);
-#else
     void do_visualization (boost::shared_ptr<pcl::PointCloud<PointT> > original_pointcloud, boost::shared_ptr<pcl::PointCloud<PointT> > decoded_pointcloud);
-#endif//__cplusplus >= 201103L
     int debug_level_;
 };
 
@@ -293,12 +270,8 @@ evaluate_compression_impl<PointT>::get_options (int argc, char** argv)
   std::vector<std::string> unrecognized_options = po::collect_unrecognized (parsed_options.options, po::exclude_positional);
   if (unrecognized_options.size () > 0) {
     cerr << "Unrecognized options on command line:\n";
-#if __cplusplus >= 201103L
-    for (auto unrecognized : unrecognized_options) {
-#else
     for (std::vector<std::string>::iterator itr= unrecognized_options.begin (); itr != unrecognized_options.end (); itr++) {
       std::string unrecognized = *itr;
-#endif//__cplusplus >= 201103L
       std::cerr << unrecognized.c_str () << "\n";
     }
   } else {
@@ -308,12 +281,8 @@ evaluate_compression_impl<PointT>::get_options (int argc, char** argv)
     unrecognized_options = po::collect_unrecognized (parsed_options.options, po::exclude_positional);
     if (unrecognized_options.size () > 0) {
       cerr << "Unrecognized options in configuration file:\n";
-#if __cplusplus >= 201103L
-      for (auto unrecognized : unrecognized_options) {
-#else
       for (std::vector<std::string>::iterator itr= unrecognized_options.begin (); itr != unrecognized_options.end (); itr++) {
         std::string unrecognized = *itr;
-#endif//__cplusplus >= 201103L
         std::cerr << unrecognized.c_str () << "\n";
       }
       return_value = false;
@@ -496,22 +465,14 @@ evaluate_compression_impl<PointT>::complete_initialization ()
     
 template<typename PointT>
 void
-#if __cplusplus >= 201103L
-evaluate_compression_impl<PointT>::do_outlier_removal (std::vector<PointCloudPtrT<PointT> >& group)
-#else
 evaluate_compression_impl<PointT>::do_outlier_removal (std::vector<boost::shared_ptr<pcl::PointCloud<PointT> > >& group)
-#endif//__cplusplus >= 201103L
 {
   pcl::io::OctreePointCloudCodecV2 <PointT>::remove_outliers (group, K_outlier_filter_, radius_, debug_level_);
 }
       
 template<typename PointT>
 void
-#if __cplusplus >= 201103L
-evaluate_compression_impl<PointT>::do_bounding_box_normalization (std::vector<PointCloudPtrT<PointT> >& group)
-#else
 evaluate_compression_impl<PointT>::do_bounding_box_normalization (std::vector<boost::shared_ptr<pcl::PointCloud<PointT> > >& group)
-#endif//__cplusplus >= 201103L
 {
   vector<pcl::io::BoundingBox> bounding_boxes (group.size ());
   pcl::io::OctreePointCloudCodecV2 <PointT>::normalize_pointclouds (group, bounding_boxes, bb_expand_factor_, debug_level_);
@@ -519,11 +480,7 @@ evaluate_compression_impl<PointT>::do_bounding_box_normalization (std::vector<bo
                                   
 template<typename PointT>
 void
-#if __cplusplus >= 201103L
-evaluate_compression_impl<PointT>::do_encoding (PointCloudPtrT<PointT> pointcloud, std::stringstream* stream, QualityMetric & achieved_quality)
-#else
 evaluate_compression_impl<PointT>::do_encoding (boost::shared_ptr<pcl::PointCloud<PointT> > pointcloud, std::stringstream* stream, QualityMetric & qualityMetric)
-#endif//__cplusplus >= 201103L
 {
   pcl::console::TicToc tt;
   int initial_stream_pos = stream->tellp ();
@@ -553,11 +510,7 @@ evaluate_compression_impl<PointT>::do_encoding (boost::shared_ptr<pcl::PointClou
     
 template<typename PointT>
 void
-#if __cplusplus >= 201103L
-evaluate_compression_impl<PointT>::do_decoding (std::stringstream* coded_stream, PointCloudPtrT<PointT> pointcloud, QualityMetric & qualityMetric)
-#else
 evaluate_compression_impl<PointT>::do_decoding (std::stringstream* coded_stream, boost::shared_ptr<pcl::PointCloud<PointT> > pointcloud, QualityMetric & qualityMetric)
-#endif//__cplusplus >= 201103L
 {
   pcl::console::TicToc tt;
   tt.tic ();
@@ -577,21 +530,12 @@ evaluate_compression_impl<PointT>::do_decoding (std::stringstream* coded_stream,
 
 template<typename PointT>
 void
-#if __cplusplus >= 201103L
-evaluate_compression_impl<PointT>::do_delta_encoding (PointCloudPtrT<PointT> i_cloud, // intra coded cloud
-                                                   PointCloudPtrT<PointT> p_cloud, // next cloud used for prediction
-                                                   PointCloudPtrT<PointT> out_cloud, // output the predicted cloud
-                                                   std::stringstream* i_stream,
-                                                   std::stringstream* p_stream,
-                                                   QualityMetric & qualityMetric)
-#else
 evaluate_compression_impl<PointT>::do_delta_encoding (boost::shared_ptr<pcl::PointCloud<PointT> > i_cloud,
                                                      boost::shared_ptr<pcl::PointCloud<PointT> > p_cloud,
                                                      boost::shared_ptr<pcl::PointCloud<PointT> > out_cloud,
                                                      std::stringstream* i_stream,
                                                      std::stringstream* p_stream,
                                                      QualityMetric & qualityMetric)
-#endif//__cplusplus >= 201103L
 {
   pcl::console::TicToc tt;
   tt.tic ();
@@ -605,19 +549,11 @@ evaluate_compression_impl<PointT>::do_delta_encoding (boost::shared_ptr<pcl::Poi
     
 template<typename PointT>
 void
-#if __cplusplus >= 201103L
-evaluate_compression_impl<PointT>::do_delta_decoding (std::stringstream* i_stream,
-                                                   std::stringstream* p_stream,
-                                                   PointCloudPtrT<PointT> i_cloud,
-                                                   PointCloudPtrT<PointT> out_cloud,
-                                                   QualityMetric & qualityMetric)
-#else
 evaluate_compression_impl<PointT>::do_delta_decoding (std::stringstream* i_stream,
                                                      std::stringstream* p_stream,
                                                      boost::shared_ptr<pcl::PointCloud<PointT> > i_cloud,
                                                      boost::shared_ptr<pcl::PointCloud<PointT> > out_cloud,
                                                      QualityMetric & qualityMetric)
-#endif//__cplusplus >= 201103L
 {
   pcl::console::TicToc tt;
   tt.tic ();
@@ -628,14 +564,9 @@ evaluate_compression_impl<PointT>::do_delta_decoding (std::stringstream* i_strea
     
 template<typename PointT>
 void
-#if __cplusplus >= 201103L
-evaluate_compression_impl<PointT>::do_quality_computation (PointCloudPtrT<PointT> & pointcloud,
-             PointCloudPtrT<PointT> & reference_pointcloud, QualityMetric & quality_metric)
-#else
 evaluate_compression_impl<PointT>::do_quality_computation (boost::shared_ptr<pcl::PointCloud<PointT> > & reference_pointcloud,
                                                         boost::shared_ptr<pcl::PointCloud<PointT> > & pointcloud,
                                                         QualityMetric & quality_metric)
-#endif//__cplusplus >= 201103L
 {
   // compute quality metric
   computeQualityMetric<PointT> (*reference_pointcloud, *pointcloud, quality_metric);
@@ -643,11 +574,7 @@ evaluate_compression_impl<PointT>::do_quality_computation (boost::shared_ptr<pcl
     
 template<typename PointT>
 void
-#if __cplusplus >= 201103L
-evaluate_compression_impl<PointT>::do_outputs (std::string path, PointCloudPtrT<PointT> pointcloud, QualityMetric & qualityMetric)
-#else
 evaluate_compression_impl<PointT>::do_outputs (std::string path, boost::shared_ptr<pcl::PointCloud<PointT> > pointcloud, QualityMetric & qualityMetric)
-#endif//__cplusplus >= 201103L
 {
   // write the .ply file by converting to point cloud2 and then to polygon mesh
   pcl::PCLPointCloud2::Ptr cloud2(new pcl::PCLPointCloud2());
@@ -658,12 +585,8 @@ evaluate_compression_impl<PointT>::do_outputs (std::string path, boost::shared_p
     
 template<typename PointT>
 void
-#if __cplusplus >= 201103L
-evaluate_compression_impl<PointT>::do_visualization (PointCloudPtrT<PointT> opc, PointCloudPtrT<PointT> dpc)
-#else
 evaluate_compression_impl<PointT>::do_visualization (boost::shared_ptr<pcl::PointCloud<PointT> > opc,
                                                    boost::shared_ptr<pcl::PointCloud<PointT> > dpc)
-#endif//__cplusplus >= 201103L
 {
   if (visualization_) {
     // display both original and encoded/decoded PointClouds in their viewers
@@ -685,11 +608,7 @@ using namespace boost::filesystem;
 using namespace pcl;
 template<typename PointT>
 int
-#if __cplusplus >= 201103L
-load_pcd_file (std::string path, PointCloudPtrT<PointT> pc)
-#else
 load_pcd_file (std::string path, boost::shared_ptr<pcl::PointCloud<PointT> > pc)
-#endif//__cplusplus >= 201103L
 {
   int rv = 1;
   PCDReader pcd_reader;
@@ -701,11 +620,7 @@ load_pcd_file (std::string path, boost::shared_ptr<pcl::PointCloud<PointT> > pc)
 
 template<typename PointT>
 int
-#if __cplusplus >= 201103L
-load_ply_file (std::string path, PointCloudPtrT<PointT> pc)
-#else
 load_ply_file (std::string path, boost::shared_ptr<pcl::PointCloud<PointT> > pc)
-#endif//__cplusplus >= 201103L
 {
   int rv = 1;
   PLYReader ply_reader;
@@ -726,11 +641,7 @@ load_ply_file (std::string path, boost::shared_ptr<pcl::PointCloud<PointT> > pc)
 
 template<typename PointT>
 int
-#if __cplusplus >= 201103L
-load_input_directory (std::string directory_name, std::string extension, std::vector<PointCloudPtrT<PointT> > &clouds)
-#else
 load_input_directory (std::string directory_name, std::string extension, std::vector<boost::shared_ptr<pcl::PointCloud<PointT> > > &clouds)
-#endif//__cplusplus >= 201103L
 {
   int rv = 0;
   if ( ! boost::filesystem::is_directory (directory_name)) {
@@ -739,26 +650,17 @@ load_input_directory (std::string directory_name, std::string extension, std::ve
   }
   // order of filenamed returned by directory_iterator is undefined
   vector<std::string> filenames;
-#if __cplusplus >= 201103L
-  for (auto de : directory_iterator (directory_name))
-  {
-#else
   namespace fs = boost::filesystem;
   boost::shared_ptr<pcl::PointCloud<PointT> > pc (new PointCloud<PointT> ());
   for (fs::directory_iterator itr (directory_name); itr != fs::directory_iterator (); itr++)
   {
     fs::directory_entry de = *itr;
-#endif//__cplusplus >= 201103L
     filenames.push_back (de.path ().string ());
   }
   std::sort (filenames.begin (), filenames.end ());
   for (auto&& filename : filenames)
   {
-#if __cplusplus >= 201103L
-    PointCloudPtrT<PointT> pc (new PointCloud<PointT> ());
-#else
     boost::shared_ptr<pcl::PointCloud<PointT> > pc (new PointCloud<PointT> ());
-#endif//__cplusplus >= 201103L
     if (boost::ends_with (filename, ".ply"))
     {
       if (load_ply_file (filename, pc))
@@ -814,24 +716,15 @@ evaluate_compression_impl<PointT>::evaluate ()
       cout << "Fusing multiple directories not yet implemented.\n";
       return (false);
     }
-#if __cplusplus >= 201103L
-    std::vector<PointCloudPtrT<PointT> > point_clouds, group, original_group;
-    for (auto input_directory : input_directories_) {
-#else
     std::vector<boost::shared_ptr<pcl::PointCloud<PointT> > > point_clouds, group, original_group, encoder_output_clouds;
     for (std::vector<std::string>::iterator itr = input_directories_.begin (); itr != input_directories_.end (); itr++) {
       std::string input_directory = *itr;
-#endif//__cplusplus >= 201103L
       load_input_directory (input_directory, ".ply", point_clouds);
     }
     int count = 0;
     
-#if __cplusplus >= 201103L
-    for (auto point_cloud : point_clouds) {
-#else
     for (typename std::vector<boost::shared_ptr<pcl::PointCloud<PointT> > >::iterator itr = point_clouds.begin (); itr != point_clouds.end (); itr++) {
       boost::shared_ptr<pcl::PointCloud<PointT> > point_cloud = *itr;
-#endif//__cplusplus >= 201103L
       // a deep copy is needed because the point_cloud is potentially modified
       // and the original is needed to compare results
       group.push_back (point_cloud->makeShared ());
@@ -847,13 +740,8 @@ evaluate_compression_impl<PointT>::evaluate ()
         vector<float> shared_macroblock_percentages (group_size_);
 
         for (int i = 0; i < group.size (); i++) {
-#if __cplusplus >= 201103L
-          auto pc = group[i];
-          auto original_pc = original_group[i]->makeShared ();
- #else
           boost::shared_ptr<pcl::PointCloud<PointT> > pc = group[i];
           boost::shared_ptr<pcl::PointCloud<PointT> > original_pc = original_group[i]->makeShared ();
-#endif//__cplusplus >= 201103L
           stringstream ss;
           QualityMetric achieved_quality;
           int i_strm_pos_cur = 0, i_strm_pos_prev = 0; // current end previous position in i-code stream
@@ -865,11 +753,7 @@ evaluate_compression_impl<PointT>::evaluate ()
           string s = ss.str ();
           std::stringstream coded_stream (s);//ss.str ());
           int group_size = original_group.size ();
-#if __cplusplus >= 201103L
-          PointCloudPtrT<PointT> output_pointcloud (new PointCloudT<PointT> ()), opc (new PointCloudT<PointT> ());
-#else
           boost::shared_ptr<pcl::PointCloud<PointT> > output_pointcloud (new pcl::PointCloud<PointT> ()), opc (new pcl::PointCloud<PointT> ());
-#endif//__cplusplus >= 201103L
           opc = original_group[i];
           do_decoding (&coded_stream, output_pointcloud, achieved_quality);
           do_quality_computation (pc, output_pointcloud, achieved_quality);

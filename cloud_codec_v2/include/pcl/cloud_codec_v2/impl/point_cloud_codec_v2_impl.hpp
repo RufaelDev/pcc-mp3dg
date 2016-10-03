@@ -1705,11 +1705,7 @@ namespace pcl{
         else
           aligned_flags[k] = true;
         
-#if __cplusplus >= 201103L
-        auto dyn_range = max_pt_bb - min_pt_bb;
-#else
         Eigen::Vector4f  dyn_range = max_pt_bb - min_pt_bb;
-#endif//__cplusplus >= 201103L
         
         bounding_boxes[k].max_xyz = max_pt_bb;
         bounding_boxes[k].min_xyz = min_pt_bb;

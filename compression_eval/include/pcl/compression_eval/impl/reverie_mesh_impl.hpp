@@ -8,13 +8,11 @@ static const unsigned int MAX_COMMENT_SIZE = 256;
 #  pragma warning(disable : 4996) //Disable depreciated use of strerror
 #endif
 
-#if __cplusplus < 201103L
 struct bounding_box
 {
     Eigen::Vector4f min_xyz;
     Eigen::Vector4f max_xyz;
 };
-#endif//__cplusplus
 
 
 // ***************
