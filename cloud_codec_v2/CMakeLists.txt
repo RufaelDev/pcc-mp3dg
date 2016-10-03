@@ -1,6 +1,6 @@
 set(SUBSYS_NAME cloud_codec_v2)
 set(SUBSYS_DESC "Extensions for Point Cloud Compression for MPEG")
-set(SUBSYS_DEPS common sample_consensus search kdtree octree filters features io geometry registration quality)
+set(SUBSYS_DEPS common sample_consensus search kdtree octree filters features io geometry registration)
 
 set(build TRUE)
 PCL_SUBSYS_OPTION(build "${SUBSYS_NAME}" "${SUBSYS_DESC}" ON)
