@@ -60,9 +60,29 @@ main (int argc, char** argv)
 {
   print_info ("MPEG Compression Eval Testbench, use: %s -h\n", argv[0]);
 
-  pcl::io::CompressionEval eval;
-  eval.run(argc, argv);
+  if (argc != 4) 
+  {
+	  std::cout << "3 input arguments usage app.exe icloudfile pcloudfile targetoutput file" << std::endl;
+  }
 
-  return (0);
+  std::string icloudfile = std::string(argv[1]);
+  std::string pcloudfile = std::string(argv[2]);
+  std::string target_out = std::string(argv[3]);
+
+  //std::cout << std::string(argv[1]) << std::endl;
+  //std::cout << std::string(argv[2]) << std::endl;
+  //std::cout << std::string(argv[3]) << std::endl;
+
+  pcl::io::CompressionEval eval;
+  //eval.encodeGOP(icloudfile, pcloudfile, target_out);
+
+  stringstream idat;
+  stringstream pdat;
+  stringstream pidat;
+
+
+  eval.decodeGOP(target_out,true);
+
+  return(0);
 }
 

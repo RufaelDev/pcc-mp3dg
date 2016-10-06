@@ -55,10 +55,10 @@ namespace pcl{
     * @param nr_bits_base_layer an integer argument representing the number of bits for encoding the base layer (octree).
     * @param nr_bits_enh_layer an integer argument representing the number of bits for encoding the  enhancement layer (octree).
     * @param nr_bits_colors an integer argument representing the number of bits for encoding the colors per point.
-	* @param i_frame_rate an integer controlling the framerate of iframes
-	* @param color_coding_type an integer specifying the color coding type to be used (pcl=0,jpeg=1)
-	* @param do_centroid_coding a boolean indicating whether or not centroid coding is toe be used
-	* \note PointT typename of point used in point cloud
+    * @param i_frame_rate an integer controlling the framerate of iframes
+    * @param color_coding_type an integer specifying the color coding type to be used (pcl=0,jpeg=1)
+    * @param do_centroid_coding a boolean indicating whether or not centroid coding is toe be used
+    * \note PointT typename of point used in point cloud
     * \author Rufael Mekuria (rufael.mekuria@cwi.nl)
     */
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -129,54 +129,90 @@ namespace pcl{
       }
     }
 
-	// class for running the MPEG Compression eval testbench
-	class PCL_EXPORTS CompressionEval {
-		////////////////////////////////////////////////////////////////////////////////////////////////////////////
-		/**!
-		* \struct to store meshes metadata for official evaluation by MPEG committee
-		* \author Rufael Mekuria (rufael.mekuria@cwi.nl)
-		*/
-		////////////////////////////////////////////////////////////////////////////////////////////////////////////
-	    public:
-		struct compression_eval_mesh_meta_data
-		{
-			string original_file_name;
-			size_t original_file_size;
-			bool has_coords;
-			bool has_normals;
-			bool has_colors;
-			bool has_texts;
-			bool has_conn;
-			compression_eval_mesh_meta_data()
-				: has_coords(true), has_normals(false), has_colors(false), has_texts(false), has_conn(false)
-			{}
-		};
+    // class for running the MPEG Compression eval testbench
+    class PCL_EXPORTS CompressionEval {
+        ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        /**!
+        * \struct to store meshes metadata for official evaluation by MPEG committee
+        * \author Rufael Mekuria (rufael.mekuria@cwi.nl)
+        */
+        ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        public:
+        struct compression_eval_mesh_meta_data
+        {
+            string original_file_name;
+            size_t original_file_size;
+            bool has_coords;
+            bool has_normals;
+            bool has_colors;
+            bool has_texts;
+            bool has_conn;
+            compression_eval_mesh_meta_data()
+                : has_coords(true), has_normals(false), has_colors(false), has_texts(false), has_conn(false)
+            {}
+        };
 
-		struct bounding_box
-		{
-			Eigen::Vector4f min_xyz;
-			Eigen::Vector4f max_xyz;
-		};
+        struct bounding_box
+        {
+            Eigen::Vector4f min_xyz;
+            Eigen::Vector4f max_xyz;
+        };
 
+        // struct to store the settings for cloud_codec_v2 in a bitstream 
+        struct codec_setting {
 
-	    public:
-		  ///////////////  Bounding Box Logging /////////////////////////	
-		  // log information on the bounding boxes, which is critical for alligning clouds in time
-		  ofstream bb_out;
-		  Eigen::Vector4f min_pt_bb;
-		  Eigen::Vector4f max_pt_bb;
-		  bool is_bb_init;
-		  double bb_expand_factor;
-		// default constructor
-		CompressionEval()
-			  : bb_out("bounding_box_pre_mesh.txt"), is_bb_init(false), bb_expand_factor(0.10)
-		{};
+            uint16_t enh_bit_settings;
+            uint16_t octree_bit_setting;
+            uint16_t color_bit_setting;
+            uint16_t color_coding_type;
+            uint8_t keep_centroid;
+            uint8_t do_delta_coding;
+            uint8_t icp_on_original;
+            uint16_t macroblocksize;
+            uint8_t do_icp_color_offset;
+            uint8_t scalable_stream;
+            uint8_t jpeg_value;
+            uint8_t omp_cores;
 
-		int
-		printHelp(int, char **argv);
+            float floatbbXmin;
+            float floatbbYmin;
+            float floatbbZmin;
+            float floatbbXmax;
+            float floatbbYmax;
+            float floatbbZmax;
 
-		bool
-		loadPLYMesh(const string &filename, pcl::PolygonMesh &mesh);
+            uint64_t istream_size;
+            uint64_t pstream_size;
+            uint64_t pistream_size;
+        };
+
+        // struct to store the settings for the evaluation testbench
+        struct eval_settings{
+            int do_radius_align;
+            double rad_size;
+            bool testbbalign;
+            bool write_output_ply;
+            bool write_compressed_file;
+        };
+
+        public:
+          ///////////////  Bounding Box Logging /////////////////////////	
+          // log information on the bounding boxes, which is critical for alligning clouds in time
+          ofstream bb_out;
+          Eigen::Vector4f min_pt_bb;
+          Eigen::Vector4f max_pt_bb;
+          bool is_bb_init;
+          double bb_expand_factor;
+        // default constructor
+        CompressionEval()
+              : bb_out("bounding_box_pre_mesh.txt"), is_bb_init(false), bb_expand_factor(0.10)
+        {};
+
+        int
+        printHelp(int, char **argv);
+
+        bool
+        loadPLYMesh(const string &filename, pcl::PolygonMesh &mesh);
 
         bool
         loadPLYFolder(const string &folder_name,
@@ -184,73 +220,109 @@ namespace pcl{
           vector<compression_eval_mesh_meta_data> &meshes_meta_data);
 
         int 
-		run(int argc, char** argv);
+        run(int argc, char** argv);
+
+        int
+        loadConfig(void);
+
+        int
+        loadClouds(int argc, char** argv);
+
+        int
+        fuseClouds();
+
+        int
+        preFilterClouds();
+
+        int
+        allignBBClouds();
+
+        int
+        allignCloudGOP();
+
+        int
+        encodeGOP(std::string& iFrame, std::string& pFrame, std::string &ofile);
 
 		int
-	    loadConfig(void);
+		decodeGOP(string &input_file_name, bool write_file);
 
-		int
-		loadClouds(int argc, char** argv);
+        int
+        run_eval(int argc,char **argv);
 
-		int
-	    fuseClouds();
+        // load a group of point clouds as a GOP (preferably 2, but groups with multiple point clouds are allowed)
+        int 
+        loadCloudGOP(std::vector<string> &input_file_names);
 
-		int
-	    preFilterClouds();
+        int 
+        pccGOPWrite(std::string ofilename, 
+            std::stringstream & idata, 
+            std::stringstream & pdata, 
+            std::stringstream & ipdat);
 
-		int
-		allignBBClouds();
+        int
+        pccGOPRead(std::string ifilename, 
+            std::stringstream & idata, 
+            std::stringstream & pdata, 
+            std::stringstream & ipdat);
 
-		int
-		run_eval(int argc,char **argv);
+        int
+        testGOPReadWrite();
 
-	    protected: 
+        
 
-         ////////////// configuration  //////////////////
-		 boost::program_options::variables_map vm;
-		 boost::program_options::options_description desc;
-		 int enh_bit_settings;
-		 vector<int> octree_bit_settings;
-		 vector<int> color_bit_settings;
+        void
+        getCodecHeader(codec_setting &header);
+
+        void
+        setCodecHeader(codec_setting &header);
+
+        protected: 
+
+         ////////////// configuration (both of the codec and the evaluation testbench)  //////////////////
+         boost::program_options::variables_map vm;
+         boost::program_options::options_description desc;
+         int enh_bit_settings;
+         vector<int> octree_bit_settings;
+         vector<int> color_bit_settings;
          vector<int> color_coding_types;
-		 bool keep_centroid;
-		 int write_out_ply;
-		 int do_delta_coding;
-		 int icp_on_original;
-		 int macroblocksize;
-		 int testbbalign;  // testing the bounding box alignment algorithm
-		 bool do_icp_color_offset;
-		 int do_radius_align;
-		 double rad_size;
-		 bool create_scalable;
-		 int jpeg_value;
-		 int omp_cores;
+         bool keep_centroid;
+         int write_out_ply;
+         int do_delta_coding;
+         int icp_on_original;
+         int macroblocksize;
+         int testbbalign;  // testing the bounding box alignment algorithm
+         bool do_icp_color_offset;
+         int do_radius_align;
+         double rad_size;
+         bool create_scalable;
+         int jpeg_value;
+         int omp_cores;
 
-		 ////////////// clouds //////////////////
-		 vector<int> ply_folder_indices;
+         ////////////// clouds //////////////////
+         vector<int> ply_folder_indices;
 
-		 // store all loaded meshes in a vector and store all metadata separately (optional)
-		 vector<vector<pcl::PolygonMesh> > meshes;
-		 vector<vector<compression_eval_mesh_meta_data> > meshes_meta_data;
+         // store all loaded meshes in a vector and store all metadata separately (optional)
+         vector<vector<pcl::PolygonMesh> > meshes;
+         vector<vector<compression_eval_mesh_meta_data> > meshes_meta_data;
 
-		 // data structures for storing the fused meshes
-		 vector<boost::shared_ptr<pcl::PointCloud<PointXYZRGB> > > fused_clouds;
-		 vector<compression_eval_mesh_meta_data> fused_clouds_meta_data;
+         // data structures for storing the fused meshes
+         vector<boost::shared_ptr<pcl::PointCloud<PointXYZRGB> > > fused_clouds;
+         vector<compression_eval_mesh_meta_data> fused_clouds_meta_data;
 
-		 // bb allign
-		 int bb_align_count;
-		 std::vector<bool> aligned_flags;
-		 std::vector<bounding_box> assigned_bbs;
+         // bb allign
+         int bb_align_count;
+         std::vector<bool> aligned_flags;
+         std::vector<bounding_box> assigned_bbs;
 
-		 // stream statistics
-		 ofstream res_p_ofstream;
-		 ofstream res_base_ofstream;
-	     ofstream res_enh_ofstream;
+         // stream statistics
+         ofstream res_p_ofstream;
+         ofstream res_base_ofstream;
+         ofstream res_enh_ofstream;
 
-		 // bounding box is expanded
-		 Eigen::Vector4f min_pt_res;
-		 Eigen::Vector4f max_pt_res;
-	};
+         // bounding box is expanded
+         Eigen::Vector4f min_pt_res;
+         Eigen::Vector4f max_pt_res;
+    };
   }
 }
 
