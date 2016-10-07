@@ -153,8 +153,11 @@ if (BUILD_tools)
   PCL_ADD_EXECUTABLE(pcl_grid_min "${SUBSYS_NAME}" grid_min.cpp)
   target_link_libraries(pcl_grid_min pcl_common pcl_io pcl_filters)
   
-  PCL_ADD_EXECUTABLE (pcl_mpeg_pcc_standalone "${SUBSYS_NAME}" mpeg_pcc_standalone.cpp)
-  target_link_libraries(pcl_mpeg_pcc_standalone pcl_common pcl_sample_consensus pcl_search pcl_kdtree pcl_octree pcl_io pcl_io_ply pcl_filters pcl_compression_eval pcl_cloud_codec_v2)
+  PCL_ADD_EXECUTABLE (pcl_mpeg_pcc_gop_coder "${SUBSYS_NAME}" mpeg_pcc_gop_coder.cpp)
+  target_link_libraries(pcl_mpeg_pcc_gop_coder pcl_common pcl_sample_consensus pcl_search pcl_kdtree pcl_octree pcl_io pcl_io_ply pcl_filters pcl_compression_eval pcl_cloud_codec_v2)
+  
+  PCL_ADD_EXECUTABLE (pcl_mpeg_pcc_compression_eval "${SUBSYS_NAME}" mpeg_pcc_compression_eval.cpp)
+  target_link_libraries(pcl_mpeg_pcc_compression_eval pcl_common pcl_sample_consensus pcl_search pcl_kdtree pcl_octree pcl_io pcl_io_ply pcl_filters pcl_compression_eval pcl_cloud_codec_v2)
 
   if(BUILD_OPENNI AND OPENNI_FOUND)
     PCL_ADD_EXECUTABLE(pcl_oni2pcd "${SUBSYS_NAME}" oni2pcd.cpp)

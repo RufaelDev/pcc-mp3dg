@@ -805,7 +805,7 @@ CompressionEval::encodeGOP(std::string& iFrame, std::string& pFrame, std::string
 }
 
 int
-CompressionEval::decodeGOP(string &input_file_name, bool write_file)
+CompressionEval::decodeGOP(string &input_file_name, bool write_file, std::string &IcodedOut, std::string &PCodedOut)
 {
 	// stringstreams containing the data
 	std::stringstream idat, pdat, ipdat;
@@ -868,15 +868,12 @@ CompressionEval::decodeGOP(string &input_file_name, bool write_file)
 		decoded_Pcloud->at(l).z += min_pt_bb[2];
 	}
 
-	
-	std::string out_file_nameI = input_file_name + "Idecoded.ply";
-	std::string out_file_nameP = input_file_name + "Pdecoded.ply";
-
 	// write the output file
 	PLYWriter ply_out;
-	ply_out.write(out_file_nameI, *decoded_Icloud);
-	ply_out.write(out_file_nameP, *decoded_Pcloud);
-
+	
+	ply_out.write(IcodedOut, *decoded_Icloud);
+	ply_out.write(PCodedOut, *decoded_Pcloud);
+	
     return 1;
 }
 

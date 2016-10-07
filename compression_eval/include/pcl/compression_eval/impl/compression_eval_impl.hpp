@@ -152,13 +152,14 @@ namespace pcl{
             {}
         };
 
+		//! struct to keep the bounding box in memory
         struct bounding_box
         {
             Eigen::Vector4f min_xyz;
             Eigen::Vector4f max_xyz;
         };
 
-        // struct to store the settings for cloud_codec_v2 in a bitstream 
+        //! struct to store the settings for cloud_codec_v2 in a bitstream 
         struct codec_setting {
 
             uint16_t enh_bit_settings;
@@ -186,7 +187,7 @@ namespace pcl{
             uint64_t pistream_size;
         };
 
-        // struct to store the settings for the evaluation testbench
+        //! struct to store the settings for the evaluation testbench
         struct eval_settings{
             int do_radius_align;
             double rad_size;
@@ -203,7 +204,7 @@ namespace pcl{
           Eigen::Vector4f max_pt_bb;
           bool is_bb_init;
           double bb_expand_factor;
-        // default constructor
+        //! default constructor
         CompressionEval()
               : bb_out("bounding_box_pre_mesh.txt"), is_bb_init(false), bb_expand_factor(0.10)
         {};
@@ -240,11 +241,13 @@ namespace pcl{
         int
         allignCloudGOP();
 
+		//! encode an I cloud and a P cloud
         int
         encodeGOP(std::string& iFrame, std::string& pFrame, std::string &ofile);
 
+		//! decode an I cloud and a P cloud
 		int
-		decodeGOP(string &input_file_name, bool write_file);
+		decodeGOP(string &input_file_name, bool write_file, std::string & IcodedOut, std::string & PcodedOut);
 
         int
         run_eval(int argc,char **argv);
@@ -253,22 +256,23 @@ namespace pcl{
         int 
         loadCloudGOP(std::vector<string> &input_file_names);
 
+		//! writing a compressed gop to a file
         int 
         pccGOPWrite(std::string ofilename, 
             std::stringstream & idata, 
             std::stringstream & pdata, 
             std::stringstream & ipdat);
 
+		//! reading a compressed fop from a file
         int
         pccGOPRead(std::string ifilename, 
             std::stringstream & idata, 
             std::stringstream & pdata, 
             std::stringstream & ipdat);
 
+		// dummy test function
         int
         testGOPReadWrite();
-
-        
 
         void
         getCodecHeader(codec_setting &header);
