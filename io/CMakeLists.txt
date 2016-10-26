@@ -304,9 +304,7 @@ if(build)
         "include/pcl/${SUBSYS_NAME}/impl/lzf_image_io.hpp"
         "include/pcl/${SUBSYS_NAME}/impl/synchronized_queue.hpp"
         "include/pcl/${SUBSYS_NAME}/impl/point_cloud_image_extractors.hpp"
-		"include/pcl/${SUBSYS_NAME}/impl/jpeg_io.hpp"
-        include/pcl/compression/impl/entropy_range_coder.hpp
-        include/pcl/compression/impl/octree_pointcloud_compression.hpp
+        "include/pcl/${SUBSYS_NAME}/impl/jpeg_io.hpp"
         ${VTK_IO_INCLUDES_IMPL}
        )
     if(PNG_FOUND AND (WITH_OPENNI OR WITH_OPENNI2))
