@@ -1196,6 +1196,8 @@ CompressionEval::run_eval(int argc, char** argv)
                                     computeQualityMetric<pcl::PointXYZRGB>(*fused_clouds[i + 1], *out_d, pframe_quality);
                                     pframe_quality.print_csv_line(compression_arg_ss.str(), res_p_ofstream);
 
+									// write a gop file
+									/*
 									// write the gop file
 									if (true)
 									{
@@ -1209,7 +1211,7 @@ CompressionEval::run_eval(int argc, char** argv)
 										boost::lexical_cast<string>(i + 1) +
 										"_out_gop.mpcc";
 
-										// write a gop file
+										
 									    std::cout << " ..........WRITING GOP FRAME.......... " 
 											      << l_output_base .str().size() << " bytes intra " 
 											      << p_frame_pdat.str().size() + p_frame_idat.str().size() << " bytes predicted " << std::endl;
@@ -1217,7 +1219,7 @@ CompressionEval::run_eval(int argc, char** argv)
 											l_output_base,
 											p_frame_pdat,
 											p_frame_idat);
-                                    }
+                                    }*/
                                 // store the quality metrics for the p cloud
                             }
 						
@@ -1344,7 +1346,8 @@ CompressionEval::run_eval(int argc, char** argv)
 					
 					// output frame
 					stringstream p_frame_pdate, p_frame_idate;
-					// write the gop file
+					// write the gop file not tested to work well yet
+					/* 
 					if (true)
 					{
 					std::string output_file_frame = "prev_ct_" +
@@ -1364,7 +1367,7 @@ CompressionEval::run_eval(int argc, char** argv)
 							l_output_base,
 							p_frame_pdate,
 							p_frame_idate);
-					}
+					}*/
 
                     // ~ write predictively encoded frames
                     // print the evaluation results to the output .cs file
