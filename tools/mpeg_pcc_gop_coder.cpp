@@ -2,8 +2,7 @@
  * Software License Agreement (BSD License)
  *
  *  Point Cloud Library (PCL) - www.pointclouds.org
- *  Copyright (c) 2011-2012, Willow Garage, Inc.
- *
+ *  Copyright (c) CodeShop B.V. 2016
  *  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
@@ -54,11 +53,16 @@ using namespace pcl;
 using namespace pcl::io;
 using namespace pcl::console;
 
-/* ---[ */
+/* ---[
+Simple Tool to encode GoPs of Point Cloud frames for generation of Anchors in MPEG
+use pcl_mpeg_pcc_frame_coder.exe -e iframe.ply pframe.ply compstream to encode
+use pcl_mpeg_pcc_frame_coder.exe -d outfileI.ply outfileP.ply compstream to decode
+uses separate parameter_config.txt file
+*/
 int
 main (int argc, char** argv)
 {
-  print_info ("MPEG Point Cloud Compression Eval Testbench, use: %s -h\n", argv[0]);
+  print_info ("MPEG Point Cloud Gop Coder Tool, use: %s -h\n", argv[0]);
 
   if (std::string(argv[1]).compare("-h") == 0)
   {
@@ -66,6 +70,7 @@ main (int argc, char** argv)
 	  std::cout << std::endl;
 	  std::cout << "example (encode):  mpeg_pcc_standalone.exe -e ifile.ply pfile.ply out_stream" << std::endl;
 	  std::cout << "example (decode):  mpeg_pcc_standalone.exe -d ifile_out.ply pfile_out.ply compressed_stream_file" << std::endl;
+	  return 1;
   }
 
   if (argc != 5) 
@@ -74,6 +79,7 @@ main (int argc, char** argv)
 	  std::cout << std::endl;
 	  std::cout << "example (encode):  mpeg_pcc_standalone.exe -e ifile.ply pfile.ply out_stream" << std::endl;
 	  std::cout << "example (decode):  mpeg_pcc_standalone.exe -d ifile_out.ply pfile_out.ply compressed_stream_file" << std::endl;
+	  return 1;
   }
 
   std::string coding_mode(argv[1]);

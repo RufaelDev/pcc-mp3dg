@@ -153,6 +153,9 @@ if (BUILD_tools)
   PCL_ADD_EXECUTABLE(pcl_grid_min "${SUBSYS_NAME}" grid_min.cpp)
   target_link_libraries(pcl_grid_min pcl_common pcl_io pcl_filters)
   
+  PCL_ADD_EXECUTABLE (pcl_mpeg_pcc_frame_coder "${SUBSYS_NAME}" mpeg_pcc_frame_coder.cpp)
+  target_link_libraries(pcl_mpeg_pcc_frame_coder pcl_common pcl_sample_consensus pcl_search pcl_kdtree pcl_octree pcl_io pcl_io_ply pcl_filters pcl_compression_eval pcl_cloud_codec_v2)
+  
   PCL_ADD_EXECUTABLE (pcl_mpeg_pcc_gop_coder "${SUBSYS_NAME}" mpeg_pcc_gop_coder.cpp)
   target_link_libraries(pcl_mpeg_pcc_gop_coder pcl_common pcl_sample_consensus pcl_search pcl_kdtree pcl_octree pcl_io pcl_io_ply pcl_filters pcl_compression_eval pcl_cloud_codec_v2)
   

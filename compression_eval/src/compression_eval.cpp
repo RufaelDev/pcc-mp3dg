@@ -383,6 +383,7 @@ CompressionEval::loadCloudGOP(std::vector<string> &input_file_names)
     return 1;
 }
 
+//! code for fusing multiple point clouds
 int
 CompressionEval::fuseClouds()
 {
@@ -624,46 +625,62 @@ CompressionEval::allignBBClouds() {
 // it will align the GOP based on this 2frame finite length sequence
 int
 CompressionEval::allignCloudGOP() {
-    //////////////// Logging of Prediction Performance /////////////////////////////////
-    bb_align_count = 1;
+	//////////////// Logging of Prediction Performance /////////////////////////////////
+	bb_align_count = 1;
 
-    aligned_flags.resize(fused_clouds.size());
-    assigned_bbs.resize(fused_clouds.size());
+	aligned_flags.resize(fused_clouds.size());
+	assigned_bbs.resize(fused_clouds.size());
 
-    Eigen::Vector4f min_ptI;
-    Eigen::Vector4f max_ptI;
+	Eigen::Vector4f min_ptI;
+	Eigen::Vector4f max_ptI;
 
-    Eigen::Vector4f min_ptP;
-    Eigen::Vector4f max_ptP;
+	pcl::getMinMax3D<pcl::PointXYZRGB>(*(fused_clouds[0]), min_ptI, max_ptI);
 
-    pcl::getMinMax3D<pcl::PointXYZRGB>(*(fused_clouds[0]), min_ptI, max_ptI);
-    pcl::getMinMax3D<pcl::PointXYZRGB>(*(fused_clouds[1]), min_ptP, max_ptP);
+	Eigen::Vector4f min_ptP;
+	Eigen::Vector4f max_ptP;
 
-    max_pt_bb[2] = std::max(max_ptI.z(), max_ptP.z());
-    max_pt_bb[1] = std::max(max_ptI.y(), max_ptP.y());
-    max_pt_bb[0] = std::max(max_ptI.x(), max_ptP.x());
+	max_pt_bb[2] = max_ptI.z();
+	max_pt_bb[1] = max_ptI.y();
+	max_pt_bb[0] = max_ptI.x();
 
-    min_pt_bb[2] = std::min(min_ptI.z(), min_ptP.z());
-    min_pt_bb[1] = std::min(min_ptI.y(), min_ptP.y());
-    min_pt_bb[0] = std::min(min_ptI.x(), min_ptP.x());
+	min_pt_bb[2] = min_ptI.z();
+	min_pt_bb[1] = min_ptI.y();
+	min_pt_bb[0] = min_ptI.x();
 
+	if (fused_clouds.size() > 1) {
+	  pcl::getMinMax3D<pcl::PointXYZRGB>(*(fused_clouds[1]), min_ptP, max_ptP);
+
+	  max_pt_bb[2] = std::max(max_ptI.z(), max_ptP.z());
+	  max_pt_bb[1] = std::max(max_ptI.y(), max_ptP.y());
+	  max_pt_bb[0] = std::max(max_ptI.x(), max_ptP.x());
+
+	  min_pt_bb[2] = std::min(min_ptI.z(), min_ptP.z());
+	  min_pt_bb[1] = std::min(min_ptI.y(), min_ptP.y());
+	  min_pt_bb[0] = std::min(min_ptI.x(), min_ptP.x());
+    }
+    
     is_bb_init = true;
     aligned_flags[0] = false;
-    aligned_flags[1] = true;
+	
+	if (fused_clouds.size() > 1)
+      aligned_flags[1] = true;
 
 #if __cplusplus >= 201103L
     auto dyn_range = max_pt_bb - min_pt_bb;
 #else
     Eigen::Vector4f  dyn_range = max_pt_bb - min_pt_bb;
 #endif//__cplusplus >= 201103L
+	assigned_bbs[0].max_xyz = max_pt_bb;
+	assigned_bbs[0].min_xyz = min_pt_bb;
 
-    assigned_bbs[0].max_xyz = max_pt_bb;
-    assigned_bbs[0].min_xyz = min_pt_bb;
-    assigned_bbs[1].max_xyz = max_pt_bb;
-    assigned_bbs[1].min_xyz = min_pt_bb;
+	if (fused_clouds.size() > 1) {
+		
+		assigned_bbs[1].max_xyz = max_pt_bb;
+		assigned_bbs[1].min_xyz = min_pt_bb;
+	}
 
     // normalize towards the bounding box
-    for (int j = 0; j < 2; j++)
+    for (int j = 0; j < fused_clouds.size(); j++)
     {
 		for (int l = 0; l < fused_clouds[j]->size(); l++)
 		{
@@ -679,7 +696,11 @@ CompressionEval::allignCloudGOP() {
 		}
     }
 
-    pcl::getMinMax3D<pcl::PointXYZRGB>(*(fused_clouds[1]), min_pt_res, max_pt_res);
+	//! sanity check
+	if(fused_clouds.size() > 1)
+      pcl::getMinMax3D<pcl::PointXYZRGB>(*(fused_clouds[1]), min_pt_res, max_pt_res);
+	else 
+	  pcl::getMinMax3D<pcl::PointXYZRGB>(*(fused_clouds[0]), min_pt_res, max_pt_res);
 
     assert(min_pt_res[0] >= 0);
     assert(min_pt_res[1] >= 0);
@@ -752,7 +773,8 @@ CompressionEval::encodeGOP(std::string& iFrame, std::string& pFrame, std::string
     this->loadConfig();
     std::vector<string> files;
     files.push_back(iFrame);
-    files.push_back(pFrame);
+	if(pFrame.size())
+      files.push_back(pFrame);
     this->loadCloudGOP(files);
     this->allignCloudGOP();
     this->preFilterClouds();
@@ -781,23 +803,27 @@ CompressionEval::encodeGOP(std::string& iFrame, std::string& pFrame, std::string
 
     stringstream l_output_iframe;
 
-    /////////////////////////////////////////////////////////////
-    //! do the encoding
+    //! do the encodingof intra frame
     TicToc tt;
     tt.tic();
+	std::cout << "encoded point cloud I frame: in " << fused_clouds[0]->points.size() << " points " << std::endl;
     l_codec_encoder->encodePointCloud(fused_clouds[0], l_output_iframe);
-    std::cout << "encoded point cloud I frame: elapsed time is: " << tt.toc() << std::endl;
+    std::cout << "encoded point cloud I frame: in "<< l_output_iframe.str().size() << " bytes " << "elapsed time is: " << tt.toc() << std::endl;
     tt.tic();
 
-    stringstream l_output_pframe_pdat;
-    stringstream l_output_pframe_idat;
+	stringstream l_output_pframe_pdat;
+	stringstream l_output_pframe_idat;
 
-    boost::shared_ptr<pcl::PointCloud<PointXYZRGB> > out_n(new pcl::PointCloud<PointXYZRGB>());
+	//! do the encodingof predicted frame (optional)
+	if (fused_clouds.size() > 1) {
 
-    l_codec_encoder->encodePointCloudDeltaFrame(icp_on_original ? fused_clouds[1] : l_codec_encoder->getOutputCloud(),
-        fused_clouds[1], out_n, l_output_pframe_idat, l_output_pframe_pdat, (int)icp_on_original, false);
+		boost::shared_ptr<pcl::PointCloud<PointXYZRGB> > out_n(new pcl::PointCloud<PointXYZRGB>());
 
-    std::cout << "encoded point P  frame: elapsed time is: " << tt.toc() << std::endl;
+		l_codec_encoder->encodePointCloudDeltaFrame(icp_on_original ? fused_clouds[1] : l_codec_encoder->getOutputCloud(),
+			fused_clouds[1], out_n, l_output_pframe_idat, l_output_pframe_pdat, (int)icp_on_original, false);
+
+		std::cout << "encoded point P  frame: elapsed time is: " << tt.toc() << std::endl;
+	}
 
 	pccGOPWrite(ofile, l_output_iframe,l_output_pframe_pdat,l_output_pframe_idat);
 
@@ -812,6 +838,10 @@ CompressionEval::decodeGOP(string &input_file_name, bool write_file, std::string
 
 	// read the data from a file
 	pccGOPRead(input_file_name, idat, pdat, ipdat);
+
+	int64_t  isize = idat.str().size();
+	int64_t  psize = pdat.str().size() + ipdat.str().size();
+	int64_t  pisize = ipdat.str().size();
 
 #if __cplusplus >= 201103L
 	auto l_codec_encoder = generatePCLOctreeCodecV2<PointXYZRGB>(
@@ -837,12 +867,16 @@ CompressionEval::decodeGOP(string &input_file_name, bool write_file, std::string
 
 	// do the decoding base layer
 	cout << "starting decoding the I frame point cloud \n" << endl;
-	l_codec_decoder->decodePointCloud(idat, decoded_Icloud);
+	if(isize)
+	  l_codec_decoder->decodePointCloud(idat, decoded_Icloud);
 
-	cout << "started decodign the P frame point cloud " << std::endl;
-	l_codec_decoder-> decodePointCloudDeltaFrame(decoded_Icloud, decoded_Pcloud, ipdat, pdat);
+	if(psize){
+	  cout << "started decodign the P frame point cloud " << std::endl;
+	  l_codec_decoder-> decodePointCloudDeltaFrame(decoded_Icloud, decoded_Pcloud, ipdat, pdat);
+	}
 	Eigen::Vector4f  dyn_range = max_pt_bb - min_pt_bb;
 
+	if (isize)
 	for (int l = 0; l < decoded_Icloud->size(); l++)
 	{
 		// dynamic range
@@ -855,6 +889,7 @@ CompressionEval::decodeGOP(string &input_file_name, bool write_file, std::string
 		decoded_Icloud->at(l).y += min_pt_bb[1];
 		decoded_Icloud->at(l).z += min_pt_bb[2];
 	}
+	if (psize)
 	for (int l = 0; l < decoded_Pcloud->size(); l++)
 	{
 		// dynamic range
@@ -871,8 +906,10 @@ CompressionEval::decodeGOP(string &input_file_name, bool write_file, std::string
 	// write the output file
 	PLYWriter ply_out;
 	
-	ply_out.write(IcodedOut, *decoded_Icloud);
-	ply_out.write(PCodedOut, *decoded_Pcloud);
+	if (isize)
+	  ply_out.write(IcodedOut, *decoded_Icloud);
+	if (psize)
+	  ply_out.write(PCodedOut, *decoded_Pcloud);
 	
     return 1;
 }
@@ -1158,9 +1195,33 @@ CompressionEval::run_eval(int argc, char** argv)
                                     // compute the quality of the resulting predictive frame
                                     computeQualityMetric<pcl::PointXYZRGB>(*fused_clouds[i + 1], *out_d, pframe_quality);
                                     pframe_quality.print_csv_line(compression_arg_ss.str(), res_p_ofstream);
-                                }
+
+									// write the gop file
+									if (true)
+									{
+									std::string output_file_gop = "prev_ct_" +
+										boost::lexical_cast<string>(ct) +
+										"ob_" +
+										boost::lexical_cast<string>(ob) +
+										"_cb_" +
+										boost::lexical_cast<string>(cb) +
+										"_mesh_nr_" +
+										boost::lexical_cast<string>(i + 1) +
+										"_out_gop.mpcc";
+
+										// write a gop file
+									    std::cout << " ..........WRITING GOP FRAME.......... " 
+											      << l_output_base .str().size() << " bytes intra " 
+											      << p_frame_pdat.str().size() + p_frame_idat.str().size() << " bytes predicted " << std::endl;
+										pccGOPWrite(output_file_gop,
+											l_output_base,
+											p_frame_pdat,
+											p_frame_idat);
+                                    }
                                 // store the quality metrics for the p cloud
                             }
+						
+						}
                     }
                     ///////////////////////////////////////////////////////////////////////
 
@@ -1278,7 +1339,33 @@ CompressionEval::run_eval(int argc, char** argv)
                                 }
                             }
 
+						
                     }
+					
+					// output frame
+					stringstream p_frame_pdate, p_frame_idate;
+					// write the gop file
+					if (true)
+					{
+					std::string output_file_frame = "prev_ct_" +
+						boost::lexical_cast<string>(ct) +
+						"ob_" +
+						boost::lexical_cast<string>(ob) +
+						"_cb_" +
+						boost::lexical_cast<string>(cb) +
+						"_mesh_nr_" +
+						boost::lexical_cast<string>(i + 1) +
+						"_out_frame.mpcc";
+
+						// write a gop file (single frame)
+					    std::cout << "................writing frame....................... " << std::endl;
+						std::cout << "................writing frame......................" << l_output_base.str().size() << "bytes" << std::endl;
+						pccGOPWrite(output_file_frame,
+							l_output_base,
+							p_frame_pdate,
+							p_frame_idate);
+					}
+
                     // ~ write predictively encoded frames
                     // print the evaluation results to the output .cs file
                     achieved_quality.print_csv_line(compression_arg_ss.str(), res_base_ofstream);
