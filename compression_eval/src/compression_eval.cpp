@@ -219,7 +219,7 @@ script for point cloud codec evaluation by MPEG committee
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 int
-CompressionEval::loadConfig() {
+CompressionEval::loadConfig(bool create_log_files) {
     ////////////////// parse configuration settings from required file ..//parameter_config.txt ///////////////////
 
 
@@ -280,24 +280,25 @@ CompressionEval::loadConfig() {
     ////////////////// ~end parse configuration file  /////////////////////////////////////
 
     /////////////// PREPARE OUTPUT CSV FILE AND CODEC PARAMTER SETTINGS /////////////////////////
-    string o_log_csv = vm["output_csv_file"].as<string>();
+	if (create_log_files) {
+		string o_log_csv = vm["output_csv_file"].as<string>();
 #if __cplusplus >= 201103L
-    res_base_ofstream = ofstream(o_log_csv);
+		res_base_ofstream = ofstream(o_log_csv);
 #else
-    res_base_ofstream = ofstream(o_log_csv.c_str());
+		res_base_ofstream = ofstream(o_log_csv.c_str());
 #endif//__cplusplus >= 201103L
-    string p_log_csv = vm["pframe_quality_log"].as<string>();
+		string p_log_csv = vm["pframe_quality_log"].as<string>();
 #if __cplusplus >= 201103L
-    ofstream res_p_ofstream = ofstream(p_log_csv);
+		ofstream res_p_ofstream = ofstream(p_log_csv);
 #else
-    res_p_ofstream = ofstream(p_log_csv.c_str());
+		res_p_ofstream = ofstream(p_log_csv.c_str());
 #endif//__cplusplus >= 201103L
-    res_enh_ofstream = ofstream("results_enh.csv");
+		res_enh_ofstream = ofstream("results_enh.csv");
 
-    // print the headers
-    QualityMetric::print_csv_header(res_base_ofstream);
-    QualityMetric::print_csv_header(res_p_ofstream);
-
+		// print the headers
+		QualityMetric::print_csv_header(res_base_ofstream);
+		QualityMetric::print_csv_header(res_p_ofstream);
+	}
     /////////////// END PREPARE OUTPUT CSV FILE AND CODEC PARAMTER SETTINGS /////////////////////////
     return 1;
 }
@@ -543,7 +544,7 @@ CompressionEval::allignBBClouds() {
 
         pcl::getMinMax3D<pcl::PointXYZRGB>(*(fused_clouds[k]), min_pt, max_pt);
 
-        bb_out << "[ " << min_pt.x() << "," << min_pt.y() << "," << min_pt.z() << "]    [" << max_pt.x() << "," << max_pt.y() << "," << max_pt.z() << "]" << endl;
+        //bb_out << "[ " << min_pt.x() << "," << min_pt.y() << "," << min_pt.z() << "]    [" << max_pt.x() << "," << max_pt.y() << "," << max_pt.z() << "]" << endl;
 
         // check if min fits bounding box, otherwise adapt the bounding box
         if (!((min_pt.x() > min_pt_bb.x()) && (min_pt.y() > min_pt_bb.y()) && (min_pt.z() > min_pt_bb.z())))
@@ -770,7 +771,7 @@ int
 CompressionEval::encodeGOP(std::string& iFrame, std::string& pFrame, std::string &ofile)
 {
     // load from scratch the class
-    this->loadConfig();
+    this->loadConfig(false);
     std::vector<string> files;
     files.push_back(iFrame);
 	if(pFrame.size())

@@ -199,14 +199,14 @@ namespace pcl{
         public:
           ///////////////  Bounding Box Logging /////////////////////////	
           // log information on the bounding boxes, which is critical for alligning clouds in time
-          ofstream bb_out;
+          //ofstream bb_out;
           Eigen::Vector4f min_pt_bb;
           Eigen::Vector4f max_pt_bb;
           bool is_bb_init;
           double bb_expand_factor;
         //! default constructor
         CompressionEval()
-              : bb_out("bounding_box_pre_mesh.txt"), is_bb_init(false), bb_expand_factor(0.10)
+              :  is_bb_init(false), bb_expand_factor(0.10)
         {};
 
         int
@@ -224,7 +224,7 @@ namespace pcl{
         run(int argc, char** argv);
 
         int
-        loadConfig(void);
+        loadConfig(bool create_log_files=true);
 
         int
         loadClouds(int argc, char** argv);
