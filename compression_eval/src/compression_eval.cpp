@@ -872,7 +872,7 @@ CompressionEval::decodeGOP(string &input_file_name, bool write_file, std::string
 	  l_codec_decoder->decodePointCloud(idat, decoded_Icloud);
 
 	if(psize){
-	  cout << "started decodign the P frame point cloud " << std::endl;
+	  cout << "started decoding the P frame point cloud " << std::endl;
 	  l_codec_decoder-> decodePointCloudDeltaFrame(decoded_Icloud, decoded_Pcloud, ipdat, pdat);
 	}
 	Eigen::Vector4f  dyn_range = max_pt_bb - min_pt_bb;
