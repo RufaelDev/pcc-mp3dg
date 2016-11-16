@@ -110,14 +110,15 @@ namespace pcl{
           const double pointResolution_arg = 0.001,
           const double octreeResolution_arg = 0.01,
           bool doVoxelGridDownDownSampling_arg = false,
-      const unsigned int iFrameRate_arg = 0, /* NO PCL P Frames in this version of the codec !! */
+          const unsigned int iFrameRate_arg = 0, /* NO PCL P Frames in this version of the codec !! */
           bool doColorEncoding_arg = true,
           const unsigned char colorBitResolution_arg = 6,
           const unsigned char colorCodingType_arg = 0,
           bool doVoxelGridCentroid_arg = true, 
           bool createScalableStream_arg = true, 
           bool codeConnectivity_arg = false,
-          int jpeg_quality_arg = 75) :
+          int jpeg_quality_arg = 75,
+          int num_threads=1) :
         OctreePointCloudCompression<PointT,LeafT,BranchT,OctreeT>(
           compressionProfile_arg,
           showStatistics_arg,
@@ -131,7 +132,8 @@ namespace pcl{
           do_voxel_centroid_enDecoding_(doVoxelGridCentroid_arg),
           create_scalable_bitstream_(createScalableStream_arg),
           do_connectivity_encoding_(codeConnectivity_arg),
-          jp_color_coder_(jpeg_quality_arg, colorCodingType_arg)
+          jp_color_coder_(jpeg_quality_arg, colorCodingType_arg),
+          num_threads_(num_threads)
         {
           macroblock_size_ = 16; // default macroblock size is 16x16x16
           icp_var_threshold_ = 100;
@@ -310,7 +312,10 @@ namespace pcl{
         // store the colors for usage in the enhancement layers
         std::vector<char> decoded_colors_;
         
-// inherited protected members needed
+        //! number of omp threads
+        int num_threads_;
+
+        // inherited protected members needed
         using pcl::octree::Octree2BufBase<LeafT, BranchT>::deleteCurrentBuffer;
         using pcl::octree::Octree2BufBase<LeafT, BranchT>::deserializeTree; // does not work in windows
         using pcl::octree::Octree2BufBase<LeafT, BranchT>::leaf_count_;

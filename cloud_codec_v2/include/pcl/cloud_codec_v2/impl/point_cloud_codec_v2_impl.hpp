@@ -1666,7 +1666,7 @@ namespace pcl{
       max_pt_bb[2]= -1000;
       
       for(int k=0;k<point_clouds.size();k++){
-        Eigen::Vector4f min_pt;
+	      Eigen::Vector4f min_pt;
         Eigen::Vector4f max_pt;
         
         pcl::getMinMax3D<pcl::PointXYZRGB>(*point_clouds[k],min_pt,max_pt);

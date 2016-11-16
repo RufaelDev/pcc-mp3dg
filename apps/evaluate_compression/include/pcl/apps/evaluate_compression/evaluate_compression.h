@@ -90,8 +90,10 @@ protected:
 // boundingbox expansion and normalisation
     double bb_expand_factor_;
 // compression codec settings
+    double point_resolution_;
+    double octree_resolution_;
     int enh_bits_;          // enhancement resolution YBD
-    int octree_bits_;       // XYZ resoution
+    int octree_bits_;       // XYZ resoution 
     int color_bits_;        // color resolution
     int color_coding_type_;
     bool keep_centroid_;
@@ -99,6 +101,7 @@ protected:
     int macroblock_size_;
     bool do_icp_color_offset_;
     bool do_delta_coding_;
+    bool do_quality_computation_;
     bool do_icp_on_original_;
     bool create_scalable_;
     int jpeg_quality_;

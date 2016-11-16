@@ -64,12 +64,8 @@ namespace po = boost::program_options;
 #include <pcl/io/ply_io.h>
 #include <pcl/io/ply_io.h>
 #include <pcl/compression/octree_pointcloud_compression.h>
-#include <pcl/filters/radius_outlier_removal.h>
-//#undef __cplusplus
-//#define __cplusplus 201103L
 #include <pcl/cloud_codec_v2/point_cloud_codec_v2.h>
-#include <pcl/cloud_codec_v2/point_cloud_codec_v2_omp.h>
-
+#include <pcl/filters/radius_outlier_removal.h>
 
 #define WITH_VTK 31
 #ifdef  WITH_VTK
@@ -137,13 +133,14 @@ evaluate_compression_impl<PointT>::initialize_options_description ()
   ("group_size,g",po::value<int> ()->default_value (0), "maximum number of files to be compressed together (TBD 0=read all files, then en (de)code 1 by 1)")
   ("bb_expand_factor,b", po::value<double> ()->default_value (0.20), "bounding box expansion to keep bounding box accross frames")
   ("algorithm,a",po::value<string> ()->default_value ("V2"), "compression algorithm ('V1' or 'V2')")
-//("input_directories,i", po::value<std::vector<std::string> > (), "Directories containing supported files (.ply)")
   ("input_directories,i", po::value<std::vector<std::string> > (), "Directory containing supported files (.pcd or .ply)")
   ("output_directory,o", po::value<std::string> ()->default_value (""), "Directory to store decompressed pointclouds (.ply)")
   ("show_statistics,s",po::value<bool> ()->default_value (false)->implicit_value (true), "gather and show a bunch of releavant statistical data")
   ("visualization,v",po::value<bool> ()->default_value (false)->implicit_value (true), "show both original and decoded PointClouds graphically")
+  ("point_resolution,p", po::value<double> ()->default_value (0.20), "XYZ resolution of point coordinates")
+  ("octree_resolution,r", po::value<double> ()->default_value (0.20), "voxel size")
   // V2 specific
-  ("octree_bits,o", po::value<int> ()->default_value (11), "octree resolution (bits)")
+  ("octree_bits", po::value<int> ()->default_value (11), "octree resolution (bits)") // XXX
   ("color_bits,c", po::value<int> ()->default_value (8), "color resolution (bits)")
   ("enh_bits,e", po::value<int> ()->default_value (0), "bits to code the points towards the center ")
   ("color_coding_type,t", po::value<int> ()->default_value (1), "pcl=0,jpeg=1 or graph transform ")
@@ -151,11 +148,12 @@ evaluate_compression_impl<PointT>::initialize_options_description ()
   ("keep_centroid,k", po::value<int> ()->default_value (0), "keep voxel grid positions or not ")
   ("create_scalable", po::value<bool> ()->default_value (false), "create scalable bitstream (not yet implemented)")
   ("do_connectivity_coding", po::value<bool> ()->default_value (false), "connectivity coding (not yet implemented)")
-  ("jpeg_quality,j", po::value<int> ()->default_value (0), "jpeg quality parameter ")
-  ("do_delta_coding", po::value<bool> ()->default_value (false),"do_delta_coding ")
   ("icp_on_original", po::value<bool> ()->default_value (false),"icp_on_original ") // iterative closest point
+  ("jpeg_quality,j", po::value<int> ()->default_value (0), "jpeg quality parameter ")
+  ("do_delta_coding", po::value<bool> ()->default_value (false),"use differential coding ")
+  ("do_quality_computation", po::value<bool> ()->default_value (false),"compute quality of encoding")
   ("do_icp_color_offset",po::value<bool> ()->default_value (false), "do color offset coding on predictive frames")
-  ("omp_cores",po::value<int> ()->default_value (0), "number of omp cores (0=default, no omp)");
+  ("omp_cores",po::value<int> ()->default_value (1), "number of omp cores (1=default, 1 thread, no parallel execution)");
 
   pod_.add ("input_directories", -1);
  }
@@ -321,6 +319,7 @@ evaluate_compression_impl<PointT>::assign_option_values ()
     create_scalable_ = vm_["create_scalable"].template as<bool> ();
     jpeg_quality_ = vm_["jpeg_quality"].template as<int> ();
     do_delta_coding_ = vm_["do_delta_coding"].template as<bool> ();
+    do_quality_computation_ = vm_["do_quality_computation"].template as<bool> ();
     icp_on_original_ = vm_["icp_on_original"].template as<bool> ();
     do_icp_color_offset_ = vm_["do_icp_color_offset"].template as<bool> ();
     omp_cores_ = vm_["omp_cores"].template as<int> ();
@@ -334,75 +333,65 @@ evaluate_compression_impl<PointT>::complete_initialization ()
   if (algorithm_ == "V1")
   {
     encoder_V1_ = boost::shared_ptr<pcl::io::OctreePointCloudCompression<PointT> > (
-                          new pcl::io::OctreePointCloudCompression<PointT> (
-                          pcl::io::MANUAL_CONFIGURATION,
-                          show_statistics_,
-                          std::pow ( 2.0, -1.0 * (octree_bits_ + enh_bits_) ),
-                          std::pow ( 2.0, -1.0 * (octree_bits_) ),
-                          false, // no intra voxel coding in this first version of the codec
-                          0, // i_frame_rate,
-                          color_bits_ > 0 ? true : false,
-                          color_bits_
-                  ));
+                    new pcl::io::OctreePointCloudCompression<PointT> (
+                      pcl::io::MANUAL_CONFIGURATION,
+                      show_statistics_,
+                      octree_bits_ > 0 ? std::pow ( 2.0, -1.0 * octree_bits_) : // XXX
+                      point_resolution_,
+                      octree_bits_ > 0 ? std::pow ( 2.0, -1.0 * octree_bits_) : // XXX
+                      point_resolution_,
+                      false, // no intra voxel coding in this first version of the codec
+                      0, // i_frame_rate,
+                      color_bits_ > 0 ? true : false,
+                      color_bits_
+                    )
+                  );
     decoder_V1_ = boost::shared_ptr<pcl::io::OctreePointCloudCompression<PointT> > (
-                         new pcl::io::OctreePointCloudCompression<PointT> (
-                         pcl::io::MANUAL_CONFIGURATION,
-                         false,
-                         std::pow ( 2.0, -1.0 * (octree_bits_ + enh_bits_) ),
-                         std::pow ( 2.0, -1.0 * (octree_bits_)),
-                         false, // no intra voxel coding in this first version of the codec
-                         0, // i_frame_rate,
-                         color_bits_ > 0 ? true : false,
-                         color_bits_
-                    ));
+                    new pcl::io::OctreePointCloudCompression<PointT> (
+                      pcl::io::MANUAL_CONFIGURATION,
+                      false,
+                      octree_bits_ > 0 ? std::pow ( 2.0, -1.0 * octree_bits_ ) : // XXX
+                      point_resolution_,
+                      octree_bits_ > 0 ? std::pow ( 2.0, -1.0 * octree_bits_) : // XXX
+                      point_resolution_,
+                      false, // no intra voxel coding in this first version of the codec
+                      0, // i_frame_rate,
+                      color_bits_ > 0 ? true : false,
+                      color_bits_
+                    )
+                  );
   }
   else
   {
     if (algorithm_ == "V2")
     {
-      if (omp_cores_ == 0)
-      {
-        encoder_V2_ = boost::shared_ptr<pcl::io::OctreePointCloudCodecV2<PointT> > (
-                            new pcl::io::OctreePointCloudCodecV2<PointT> (
-                            pcl::io::MANUAL_CONFIGURATION,
-                            show_statistics_,
-                            std::pow ( 2.0, -1.0 * (octree_bits_ + enh_bits_) ),
-                            std::pow ( 2.0, -1.0 * (octree_bits_)),
-                            true, // no intra voxel coding in this first version of the codec
-                            0, // i_frame_rate,
-                            color_bits_ > 0 ? true : false,
-                            color_bits_,
-                            color_coding_type_,
-                            keep_centroid_,
-                            create_scalable_, // not implemented
-                            false, // do_connectivity_coding_ not implemented
-                            jpeg_quality_
-                     ));
-        decoder_V2_ = boost::shared_ptr<pcl::io::OctreePointCloudCodecV2<PointT> > (
-                            new pcl::io::OctreePointCloudCodecV2<PointT> (
-                            pcl::io::MANUAL_CONFIGURATION,
-                            false,
-                            std::pow ( 2.0, -1.0 * (octree_bits_ + enh_bits_) ),
-                            std::pow ( 2.0, -1.0 * (octree_bits_)),
-                            true, // no intra voxel coding in this first version of the codec
-                            0, // i_frame_rate,
-                            color_bits_ > 0 ? true : false,
-                            color_bits_,
-                            color_coding_type_,
-                            keep_centroid_,
-                            create_scalable_, // not implemented
-                            false, // do_connectivity_coding_, not implemented
-                            jpeg_quality_
-                     ));
-      }
-      else
-      {
-        encoder_V2_ = boost::shared_ptr<pcl::io::OctreePointCloudCodecV2OMP<PointT> > (
-                             new pcl::io::OctreePointCloudCodecV2OMP<PointT> (
+      encoder_V2_ = boost::shared_ptr<pcl::io::OctreePointCloudCodecV2<PointT> > (
+                           new pcl::io::OctreePointCloudCodecV2<PointT> (
                              pcl::io::MANUAL_CONFIGURATION,
                              show_statistics_,
-                             std::pow ( 2.0, -1.0 * (octree_bits_ + enh_bits_) ),
-                             std::pow ( 2.0, -1.0 * (octree_bits_)),
+                             octree_bits_ > 0 ? std::pow ( 2.0, -1.0 * (octree_bits_ + enh_bits_) ) : // XXX
+                             point_resolution_,
+                             octree_bits_ > 0 ? std::pow ( 2.0, -1.0 * octree_bits_) : // XXX
+                             point_resolution_,
+                             true, // no intra voxel coding in this first version of the codec
+                             0, // i_frame_rate,
+                             color_bits_ > 0 ? true : false,
+                             color_bits_,
+                             color_coding_type_,
+                             keep_centroid_,
+                             create_scalable_, // not implemented
+                             false, // do_connectivity_coding_ not implemented
+                             jpeg_quality_,
+                             omp_cores_
+                    ));
+        decoder_V2_ = boost::shared_ptr<pcl::io::OctreePointCloudCodecV2<PointT> > (
+                             new pcl::io::OctreePointCloudCodecV2<PointT> (
+                             pcl::io::MANUAL_CONFIGURATION,
+                             false,
+                             octree_bits_ > 0 ? std::pow ( 2.0, -1.0 * (octree_bits_ + enh_bits_) ) : // XXX
+                             point_resolution_,
+                             octree_bits_ > 0 ? std::pow ( 2.0, -1.0 * octree_bits_) : // XXX
+                             point_resolution_,
                              true, // no intra voxel coding in this first version of the codec
                              0, // i_frame_rate,
                              color_bits_ > 0 ? true : false,
@@ -414,24 +403,6 @@ evaluate_compression_impl<PointT>::complete_initialization ()
                              jpeg_quality_,
                              omp_cores_
                       ));
-        decoder_V2_ = boost::shared_ptr<pcl::io::OctreePointCloudCodecV2OMP<PointT> > ( // not used
-                             new pcl::io::OctreePointCloudCodecV2OMP<PointT> (
-                             pcl::io::MANUAL_CONFIGURATION,
-                             false,
-                             std::pow ( 2.0, -1.0 * (octree_bits_ + enh_bits_) ),
-                             std::pow ( 2.0, -1.0 * (octree_bits_)),
-                             true, // no intra voxel coding in this first version of the codec
-                             0, // i_frame_rate,
-                             color_bits_ > 0 ? true : false,
-                             color_bits_,
-                             color_coding_type_,
-                             keep_centroid_,
-                             create_scalable_, // not implemented
-                             false, // do_connectivity_coding_,
-                             jpeg_quality_,
-                             omp_cores_
-                      ));
-      }
       encoder_V2_->setMacroblockSize (macroblock_size_);
       // icp offset coding
       encoder_V2_->setDoICPColorOffset (do_icp_color_offset_);
@@ -637,7 +608,6 @@ load_ply_file (std::string path, boost::shared_ptr<pcl::PointCloud<PointT> > pc)
   }
   return rv;
 }
-    
 
 template<typename PointT>
 int
@@ -658,8 +628,9 @@ load_input_directory (std::string directory_name, std::string extension, std::ve
     filenames.push_back (de.path ().string ());
   }
   std::sort (filenames.begin (), filenames.end ());
-  for (auto&& filename : filenames)
+  for (vector<string>::const_iterator i = filenames.begin(); i != filenames.end(); ++i)
   {
+    std::string filename = *i;
     boost::shared_ptr<pcl::PointCloud<PointT> > pc (new PointCloud<PointT> ());
     if (boost::ends_with (filename, ".ply"))
     {
@@ -732,14 +703,19 @@ evaluate_compression_impl<PointT>::evaluate ()
       
       count++;
       
-      if (group_size_ == 0 || (count % group_size_) == 0 || count == point_clouds.size ()) {
+      if (group_size_ == 0 && count < point_clouds.size ()) continue;
+      
+      if (count == point_clouds.size () || count % group_size_ == 0)
+      {
         // encode the group
         if (K_outlier_filter_ > 0) do_outlier_removal (group);
         if (bb_expand_factor_ >= 0.0) do_bounding_box_normalization (group);
+        if (group_size_ == 0) group_size_ = point_clouds.size();
         vector<float> icp_convergence_percentage (group_size_);
         vector<float> shared_macroblock_percentages (group_size_);
 
-        for (int i = 0; i < group.size (); i++) {
+        for (int i = 0; i < group.size (); i++)
+        {
           boost::shared_ptr<pcl::PointCloud<PointT> > pc = group[i];
           boost::shared_ptr<pcl::PointCloud<PointT> > original_pc = original_group[i]->makeShared ();
           stringstream ss;
@@ -756,12 +732,19 @@ evaluate_compression_impl<PointT>::evaluate ()
           boost::shared_ptr<pcl::PointCloud<PointT> > output_pointcloud (new pcl::PointCloud<PointT> ()), opc (new pcl::PointCloud<PointT> ());
           opc = original_group[i];
           do_decoding (&coded_stream, output_pointcloud, achieved_quality);
-          do_quality_computation (pc, output_pointcloud, achieved_quality);
-          do_outputs ( "pointcloud_" + boost::lexical_cast<string> (i) + ".ply", output_pointcloud, achieved_quality);
+          if (do_quality_computation_)
+          {
+            do_quality_computation (pc, output_pointcloud, achieved_quality);
+          }
+          if (output_directory_ != "")
+          {
+            do_outputs ( "pointcloud_" + boost::lexical_cast<string> (i) + ".ply", output_pointcloud, achieved_quality);
+          }
           do_visualization (opc, output_pointcloud);
           // test and evaluation iterative closest point predictive coding
           if (algorithm_ == "V2" && do_delta_coding_ && bb_expand_factor_ >= 0  // bounding boxes were aligned
-            && i+1 < group_size) {
+            && i+1 < group_size)
+          {
             boost::shared_ptr<pcl::PointCloud<PointT> > decoded_pc (new pcl::PointCloud<PointT> ());
             boost::shared_ptr<pcl::PointCloud<PointT> > predicted_pc (new pcl::PointCloud<PointT> ());
             cout << " delta coding frame nr " << i+1 << endl;
@@ -781,7 +764,10 @@ evaluate_compression_impl<PointT>::evaluate ()
             // create a deep copy of original pointcloud, for comparison
             do_delta_decoding (&p_frame_idat, &p_frame_pdat, output_pointcloud, decoded_pc, pframe_quality);
 //      compute the quality of the resulting predictive frame
-            do_quality_computation (group[i+1], decoded_pc, pframe_quality);
+            if (do_quality_computation_)
+            {
+              do_quality_computation (group[i+1], decoded_pc, pframe_quality);
+            }
             pframe_quality.print_csv_line ("", cout);
           }
           // TBD store the quality metrics for the p cloud
