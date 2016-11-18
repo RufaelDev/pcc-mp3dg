@@ -279,25 +279,25 @@ CompressionEval::loadConfig(bool create_log_files) {
     omp_cores = vm["omp_cores"].as<int>();
     ////////////////// ~end parse configuration file  /////////////////////////////////////
 
-    /////////////// PREPARE OUTPUT CSV FILE AND CODEC PARAMTER SETTINGS /////////////////////////
+    /////////////// PREPARE OUTPUT CSV FILE AND CODEC PARAMETER SETTINGS /////////////////////////
 	if (create_log_files) {
 		string o_log_csv = vm["output_csv_file"].as<string>();
 #if __cplusplus >= 201103L
-		res_base_ofstream = ofstream(o_log_csv);
+		res_base_ofstream = std::shared_ptr<ofstream>(new ofstream(o_log_csv));
 #else
-		res_base_ofstream = ofstream(o_log_csv.c_str());
+		res_base_ofstream = std::shared_ptr<ofstream>(new ofstream(o_log_csv.c_str()));
 #endif//__cplusplus >= 201103L
 		string p_log_csv = vm["pframe_quality_log"].as<string>();
 #if __cplusplus >= 201103L
-		ofstream res_p_ofstream = ofstream(p_log_csv);
+		res_p_ofstream =std::shared_ptr<ofstream>(new ofstream(p_log_csv));
 #else
-		res_p_ofstream = ofstream(p_log_csv.c_str());
+		res_p_ofstream = std::shared_ptr<ofstream>(new ofstream(p_log_csv.c_str()));
 #endif//__cplusplus >= 201103L
-		res_enh_ofstream = ofstream("results_enh.csv");
+		res_enh_ofstream = std::shared_ptr<ofstream>(new ofstream("results_enh.csv"));
 
 		// print the headers
-		QualityMetric::print_csv_header(res_base_ofstream);
-		QualityMetric::print_csv_header(res_p_ofstream);
+		QualityMetric::print_csv_header(*res_base_ofstream);
+		QualityMetric::print_csv_header(*res_p_ofstream);
 	}
     /////////////// END PREPARE OUTPUT CSV FILE AND CODEC PARAMTER SETTINGS /////////////////////////
     return 1;
@@ -932,7 +932,7 @@ CompressionEval::pccGOPWrite(
 	head.pistream_size = ipdat.str().size();
 
 	//experiment with writing the stream to a file
-	ofstream oo(ofilename, std::ios::binary);
+	ofstream oo(ofilename, std::ofstream::binary);
 	if (oo.good()) {
 		try {
 			oo.write((const char *)&head, sizeof(head));
@@ -964,7 +964,7 @@ CompressionEval::pccGOPRead(std::string ifilename,
 {
     // initialize codec header
 	codec_setting ihead;
-    ifstream ii(ifilename, std::ios::binary);
+    ifstream ii(ifilename, std::ifstream::binary);
     ii.read((char *)&ihead, sizeof(ihead));
 
 	setCodecHeader(ihead);
@@ -1195,7 +1195,7 @@ CompressionEval::run_eval(int argc, char** argv)
 
                                     // compute the quality of the resulting predictive frame
                                     computeQualityMetric<pcl::PointXYZRGB>(*fused_clouds[i + 1], *out_d, pframe_quality);
-                                    pframe_quality.print_csv_line(compression_arg_ss.str(), res_p_ofstream);
+                                    pframe_quality.print_csv_line(compression_arg_ss.str(), *res_p_ofstream);
 
 									// write a gop file
 									/*
@@ -1372,7 +1372,7 @@ CompressionEval::run_eval(int argc, char** argv)
 
                     // ~ write predictively encoded frames
                     // print the evaluation results to the output .cs file
-                    achieved_quality.print_csv_line(compression_arg_ss.str(), res_base_ofstream);
+                    achieved_quality.print_csv_line(compression_arg_ss.str(), *res_base_ofstream);
                 }
                 ////////////// END ASSESMENT //////////////////
             }
