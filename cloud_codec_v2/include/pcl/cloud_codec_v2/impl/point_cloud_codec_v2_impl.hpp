@@ -931,7 +931,7 @@ namespace pcl{
       uint8_t chunk_size=0;
       char rgb_offsets[3]={0,0,0};
       std::vector<int16_t> comp_dat_in;
-      bool ended_unexpected=false;
+      //bool ended_unexpected=false;
       int decoded_mblocks=0;
 
       ///////////////////////////decode p data ///////////////////////////

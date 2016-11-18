@@ -250,7 +250,7 @@ namespace pcl{
 		decodeGOP(string &input_file_name, bool write_file, std::string & IcodedOut, std::string & PcodedOut);
 
         int
-        run_eval(int argc,char **argv);
+        run_eval();
 
         // load a group of point clouds as a GOP (preferably 2, but groups with multiple point clouds are allowed)
         int 

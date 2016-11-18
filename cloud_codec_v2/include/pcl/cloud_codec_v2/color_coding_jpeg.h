@@ -229,7 +229,7 @@ namespace pcl{
       decodeJPEGSnake(std::vector<char> &in_vec, std::vector<uint8_t> & out_data)
       {
         PCLImage im_out; //!
-        io::JPEGReader<char>::readJPEG(in_vec,im_out); //! 
+        io::JPEGReader<char>::readJPEG(in_vec,im_out);  
 
         SnakeGridMapping<uint8_t,char> un_m(im_out.width,im_out.height);
         std::vector<char> res2 = un_m.undoSnakeGridMapping(im_out.data);

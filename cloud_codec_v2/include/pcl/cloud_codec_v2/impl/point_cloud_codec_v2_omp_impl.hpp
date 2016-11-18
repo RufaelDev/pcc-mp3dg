@@ -126,7 +126,7 @@ namespace pcl{
 				typename pcl::PointCloud<PointT>::Ptr cloud_out (new pcl::PointCloud<PointT>(icp_on_original ? *pcloud_arg : *simp_pcloud , *p_info_list[i].indices));
         p_result_list[i].out_cloud = cloud_out;
 				if (i_leaf != NULL) {
-					const octree::OctreeKey current_key = p_info_list[i].current_key;
+					//const octree::OctreeKey current_key = p_info_list[i].current_key;
 					p_result_list[i].in_cloud =  (PointCloudPtr) new pcl::PointCloud<PointT>(*icloud_arg, i_leaf->getPointIndicesVector());
 					do_icp_prediction(
 						(PointCloudPtr) p_result_list[i].in_cloud,

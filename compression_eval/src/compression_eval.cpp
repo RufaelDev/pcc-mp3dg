@@ -430,7 +430,7 @@ CompressionEval::preFilterClouds() {
             rorfilter.setNegative(false);
             rorfilter.filter(*l_ptr);
 
-            std::size_t or_number_of_points = fused_clouds[i]->size();
+            //std::size_t or_number_of_points = fused_clouds[i]->size();
 
             // swap the pointer
             IndicesConstPtr indices_rem = rorfilter.getRemovedIndices();
@@ -868,50 +868,50 @@ CompressionEval::decodeGOP(string &input_file_name, bool write_file, std::string
 
 	// do the decoding base layer
 	cout << "starting decoding the I frame point cloud \n" << endl;
-	if(isize)
-	  l_codec_decoder->decodePointCloud(idat, decoded_Icloud);
+	if (isize)
+		l_codec_decoder->decodePointCloud(idat, decoded_Icloud);
 
-	if(psize){
-	  cout << "started decoding the P frame point cloud " << std::endl;
-	  l_codec_decoder-> decodePointCloudDeltaFrame(decoded_Icloud, decoded_Pcloud, ipdat, pdat);
+	if (psize || pisize) {
+		cout << "started decoding the P frame point cloud " << std::endl;
+		l_codec_decoder->decodePointCloudDeltaFrame(decoded_Icloud, decoded_Pcloud, ipdat, pdat);
 	}
 	Eigen::Vector4f  dyn_range = max_pt_bb - min_pt_bb;
 
 	if (isize)
-	for (int l = 0; l < decoded_Icloud->size(); l++)
-	{
-		// dynamic range
-		decoded_Icloud->at(l).x *= dyn_range[0];
-		decoded_Icloud->at(l).y *= dyn_range[1];
-		decoded_Icloud->at(l).z *= dyn_range[2];
+		for (int l = 0; l < decoded_Icloud->size(); l++)
+		{
+			// dynamic range
+			decoded_Icloud->at(l).x *= dyn_range[0];
+			decoded_Icloud->at(l).y *= dyn_range[1];
+			decoded_Icloud->at(l).z *= dyn_range[2];
 
-		// offset the minimum value
-		decoded_Icloud->at(l).x += min_pt_bb[0];
-		decoded_Icloud->at(l).y += min_pt_bb[1];
-		decoded_Icloud->at(l).z += min_pt_bb[2];
-	}
+			// offset the minimum value
+			decoded_Icloud->at(l).x += min_pt_bb[0];
+			decoded_Icloud->at(l).y += min_pt_bb[1];
+			decoded_Icloud->at(l).z += min_pt_bb[2];
+		}
 	if (psize)
-	for (int l = 0; l < decoded_Pcloud->size(); l++)
-	{
-		// dynamic range
-		decoded_Pcloud->at(l).x *= dyn_range[0];
-		decoded_Pcloud->at(l).y *= dyn_range[1];
-		decoded_Pcloud->at(l).z *= dyn_range[2];
+		for (int l = 0; l < decoded_Pcloud->size(); l++)
+		{
+			// dynamic range
+			decoded_Pcloud->at(l).x *= dyn_range[0];
+			decoded_Pcloud->at(l).y *= dyn_range[1];
+			decoded_Pcloud->at(l).z *= dyn_range[2];
 
-		// offset the minimum value
-		decoded_Pcloud->at(l).x += min_pt_bb[0];
-		decoded_Pcloud->at(l).y += min_pt_bb[1];
-		decoded_Pcloud->at(l).z += min_pt_bb[2];
-	}
+			// offset the minimum value
+			decoded_Pcloud->at(l).x += min_pt_bb[0];
+			decoded_Pcloud->at(l).y += min_pt_bb[1];
+			decoded_Pcloud->at(l).z += min_pt_bb[2];
+		}
 
 	// write the output file
 	PLYWriter ply_out;
-	
-	if (isize)
-	  ply_out.write(IcodedOut, *decoded_Icloud);
-	if (psize)
-	  ply_out.write(PCodedOut, *decoded_Pcloud);
-	
+	if (write_file) {
+	  if (isize)
+		ply_out.write(IcodedOut, *decoded_Icloud);
+	  if (psize)
+		ply_out.write(PCodedOut, *decoded_Pcloud);
+    }
     return 1;
 }
 
@@ -1041,7 +1041,7 @@ CompressionEval::testGOPReadWrite()
 }
 
 int
-CompressionEval::run_eval(int argc, char** argv)
+CompressionEval::run_eval()
 {
     // assumes all init steps have been completed
 
@@ -1434,7 +1434,7 @@ CompressionEval::run(int argc, char** argv)
     this->allignBBClouds();
 
     // evaluation 
-    this->run_eval(argc, argv);
+    this->run_eval();
 
     return (-1);
 }
