@@ -932,7 +932,11 @@ CompressionEval::pccGOPWrite(
 	head.pistream_size = ipdat.str().size();
 
 	//experiment with writing the stream to a file
-	ofstream oo(ofilename);
+#if __cplusplus >= 201103L
+	ofstream oo(ofilename, std::ofstream::binary);
+#else
+	ofstream oo(ofilename.c_str(), std::ofstream::binary);
+#endif
 	if (oo.good()) {
 		try {
 			oo.write((const char *)&head, sizeof(head));
@@ -964,7 +968,11 @@ CompressionEval::pccGOPRead(std::string ifilename,
 {
     // initialize codec header
 	codec_setting ihead;
-    ifstream ii(ifilename);
+#if __cplusplus >= 201103L
+    ifstream ii(ifilename, std::ifstream::binary);
+#else
+	ifstream ii(ifilename.c_str(), std::ifstream::binary);
+#endif
     ii.read((char *)&ihead, sizeof(ihead));
 
 	setCodecHeader(ihead);
