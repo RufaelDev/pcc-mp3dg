@@ -283,17 +283,17 @@ CompressionEval::loadConfig(bool create_log_files) {
 	if (create_log_files) {
 		string o_log_csv = vm["output_csv_file"].as<string>();
 #if __cplusplus >= 201103L
-		res_base_ofstream = std::shared_ptr<ofstream>(new ofstream(o_log_csv));
+		res_base_ofstream = boost::shared_ptr<ofstream>(new ofstream(o_log_csv));
 #else
-		res_base_ofstream = std::shared_ptr<ofstream>(new ofstream(o_log_csv.c_str()));
+		res_base_ofstream = boost::shared_ptr<ofstream>(new ofstream(o_log_csv.c_str()));
 #endif//__cplusplus >= 201103L
 		string p_log_csv = vm["pframe_quality_log"].as<string>();
 #if __cplusplus >= 201103L
-		res_p_ofstream =std::shared_ptr<ofstream>(new ofstream(p_log_csv));
+		res_p_ofstream =boost::shared_ptr<ofstream>(new ofstream(p_log_csv));
 #else
-		res_p_ofstream = std::shared_ptr<ofstream>(new ofstream(p_log_csv.c_str()));
+		res_p_ofstream = boost::shared_ptr<ofstream>(new ofstream(p_log_csv.c_str()));
 #endif//__cplusplus >= 201103L
-		res_enh_ofstream = std::shared_ptr<ofstream>(new ofstream("results_enh.csv"));
+		res_enh_ofstream = boost::shared_ptr<ofstream>(new ofstream("results_enh.csv"));
 
 		// print the headers
 		QualityMetric::print_csv_header(*res_base_ofstream);
@@ -932,7 +932,7 @@ CompressionEval::pccGOPWrite(
 	head.pistream_size = ipdat.str().size();
 
 	//experiment with writing the stream to a file
-	ofstream oo(ofilename, std::ofstream::binary);
+	ofstream oo(ofilename);
 	if (oo.good()) {
 		try {
 			oo.write((const char *)&head, sizeof(head));
@@ -964,7 +964,7 @@ CompressionEval::pccGOPRead(std::string ifilename,
 {
     // initialize codec header
 	codec_setting ihead;
-    ifstream ii(ifilename, std::ifstream::binary);
+    ifstream ii(ifilename);
     ii.read((char *)&ihead, sizeof(ihead));
 
 	setCodecHeader(ihead);

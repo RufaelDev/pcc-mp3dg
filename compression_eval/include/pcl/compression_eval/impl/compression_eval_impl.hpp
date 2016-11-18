@@ -319,9 +319,9 @@ namespace pcl{
          std::vector<bounding_box> assigned_bbs;
 
          // stream statistics
-         std::shared_ptr<ofstream> res_p_ofstream;
-		 std::shared_ptr<ofstream> res_base_ofstream;
-		 std::shared_ptr<ofstream> res_enh_ofstream;
+         boost::shared_ptr<ofstream> res_p_ofstream;
+		 boost::shared_ptr<ofstream> res_base_ofstream;
+		 boost::shared_ptr<ofstream> res_enh_ofstream;
 
          // bounding box is expanded
          Eigen::Vector4f min_pt_res;
