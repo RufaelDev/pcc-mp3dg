@@ -87,7 +87,8 @@ namespace pcl{
       addPointsFromInputCloud ();
 
       // make sure cloud contains points
-      if (leaf_count_>0) {
+      if (leaf_count_> 0)
+      {
         // color field analysis
         cloud_with_color_ = false;
         std::vector<pcl::PCLPointField> fields;
@@ -131,8 +132,10 @@ namespace pcl{
           color_coder_.initializeEncoding ();
           color_coder_.setPointCount (static_cast<unsigned int> (cloud_arg->points.size ()));
           color_coder_.setVoxelCount (static_cast<unsigned int> (leaf_count_));
-        }else
-        { // new jpeg color coding
+        }
+        else
+        {
+          // new jpeg color coding
           jp_color_coder_.initializeEncoding ();
           jp_color_coder_.setPointCount (static_cast<unsigned int> (cloud_arg->points.size ()));
           jp_color_coder_.setVoxelCount (static_cast<unsigned int> (leaf_count_));
@@ -146,12 +149,15 @@ namespace pcl{
 
         // serialize octree
         if (i_frame_)
+        {
           // i-frame encoding - encode tree structure without referencing previous buffer
           serializeTree (binary_tree_data_vector_, false);
+        }
         else
+        {
           // p-frame encoding - XOR encoded tree structure
           serializeTree (binary_tree_data_vector_, true);
-
+        }
 
         // write frame header information to stream
         writeFrameHeader (compressed_tree_data_out_arg);
@@ -164,11 +170,30 @@ namespace pcl{
 
         if (b_show_statistics_) // todo update for codec v2
         {
-          print_statistics("*** V2 POINTCLOUD ENCODING ***\n");
+          float bytes_per_XYZ = static_cast<float> (compressed_point_data_len_) / static_cast<float> (point_count_);
+          float bytes_per_color = static_cast<float> (compressed_color_data_len_) / static_cast<float> (point_count_);
+            
+          PCL_INFO ("*** POINTCLOUD ENCODING ***\n");
+          PCL_INFO ("Frame ID: %d\n", frame_ID_);
+          if (i_frame_)
+            PCL_INFO ("Encoding Frame: Intra frame\n");
+          else
+            PCL_INFO ("Encoding Frame: Prediction frame\n");
+          PCL_INFO ("Number of encoded points: %ld\n", point_count_);
+          PCL_INFO ("XYZ compression percentage: %f%%\n", bytes_per_XYZ / (3.0f * sizeof(float)) * 100.0f);
+          PCL_INFO ("XYZ bytes per point: %f bytes\n", bytes_per_XYZ);
+          PCL_INFO ("Color compression percentage: %f%%\n", bytes_per_color / (sizeof (int)) * 100.0f);
+          PCL_INFO ("Color bytes per point: %f bytes\n", bytes_per_color);
+          PCL_INFO ("Size of uncompressed point cloud: %f kBytes\n", static_cast<float> (point_count_) * (sizeof (int) + 3.0f  * sizeof (float)) / 1024);
+          PCL_INFO ("Size of compressed point cloud: %d kBytes\n", (compressed_point_data_len_ + compressed_color_data_len_) / (1024));
+          PCL_INFO ("Total bytes per point: %f\n", bytes_per_XYZ + bytes_per_color);
+          PCL_INFO ("Total compression percentage: %f\n", (bytes_per_XYZ + bytes_per_color) / (sizeof (int) + 3.0f * sizeof(float)) * 100.0f);
+          PCL_INFO ("Compression ratio: %f\n\n", static_cast<float> (sizeof (int) + 3.0f * sizeof (float)) / static_cast<float> (bytes_per_XYZ + bytes_per_color));
         }
-      } else {
-        if (b_show_statistics_)
-          PCL_INFO ("Info: Dropping empty point cloud\n");
+      }
+      else
+      {
+        if (b_show_statistics_) PCL_INFO ("Info: Dropping empty point cloud\n");
         deleteTree();
         i_frame_counter_ = 0;
         i_frame_ = true;
@@ -248,8 +273,7 @@ namespace pcl{
       output_->width = static_cast<uint32_t> (cloud_arg->points.size ());
       output_->is_dense = false;
 
-      //! todo update for cloud codecV2
-      if (0)//b_show_statistics_)
+      if (b_show_statistics_)
       {
         float bytes_per_XYZ = static_cast<float> (compressed_point_data_len_) / static_cast<float> (point_count_);
         float bytes_per_color = static_cast<float> (compressed_color_data_len_) / static_cast<float> (point_count_);
@@ -1024,13 +1048,14 @@ namespace pcl{
       unsigned int g;
       unsigned int b; 
     };
-    /*
+    /* EXP *
     //! function for coding an enhancement layer, use the same input cloud!! 
     template<typename PointT, typename LeafT, typename BranchT, typename OctreeT> void 
       OctreePointCloudCodecV2<PointT, LeafT, BranchT, OctreeT>::encodeEnhancementLayer(const PointCloudConstPtr &cloud_arg, 
       std::ostream& compressed_tree_data_out_arg)
     {
       // get the leafs
+      using namespace octree;
       LeafNodeIterator leaf_it = leaf_begin();
       LeafNodeIterator leaf_end_it = leaf_end();
 
@@ -1247,7 +1272,7 @@ namespace pcl{
         ++curr_code;
       }
     }
-    */
+     EXP */
 
     /////////////////// CODE OVERWRITING CODEC V1 to become codec V2 ////////////////////////////////
 
@@ -1577,7 +1602,7 @@ namespace pcl{
         point_avg_color_data_vector.resize (static_cast<std::size_t> (point_avg_color_data_vector_size));
         compressed_color_data_len_ += entropy_coder_.decodeStreamToCharVector(compressed_tree_data_in_arg1,	point_avg_color_data_vector);
       }
-/* no enhancement layer encoding/decoding TBD
+/* no enhancement layer encoding/decoding TBD */
       //! check if the enhancement layer has been received
       compressed_tree_data_in_arg2.peek();
       if(compressed_tree_data_in_arg2.good() && (! compressed_tree_data_in_arg2.eof()) )
@@ -1611,7 +1636,7 @@ namespace pcl{
           compressed_color_data_len_ += entropy_coder_.decodeStreamToCharVector (compressed_tree_data_in_arg2, pointDiffColorDataVector);
         }
       }
-  no enhancement layer encoding/decoding TBD */
+      /* enhancement layer encoding/decoding EXP */
     };
     /*! \brief
     *  \param point_clouds: an array of pointers to point_clouds to be inspected and modified

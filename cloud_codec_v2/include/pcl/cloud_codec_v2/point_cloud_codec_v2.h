@@ -223,13 +223,13 @@ namespace pcl{
       static void
       normalize_pointclouds (vector<PointCloudPtr> &point_clouds, vector<BoundingBox> &bouding_boxes, double bb_expand_factor, unsigned int debug_level=0);
       
-        //! function for coding an enhancement layer
-       // virtual void 
-       // encodeEnhancementLayer(const PointCloudConstPtr &cloud_arg, std::ostream& compressed_tree_data_out_arg);
+      //! function for coding an enhancement layer
+      // virtual void
+      // encodeEnhancementLayer(const PointCloudConstPtr &cloud_arg, std::ostream& compressed_tree_data_out_arg);
 
-        //! function for coding an enhancment layer
-       // virtual void
-        //decodeEnhancementLayer(std::istream& compressed_tree_data_in_arg, PointCloudPtr &cloud_arg, PointCloudPtr &cloud_arg_enh);
+      //! function for coding an enhancment layer
+      // virtual void
+      // decodeEnhancementLayer(std::istream& compressed_tree_data_in_arg, PointCloudPtr &cloud_arg, PointCloudPtr &cloud_arg_enh);
 
       protected: 
 
@@ -331,7 +331,6 @@ namespace pcl{
         using pcl::octree::OctreePointCloud<PointT, LeafT, BranchT, OctreeT>::min_z_;
         using pcl::octree::OctreePointCloud<PointT, LeafT, BranchT, OctreeT>::resolution_;
         using pcl::octree::OctreePointCloud<PointT, LeafT, BranchT, OctreeT>::setInputCloud;
-        using pcl::io::OctreePointCloudCompression<PointT, LeafT, BranchT, OctreeT>::print_statistics;
         using pcl::io::OctreePointCloudCompression<PointT, LeafT, BranchT, OctreeT>::b_show_statistics_;
         using pcl::io::OctreePointCloudCompression<PointT, LeafT, BranchT, OctreeT>::binary_tree_data_vector_;
         using pcl::io::OctreePointCloudCompression<PointT, LeafT, BranchT, OctreeT>::cloud_with_color_;
