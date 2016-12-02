@@ -114,8 +114,8 @@ namespace pcl{
 		double mse_colors_yuv[3]  = {0.0,0.0,0.0};
 
 		// maximum color values needed to compute PSNR
-		double peak_yuv[3] = {0.0,0.0,0.0};
-		double min_yuv[3] = {0.0,0.0,0.0};
+		// double peak_yuv[3] = {0.0,0.0,0.0};
+		// double min_yuv[3] = {0.0,0.0,0.0};
 
 		//! compute the maximum and mean square distance between each point in a to the nearest point in b 
 		//! compute the mean square color error for each point in a to the nearest point in b 
@@ -146,14 +146,14 @@ namespace pcl{
 		  convertRGBtoYUV<PointT>(cloud_b.points[indices[0]],out_yuv);
 
 		  // calculate the maximum YUV components
-		  for(int cc=0;cc<3;cc++)
-			if((in_yuv[cc] * in_yuv[cc])  > (peak_yuv[cc] * peak_yuv[cc]))
-				peak_yuv[cc] = in_yuv[cc];
+		  //for(int cc=0;cc<3;cc++)
+		  //if((in_yuv[cc] * in_yuv[cc])  > (peak_yuv[cc] * peak_yuv[cc]))
+		  //		peak_yuv[cc] = in_yuv[cc];
 
 		  // calculate the minimum YUV components
-		  for (int cc = 0; cc<3; cc++)
-			  if ((in_yuv[cc] * in_yuv[cc]) < (min_yuv[cc] * min_yuv[cc]))
-				  min_yuv[cc] = in_yuv[cc];
+		  //for (int cc = 0; cc<3; cc++)
+		  //  if ((in_yuv[cc] * in_yuv[cc]) < (min_yuv[cc] * min_yuv[cc]))
+		  //	  min_yuv[cc] = in_yuv[cc];
 		  
 		  mse_colors_yuv[0]+=((in_yuv[0] - out_yuv[0]) * (in_yuv[0] - out_yuv[0]));
 		  mse_colors_yuv[1]+=((in_yuv[1] - out_yuv[1]) * (in_yuv[1] - out_yuv[1]));
@@ -221,12 +221,12 @@ namespace pcl{
 
 		// compute PSNR for YUV colors
 		// compute the peak signal also taking into account the
-		for(int cc=0;cc<3;cc++)
-		  peak_yuv[cc] = peak_yuv[cc] - min_yuv[cc];
+		//for(int cc=0;cc<3;cc++)
+		//  peak_yuv[cc] = peak_yuv[cc] - min_yuv[cc];
 		
-		psnr_colors_yuv[0] = 10 * std::log10( (peak_yuv[0] * peak_yuv[0] )/mse_colors_yuv[0]);
-		psnr_colors_yuv[1] = 10 * std::log10( (peak_yuv[1] * peak_yuv[1] )/mse_colors_yuv[1]);
-		psnr_colors_yuv[2] = 10 * std::log10( (peak_yuv[2] * peak_yuv[2] )/mse_colors_yuv[2]);
+		psnr_colors_yuv[0] = 10 * std::log10( 1 /mse_colors_yuv[0]);
+		psnr_colors_yuv[1] = 10 * std::log10( 1 /mse_colors_yuv[1]);
+		psnr_colors_yuv[2] = 10 * std::log10( 1 /mse_colors_yuv[2]);
 
 		print_info ("[done, "); print_value ("%g", tt.toc ()); print_info (" ms \n");
 		//print_info ("A->B: "); print_value ("%f\n", max_dist_a);
