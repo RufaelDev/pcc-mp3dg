@@ -66,12 +66,20 @@ namespace pcl{
 	*/
 
 	template<typename PointT> void
-	convertRGBtoYUV(const PointT &in_rgb, float * out_yuv)
+		convertRGBtoYUV(const PointT &in_rgb, float * out_yuv)
 	{
-	  // color space conversion to YUV on a 0-1 scale
-	  out_yuv[0] = (0.299 * in_rgb.r + 0.587 * in_rgb.g + 0.114 * in_rgb.b)/255.0;
-	  out_yuv[1] = (-0.147 * in_rgb.r - 0.289 * in_rgb.g + 0.436 * in_rgb.b)/255.0;
-	  out_yuv[2] = (0.615 * in_rgb.r - 0.515 * in_rgb.g - 0.100 * in_rgb.b)/255.0;
+		// color space conversion to YUV on a 0-1 scale
+		out_yuv[0] = (0.299 * in_rgb.r + 0.587 * in_rgb.g + 0.114 * in_rgb.b) / 255.0;
+		out_yuv[1] = (-0.147 * in_rgb.r - 0.289 * in_rgb.g + 0.436 * in_rgb.b) / 255.0;
+		out_yuv[2] = (0.615 * in_rgb.r - 0.515 * in_rgb.g - 0.100 * in_rgb.b) / 255.0;
+
+		// double check for no negative values or values larger than 1 
+		for (int i = 0; i < 3; i++) {
+		  if (out_yuv[i] < 0)
+			out_yuv[i] = 0;
+		  if (out_yuv[i] > 1)
+			out_yuv[i] = 1;
+	    }
 	}
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -107,6 +115,7 @@ namespace pcl{
 
 		// maximum color values needed to compute PSNR
 		double peak_yuv[3] = {0.0,0.0,0.0};
+		double min_yuv[3] = {0.0,0.0,0.0};
 
 		//! compute the maximum and mean square distance between each point in a to the nearest point in b 
 		//! compute the mean square color error for each point in a to the nearest point in b 
@@ -140,6 +149,11 @@ namespace pcl{
 		  for(int cc=0;cc<3;cc++)
 			if((in_yuv[cc] * in_yuv[cc])  > (peak_yuv[cc] * peak_yuv[cc]))
 				peak_yuv[cc] = in_yuv[cc];
+
+		  // calculate the minimum YUV components
+		  for (int cc = 0; cc<3; cc++)
+			  if ((in_yuv[cc] * in_yuv[cc]) < (min_yuv[cc] * min_yuv[cc]))
+				  min_yuv[cc] = in_yuv[cc];
 		  
 		  mse_colors_yuv[0]+=((in_yuv[0] - out_yuv[0]) * (in_yuv[0] - out_yuv[0]));
 		  mse_colors_yuv[1]+=((in_yuv[1] - out_yuv[1]) * (in_yuv[1] - out_yuv[1]));
@@ -206,6 +220,10 @@ namespace pcl{
 		mse_colors_yuv[2] /= cloud_a.points.size ();
 
 		// compute PSNR for YUV colors
+		// compute the peak signal also taking into account the
+		for(int cc=0;cc<3;cc++)
+		  peak_yuv[cc] = peak_yuv[cc] - min_yuv[cc];
+		
 		psnr_colors_yuv[0] = 10 * std::log10( (peak_yuv[0] * peak_yuv[0] )/mse_colors_yuv[0]);
 		psnr_colors_yuv[1] = 10 * std::log10( (peak_yuv[1] * peak_yuv[1] )/mse_colors_yuv[1]);
 		psnr_colors_yuv[2] = 10 * std::log10( (peak_yuv[2] * peak_yuv[2] )/mse_colors_yuv[2]);
