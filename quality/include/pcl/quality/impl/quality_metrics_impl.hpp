@@ -68,18 +68,10 @@ namespace pcl{
 	template<typename PointT> void
 		convertRGBtoYUV(const PointT &in_rgb, float * out_yuv)
 	{
-		// color space conversion to YUV on a 0-1 scale
+		// color space conversion to YUV 
 		out_yuv[0] = (0.299 * in_rgb.r + 0.587 * in_rgb.g + 0.114 * in_rgb.b) / 255.0;
 		out_yuv[1] = (-0.147 * in_rgb.r - 0.289 * in_rgb.g + 0.436 * in_rgb.b) / 255.0;
 		out_yuv[2] = (0.615 * in_rgb.r - 0.515 * in_rgb.g - 0.100 * in_rgb.b) / 255.0;
-
-		// double check for no negative values or values larger than 1 
-		for (int i = 0; i < 3; i++) {
-		  if (out_yuv[i] < 0)
-			out_yuv[i] = 0;
-		  if (out_yuv[i] > 1)
-			out_yuv[i] = 1;
-	    }
 	}
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -224,9 +216,9 @@ namespace pcl{
 		//for(int cc=0;cc<3;cc++)
 		//  peak_yuv[cc] = peak_yuv[cc] - min_yuv[cc];
 		
-		psnr_colors_yuv[0] = 10 * std::log10( 1 /mse_colors_yuv[0]);
-		psnr_colors_yuv[1] = 10 * std::log10( 1 /mse_colors_yuv[1]);
-		psnr_colors_yuv[2] = 10 * std::log10( 1 /mse_colors_yuv[2]);
+		psnr_colors_yuv[0] = 10 * std::log10( 1.0 /mse_colors_yuv[0]);
+		psnr_colors_yuv[1] = 10 * std::log10( 1.0 /mse_colors_yuv[1]);
+		psnr_colors_yuv[2] = 10 * std::log10( 1.0 /mse_colors_yuv[2]);
 
 		print_info ("[done, "); print_value ("%g", tt.toc ()); print_info (" ms \n");
 		//print_info ("A->B: "); print_value ("%f\n", max_dist_a);
