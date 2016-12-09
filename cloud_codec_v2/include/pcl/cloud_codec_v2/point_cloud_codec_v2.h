@@ -217,11 +217,12 @@ namespace pcl{
       static void
       remove_outliers (vector<PointCloudPtr> &point_clouds, int num_points, double radius, unsigned int debug_level=0);
       /** \brief
-       *  \param point_clouds: an array of pointers to point_clouds to be inspected and modified
+       *  \param point_clouds: an vector of suitably aligned pointers to point_clouds to be inspected and modified
        * to normalize their bouding boxes s.t. they effectivly can be used for interframe coding.
        */
+	  //vector<pcl::io::BoundingBox, Eigen::aligned_allocator<pcl::io::BoundingBox> >  bounding_boxes (group.size ())
       static void
-      normalize_pointclouds (vector<PointCloudPtr> &point_clouds, vector<BoundingBox> &bouding_boxes, double bb_expand_factor, unsigned int debug_level=0);
+      normalize_pointclouds (vector<PointCloudPtr> &point_clouds, vector<BoundingBox, Eigen::aligned_allocator<BoundingBox> > &bouding_boxes, double bb_expand_factor, unsigned int debug_level=0);
       
       //! function for coding an enhancement layer
       // virtual void
@@ -240,12 +241,12 @@ namespace pcl{
 
         MacroBlockTree *
         generate_macroblock_tree(PointCloudConstPtr in_cloud);
-
-        void 
+ 
+		void 
         do_icp_prediction(
+          Eigen::Matrix4f* rigid_transform,
           PointCloudPtr i_cloud,
           PointCloudPtr p_cloud,
-          Eigen::Matrix4f &rigid_transform,
           bool & has_converged,
           char *rgb_offsets
         );

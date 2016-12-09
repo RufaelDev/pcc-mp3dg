@@ -78,12 +78,14 @@ protected:
     bool show_statistics_ = false;
     bool visualization_ = false;
     std::string output_directory_;
+    std::string intra_frame_quality_csv_;
+    std::string predictive_quality_csv_;
 // program control settings
     int group_size_;
     std::string algorithm_; // select compression algorithm
     int testbbalign_;  // testing the bounding box alignment algorithm ?TBD want to keep this ?
     int debug_level_;
-    int omp_cores_;
+    int num_threads_;
 // outlier removal
     int K_outlier_filter_;
     double radius_;
@@ -105,6 +107,5 @@ protected:
     bool do_icp_on_original_;
     bool create_scalable_;
     int jpeg_quality_;
-    int omp_cores;
-};
+  };
 #endif /* evaluate_compression_h */

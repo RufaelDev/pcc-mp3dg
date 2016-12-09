@@ -69,7 +69,7 @@ namespace pcl{
 	template<typename PointT> void
 	convertRGBtoYUV(const PointT &in_rgb, float * out_yuv)
 	{
-	  // color space conversion to YUV on a 0-1 scale
+	  // color space conversion to YUV 
 	  out_yuv[0] = (0.299 * in_rgb.r + 0.587 * in_rgb.g + 0.114 * in_rgb.b)/255.0;
 	  out_yuv[1] = (-0.147 * in_rgb.r - 0.289 * in_rgb.g + 0.436 * in_rgb.b)/255.0;
 	  out_yuv[2] = (0.615 * in_rgb.r - 0.515 * in_rgb.g - 0.100 * in_rgb.b)/255.0;
@@ -148,7 +148,7 @@ namespace pcl{
 		}
 
 		// compare geometry of B to A (needed for symmetric metric)
-    pcl::search::KdTree<PointT> tree_a;
+        pcl::search::KdTree<PointT> tree_a;
 		tree_a.setInputCloud (cloud_a.makeShared ());
 		float max_dist_b = -std::numeric_limits<float>::max ();
 		double rms_dist_b = 0;

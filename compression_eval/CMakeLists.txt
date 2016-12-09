@@ -39,7 +39,7 @@ if(build)
       set(PROG_NAME "pcl_${prog_name}")
 #X    message("PROG_NAME=" ${PROG_NAME})
       PCL_ADD_EXECUTABLE(${PROG_NAME} ${SUBSYS_NAME} ${prog_src} ${incs} ${impl_incs})
-      target_link_libraries(${PROG_NAME} pcl_common pcl_sample_consensus pcl_search pcl_kdtree pcl_octree pcl_io pcl_io_ply pcl_filters pcl_quality)
+      target_link_libraries(${PROG_NAME} pcl_common pcl_sample_consensus pcl_search pcl_kdtree pcl_octree pcl_io pcl_io_ply pcl_filters pcl_quality pcl_cloud_codec_v2)
 #     PCL_MAKE_PKGCONFIG("${LIB_NAME}" "${SUBSYS_NAME}" "${SUBSYS_DESC}" "${SUBSYS_DEPS}" "" "" "" "")
     endforeach (prog_src ${srcs})    # Install include files
     PCL_ADD_INCLUDES("${SUBSYS_NAME}" "${SUBSYS_NAME}" ${incs})

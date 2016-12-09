@@ -383,8 +383,8 @@ int
   string algorithm = vm["algorithm"].as<string>();
   //   PointCloudEncoder = new pcl::io::OctreePointCloudCompression<pcl::PointXYZRGBA> (compressionProfile, showStatistics);
   //   PointCloudDecoder = new pcl::io::OctreePointCloudCompression<pcl::PointXYZRGBA> ();
-  
-  vector<bounding_box> assigned_bbs(fused_clouds.size());
+ 
+  vector<bounding_box, Eigen::aligned_allocator<Eigen::Vector4f> > assigned_bbs(fused_clouds.size());
   
   if (algorithm == "V1") {
     int cb = 0, ct = 0, ob = 0;
@@ -491,10 +491,10 @@ int
 
       Eigen::Vector4f  dyn_range = max_pt_bb - min_pt_bb;
 
-      assigned_bbs[k].max_xyz = max_pt_bb;
-      assigned_bbs[k].min_xyz = min_pt_bb;
+	  assigned_bbs[k].max_xyz = max_pt_bb;
+	  assigned_bbs[k].min_xyz = min_pt_bb;
 
-      for(int j=0; j < fused_clouds[k]->size();j++)
+	  for(int j=0; j < fused_clouds[k]->size();j++)
       {
         // offset the minimum value
         fused_clouds[k]->at(j).x-=min_pt_bb[0];

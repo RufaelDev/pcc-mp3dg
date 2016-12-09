@@ -47,7 +47,6 @@
 
 // c++ standard library
 #include <fstream>
-#include <iostream>
 #include <vector>
 #include <ctime> // for 'strftime'
 #include <exception>
@@ -72,7 +71,11 @@ namespace po = boost::program_options;
 #include <pcl/visualization/pcl_visualizer.h>
 #include <vtkRenderWindow.h>
 #endif/*WITH_VTK*/
-
+#ifdef WIN32
+#include <direct.h>
+#include <stdlib.h>
+#include <stdio.h>
+#endif//WIN32
 #include <evaluate_compression.h>
 #include <quality_metrics.h>
 
@@ -126,7 +129,7 @@ void
 evaluate_compression_impl<PointT>::initialize_options_description ()
 {
   desc_.add_options ()
- ("help,h", "produce help message ")
+  ("help,h", "produce help message ")
   ("debug_level,d",po::value<int> ()->default_value (0), "debug print level (0=no debug print, 3=all debug print)")
   ("K_outlier_filter,K",po::value<int> ()->default_value (0), "K neighbours for radius outlier filter ")
   ("radius,r",po::value<double> ()->default_value (0.01), "radius outlier filter, maximum radius ")
@@ -139,6 +142,7 @@ evaluate_compression_impl<PointT>::initialize_options_description ()
   ("visualization,v",po::value<bool> ()->default_value (false)->implicit_value (true), "show both original and decoded PointClouds graphically")
   ("point_resolution,p", po::value<double> ()->default_value (0.20), "XYZ resolution of point coordinates")
   ("octree_resolution,r", po::value<double> ()->default_value (0.20), "voxel size")
+
   // V2 specific
   ("octree_bits", po::value<int> ()->default_value (11), "octree resolution (bits)") // XXX
   ("color_bits,c", po::value<int> ()->default_value (8), "color resolution (bits)")
@@ -153,8 +157,10 @@ evaluate_compression_impl<PointT>::initialize_options_description ()
   ("do_delta_coding", po::value<bool> ()->default_value (false),"use differential coding ")
   ("do_quality_computation", po::value<bool> ()->default_value (false),"compute quality of encoding")
   ("do_icp_color_offset",po::value<bool> ()->default_value (false), "do color offset coding on predictive frames")
-  ("omp_cores",po::value<int> ()->default_value (1), "number of omp cores (1=default, 1 thread, no parallel execution)");
-
+  ("num_threads",po::value<int> ()->default_value (1), "number of omp cores (1=default, 1 thread, no parallel execution)")
+  ("intra_frame_quality_csv", po::value<string>()->default_value("intra_frame_quality.csv")," intra frame coding quality results (.csv file)")
+  ("predictive_quality_csv",po::value<string>()->default_value("predictive_quality.csv"), " predictive coding quality results (.csv file)")
+  ;
   pod_.add ("input_directories", -1);
  }
 
@@ -242,7 +248,10 @@ evaluate_compression_impl<PointT>::get_options (int argc, char** argv)
 //  po::store (po::parse_config_file (in_conf, desc), vm);
 //  po::notify (vm);
   // Check if optional file 'parameter_config.txt' is present in parent or current working directory
-  bool use_parent = true, has_config = true, return_value = true;;
+  bool use_parent = true, has_config = true, return_value = true;
+#ifdef WIN32 //XXX
+  char buf[256]; char* rv = _getcwd(buf, 256); printf("cwd=%s", buf); //XXX
+#endif //WIN32 XXX
   std::ifstream config_file ("..//parameter_config.txt");
   if (config_file.fail ()) {
     use_parent = false;
@@ -322,7 +331,9 @@ evaluate_compression_impl<PointT>::assign_option_values ()
     do_quality_computation_ = vm_["do_quality_computation"].template as<bool> ();
     icp_on_original_ = vm_["icp_on_original"].template as<bool> ();
     do_icp_color_offset_ = vm_["do_icp_color_offset"].template as<bool> ();
-    omp_cores_ = vm_["omp_cores"].template as<int> ();
+    num_threads_ = vm_["num_threads"].template as<int> ();
+    intra_frame_quality_csv_ = vm_["intra_frame_quality_csv"].template as<string>();
+    predictive_quality_csv_ = vm_["predictive_quality_csv"].template as<string>();
   }
 }
 template<typename PointT>
@@ -382,7 +393,7 @@ evaluate_compression_impl<PointT>::complete_initialization ()
                              create_scalable_, // not implemented
                              false, // do_connectivity_coding_ not implemented
                              jpeg_quality_,
-                             omp_cores_
+                             num_threads_
                     ));
         decoder_V2_ = boost::shared_ptr<pcl::io::OctreePointCloudCodecV2<PointT> > (
                              new pcl::io::OctreePointCloudCodecV2<PointT> (
@@ -401,14 +412,13 @@ evaluate_compression_impl<PointT>::complete_initialization ()
                              create_scalable_, // not implemented
                              false, // do_connectivity_coding_, not implemented
                              jpeg_quality_,
-                             omp_cores_
+                             num_threads_
                       ));
       encoder_V2_->setMacroblockSize (macroblock_size_);
       // icp offset coding
       encoder_V2_->setDoICPColorOffset (do_icp_color_offset_);
     }
   }
-  // TBD: quality, output
   if (visualization_) {
 #ifdef  WITH_VTK
     viewer_decoded_ = new pcl::visualization::PCLVisualizer ("Decoded");
@@ -445,7 +455,7 @@ template<typename PointT>
 void
 evaluate_compression_impl<PointT>::do_bounding_box_normalization (std::vector<boost::shared_ptr<pcl::PointCloud<PointT> > >& group)
 {
-  vector<pcl::io::BoundingBox> bounding_boxes (group.size ());
+  vector<pcl::io::BoundingBox, Eigen::aligned_allocator<pcl::io::BoundingBox> >  bounding_boxes (group.size ());
   pcl::io::OctreePointCloudCodecV2 <PointT>::normalize_pointclouds (group, bounding_boxes, bb_expand_factor_, debug_level_);
  }
                                   
@@ -684,7 +694,7 @@ evaluate_compression_impl<PointT>::evaluate ()
     complete_initialization ();
     if (input_directories_.size() > 1)
     {
-      cout << "Fusing multiple directories not yet implemented.\n";
+      cout << "Fusing multiple directories not implemented.\n";
       return (false);
     }
     std::vector<boost::shared_ptr<pcl::PointCloud<PointT> > > point_clouds, group, original_group, encoder_output_clouds;
@@ -693,8 +703,23 @@ evaluate_compression_impl<PointT>::evaluate ()
       load_input_directory (input_directory, ".ply", point_clouds);
     }
     int count = 0;
-    
-    for (typename std::vector<boost::shared_ptr<pcl::PointCloud<PointT> > >::iterator itr = point_clouds.begin (); itr != point_clouds.end (); itr++) {
+    std::ofstream intra_frame_quality_csv;
+    stringstream compression_settings;
+    compression_settings << "octree_bits=" << octree_bits_ << " color_bits=" <<  color_bits_ << " enh._bits=" << enh_bits_ << "_colortype=" << color_coding_type_ << " centroid=" << keep_centroid_;
+
+    if (intra_frame_quality_csv_ != "")
+    {
+      intra_frame_quality_csv.open(intra_frame_quality_csv_.c_str());
+      QualityMetric::print_csv_header(intra_frame_quality_csv);
+    }
+    std::ofstream predictive_quality_csv;
+    if (predictive_quality_csv_ != "")
+    {
+      predictive_quality_csv.open(predictive_quality_csv_.c_str());
+      QualityMetric::print_csv_header(predictive_quality_csv);
+    }
+    for (typename std::vector<boost::shared_ptr<pcl::PointCloud<PointT> > >::iterator itr = point_clouds.begin (); itr != point_clouds.end (); itr++)
+    {
       boost::shared_ptr<pcl::PointCloud<PointT> > point_cloud = *itr;
       // a deep copy is needed because the point_cloud is potentially modified
       // and the original is needed to compare results
@@ -735,6 +760,10 @@ evaluate_compression_impl<PointT>::evaluate ()
           if (do_quality_computation_)
           {
             do_quality_computation (pc, output_pointcloud, achieved_quality);
+            if (intra_frame_quality_csv_ != "")
+            {
+              achieved_quality.print_csv_line(compression_settings.str(), intra_frame_quality_csv);
+            }
           }
           if (output_directory_ != "")
           {
@@ -749,9 +778,9 @@ evaluate_compression_impl<PointT>::evaluate ()
             boost::shared_ptr<pcl::PointCloud<PointT> > predicted_pc (new pcl::PointCloud<PointT> ());
             cout << " delta coding frame nr " << i+1 << endl;
             stringstream p_frame_pdat, p_frame_idat;
-            QualityMetric pframe_quality;
+            QualityMetric predictive_quality;
 
-            do_delta_encoding (icp_on_original_ ? pc : encoder_V2_->getOutputCloud (), group[i+1], predicted_pc, &p_frame_idat, &p_frame_pdat, pframe_quality);
+            do_delta_encoding (icp_on_original_ ? pc : encoder_V2_->getOutputCloud (), group[i+1], predicted_pc, &p_frame_idat, &p_frame_pdat, predictive_quality);
             // quality
             shared_macroblock_percentages[i] = encoder_V2_->getMacroBlockPercentage ();
             icp_convergence_percentage[i] =  encoder_V2_->getMacroBlockConvergencePercentage ();
@@ -762,15 +791,17 @@ evaluate_compression_impl<PointT>::evaluate ()
             i_strm_pos_cur = p_frame_idat.tellp ();
             cout << " encoded a predictive frame: coded " << (i_strm_pos_cur - i_strm_pos_prev) << " bytes intra and " << (p_strm_pos_cur - p_strm_pos_prev) << " inter frame encoded " <<endl;
             // create a deep copy of original pointcloud, for comparison
-            do_delta_decoding (&p_frame_idat, &p_frame_pdat, output_pointcloud, decoded_pc, pframe_quality);
+            do_delta_decoding (&p_frame_idat, &p_frame_pdat, output_pointcloud, decoded_pc, predictive_quality);
 //      compute the quality of the resulting predictive frame
             if (do_quality_computation_)
             {
-              do_quality_computation (group[i+1], decoded_pc, pframe_quality);
+              do_quality_computation (group[i+1], decoded_pc, predictive_quality);
+              if (predictive_quality_csv_ != "")
+              {
+                predictive_quality.print_csv_line(compression_settings.str(), predictive_quality_csv);
+              }
             }
-            pframe_quality.print_csv_line ("", cout);
           }
-          // TBD store the quality metrics for the p cloud
           output_pointcloud->clear (); // clear output cloud
         }
         // start new groups
