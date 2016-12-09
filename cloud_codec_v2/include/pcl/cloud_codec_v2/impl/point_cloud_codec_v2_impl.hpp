@@ -522,9 +522,9 @@ namespace pcl{
 
       icp.setMaximumIterations (icp_max_iterations_);
       // Set the transformation epsilon (criterion 2)
-      icp.setTransformationEpsilon (icp_max_iterations_);
+      icp.setTransformationEpsilon (transformationepsilon_);
       // Set the euclidean distance difference epsilon (criterion 3)
-      icp.setEuclideanFitnessEpsilon (transformationepsilon_);
+      icp.setEuclideanFitnessEpsilon (3 * transformationepsilon_);
 
       pcl::PointCloud<PointT> Final;
       icp.align(Final);
