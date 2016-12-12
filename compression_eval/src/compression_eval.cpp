@@ -384,7 +384,7 @@ int
   //   PointCloudEncoder = new pcl::io::OctreePointCloudCompression<pcl::PointXYZRGBA> (compressionProfile, showStatistics);
   //   PointCloudDecoder = new pcl::io::OctreePointCloudCompression<pcl::PointXYZRGBA> ();
  
-  vector<bounding_box, Eigen::aligned_allocator<Eigen::Vector4f> > assigned_bbs(fused_clouds.size());
+  vector<bounding_box, Eigen::aligned_allocator<bounding_box> > assigned_bbs(fused_clouds.size());
   
   if (algorithm == "V1") {
     int cb = 0, ct = 0, ob = 0;
