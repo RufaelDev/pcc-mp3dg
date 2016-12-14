@@ -730,9 +730,9 @@ evaluate_compression_impl<PointT>::evaluate ()
       
       if (group_size_ == 0 && count < point_clouds.size ()) continue;
       
-      if (count == point_clouds.size () || count % group_size_ == 0)
+     // encode the group for each set of 'group_size' point_clouds, and the finaal set
+     if (count == point_clouds.size () || count % group_size_ == 0)
       {
-        // encode the group
         if (K_outlier_filter_ > 0) do_outlier_removal (group);
         if (bb_expand_factor_ >= 0.0) do_bounding_box_normalization (group);
         if (group_size_ == 0) group_size_ = point_clouds.size();
@@ -772,7 +772,7 @@ evaluate_compression_impl<PointT>::evaluate ()
           do_visualization (opc, output_pointcloud);
           // test and evaluation iterative closest point predictive coding
           if (algorithm_ == "V2" && do_delta_coding_ && bb_expand_factor_ >= 0  // bounding boxes were aligned
-            && i+1 < group_size)
+            && i > 0 && i+1 < group_size)
           {
             boost::shared_ptr<pcl::PointCloud<PointT> > decoded_pc (new pcl::PointCloud<PointT> ());
             boost::shared_ptr<pcl::PointCloud<PointT> > predicted_pc (new pcl::PointCloud<PointT> ());
