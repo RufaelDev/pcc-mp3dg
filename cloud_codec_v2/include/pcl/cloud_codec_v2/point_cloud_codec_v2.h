@@ -118,7 +118,7 @@ namespace pcl{
           bool createScalableStream_arg = true, 
           bool codeConnectivity_arg = false,
           int jpeg_quality_arg = 75,
-          int num_threads=1) :
+          int num_threads=0) :
         OctreePointCloudCompression<PointT,LeafT,BranchT,OctreeT>(
           compressionProfile_arg,
           showStatistics_arg,
