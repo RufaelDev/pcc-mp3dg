@@ -769,9 +769,9 @@ namespace pcl{
 #ifndef _OPENMP
 		num_threads_ = 0;
 #endif// _OPENMP
-    std::vector<cloudInfoT<PointT> > p_info_list;
-    std::vector<cloudResultT<PointT> > p_result_list;
-    std::vector<Eigen::Matrix4f, Eigen::aligned_allocator<Eigen::Matrix4f> > p_result_matrices;
+        std::vector<cloudInfoT<PointT> > p_info_list;
+        std::vector<cloudResultT<PointT> > p_result_list;
+        std::vector<Eigen::Matrix4f, Eigen::aligned_allocator<Eigen::Matrix4f> > p_result_matrices;
 
 		// intra coded points storage (points that cannot be predicted)
 		typename pcl::PointCloud<PointT>::Ptr intra_coded_points(new pcl::PointCloud<PointT>());
@@ -815,7 +815,7 @@ namespace pcl{
 
 					// shared block, do icp
 					bool icp_success = false;
-					Eigen::Matrix4f rt;
+					Eigen::Matrix4f rt = Eigen::Matrix4f::Identity();
 					char rgb_offsets[3] = { 0,0,0 };
 
 					// Next function is CPU intensive, and candidate for parallel execution
