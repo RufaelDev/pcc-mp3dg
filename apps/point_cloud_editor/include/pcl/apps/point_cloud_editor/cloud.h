@@ -45,6 +45,13 @@
 #include <QtGui/QColor>
 #include <pcl/apps/point_cloud_editor/localTypes.h>
 #include <pcl/apps/point_cloud_editor/statistics.h>
+#ifdef OPENGL_IS_A_FRAMEWORK
+# include <OpenGL/gl.h>
+# include <OpenGL/glu.h>
+#else
+# include <GL/gl.h>
+# include <GL/glu.h>
+#endif
 
 /// @brief A wrapper which allows to use any implementation of cloud provided by
 /// a third-party library.
@@ -348,7 +355,7 @@ class Cloud : public Statistics
     /// @param pts a vector used to store the points whose coordinates are
     /// transformed.
     void
-    getDisplaySpacePoints (std::vector<Point3D>& pts) const;
+    getDisplaySpacePoints (Point3DVector& pts) const;
 
     /// @brief Returns a const reference to the internal representation of this
     /// object.

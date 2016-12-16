@@ -113,7 +113,6 @@ pcl::cloud_composer::CloudItem::setTemplateCloudFromBlob ()
 {
   if (! template_cloud_set_ )
   {
-    int num_fields = cloud_blob_ptr_->fields.size ();
     std::vector<pcl::PCLPointField>::iterator end = cloud_blob_ptr_->fields.end ();
     std::vector<pcl::PCLPointField>::iterator itr = cloud_blob_ptr_->fields.begin ();
     QStringList field_names;
@@ -144,7 +143,7 @@ pcl::cloud_composer::CloudItem::setTemplateCloudFromBlob ()
     {
       case (PointTypeFlags::XYZ):
       {
-        pcl::PointCloud <PointXYZ>::Ptr cloud_ptr =  boost::make_shared<pcl::PointCloud <PointXYZ> >();
+        pcl::PointCloud <PointXYZ>::Ptr cloud_ptr = boost::shared_ptr<pcl::PointCloud <PointXYZ> > (new pcl::PointCloud <PointXYZ> );
         pcl::fromPCLPointCloud2 (*cloud_blob_ptr_, *cloud_ptr);
         cloud_pointer_variant = QVariant::fromValue (cloud_ptr);
         //Initialize the search kd-tree for this cloud
@@ -155,7 +154,7 @@ pcl::cloud_composer::CloudItem::setTemplateCloudFromBlob ()
       }
       case (PointTypeFlags::XYZ | PointTypeFlags::RGB):
       {
-        pcl::PointCloud <PointXYZRGB>::Ptr cloud_ptr =  boost::make_shared<pcl::PointCloud <PointXYZRGB> >();
+        pcl::PointCloud <PointXYZRGB>::Ptr cloud_ptr = boost::shared_ptr<pcl::PointCloud <PointXYZRGB> > (new pcl::PointCloud <PointXYZRGB>);
         pcl::fromPCLPointCloud2 (*cloud_blob_ptr_, *cloud_ptr);
         cloud_pointer_variant = QVariant::fromValue (cloud_ptr);
         pcl::search::KdTree<PointXYZRGB>::Ptr kd_search = boost::make_shared<search::KdTree<PointXYZRGB> >();
@@ -165,7 +164,7 @@ pcl::cloud_composer::CloudItem::setTemplateCloudFromBlob ()
       }
       case (PointTypeFlags::XYZ | PointTypeFlags::RGBA):
       {
-        pcl::PointCloud <PointXYZRGBA>::Ptr cloud_ptr =  boost::make_shared<pcl::PointCloud <PointXYZRGBA> >();
+        pcl::PointCloud <PointXYZRGBA>::Ptr cloud_ptr = boost::shared_ptr<pcl::PointCloud <PointXYZRGBA> > (new pcl::PointCloud <PointXYZRGBA>);
         pcl::fromPCLPointCloud2 (*cloud_blob_ptr_, *cloud_ptr);
         cloud_pointer_variant = QVariant::fromValue (cloud_ptr);
         pcl::search::KdTree<PointXYZRGBA>::Ptr kd_search = boost::make_shared<search::KdTree<PointXYZRGBA> >();
