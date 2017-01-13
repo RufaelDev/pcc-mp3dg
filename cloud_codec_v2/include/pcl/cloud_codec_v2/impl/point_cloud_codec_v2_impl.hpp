@@ -37,6 +37,11 @@
 #ifndef POINT_CLOUD_CODECV2_IMPL_HPP
 #define POINT_CLOUD_CODECV2_IMPL_HPP
 
+// STL Containers containing fixed-size vectorizable Eigen types need aligned_allocator<...>
+// see: http://eigen.tuxfamily.org/dox-devel/group__TopicStlContainers.html
+#include <Eigen/StdVector>
+
+
 // point cloud compression from PCL
 #include <pcl/compression/entropy_range_coder.h>
 #include <pcl/compression/impl/entropy_range_coder.hpp>
@@ -522,9 +527,9 @@ namespace pcl{
 
       icp.setMaximumIterations (icp_max_iterations_);
       // Set the transformation epsilon (criterion 2)
-      icp.setTransformationEpsilon (transformationepsilon_);
-      // Set the euclidean distance difference epsilon (criterion 3)
-      icp.setEuclideanFitnessEpsilon (3 * transformationepsilon_);
+	  icp.setTransformationEpsilon(transformationepsilon_);
+	  // Set the euclidean distance difference epsilon (criterion 3)
+	  icp.setEuclideanFitnessEpsilon(3 * transformationepsilon_);
 
       pcl::PointCloud<PointT> Final;
       icp.align(Final);
@@ -599,7 +604,7 @@ namespace pcl{
           shared_macroblock_count++;
           // shared block, do icp
           bool icp_success=false;
-          Eigen::Matrix4f rt;
+          Eigen::Matrix4f rt = Eigen::Matrix4f::Identity();
           char rgb_offsets[3]={0,0,0};
 
           do_icp_prediction(
@@ -635,7 +640,7 @@ namespace pcl{
               p_coded_data.write((const char *) &rgb_offsets[0] ,3*sizeof(char));
 
             // following code is for generation of the predicted frame
-            Eigen::Matrix4f mdec;
+            Eigen::Matrix4f mdec = Eigen::Matrix4f::Identity();
             Eigen::Quaternion<float> l_quat_out_dec;
             RigidTransformCoding<float>::deCompressRigidTransform(comp_dat, mdec,l_quat_out_dec);
 
@@ -793,9 +798,9 @@ namespace pcl{
 
           // shared block, do icp
           bool icp_success=false;
-          Eigen::Matrix4f rt;
+          Eigen::Matrix4f rt = Eigen::Matrix4f::Identity();
           char rgb_offsets[3]={0,0,0};
-
+          
           do_icp_prediction(
             cloud_in,
             cloud_out,
@@ -803,7 +808,7 @@ namespace pcl{
             icp_success,
             rgb_offsets
             );
-
+          
           if(icp_success)
           {
             convergence_count++;
@@ -829,7 +834,7 @@ namespace pcl{
               p_coded_data.write((const char *) rgb_offsets ,3*sizeof(char));
 
             // following code is for generation of predicted frame
-            Eigen::Matrix4f mdec;
+            Eigen::Matrix4f mdec = Eigen::Matrix4f::Identity();
             Eigen::Quaternion<float> l_quat_out_dec;
             RigidTransformCoding<float>::deCompressRigidTransform(comp_dat, mdec,l_quat_out_dec);
 
@@ -963,7 +968,7 @@ namespace pcl{
             typename pcl::PointCloud<PointT>::Ptr cloud_in (new pcl::PointCloud<PointT>(*icloud_arg, i_leaf->getPointIndicesVector()));
 
             // following code is for generation of predicted frame
-            Eigen::Matrix4f mdec;
+            Eigen::Matrix4f mdec = Eigen::Matrix4f::Identity();
             Eigen::Quaternion<float> l_quat_out_dec;
             RigidTransformCoding<float>::deCompressRigidTransform(comp_dat_in, mdec,l_quat_out_dec);
 
