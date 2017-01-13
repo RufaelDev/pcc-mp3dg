@@ -43,6 +43,7 @@
 #include <pcl/common/common.h>
 #include <pcl/common/eigen.h>
 #include <boost/program_options.hpp>
+#include <Eigen/StdVector>
 #include <iostream>
 #include <fstream>
 
@@ -316,7 +317,7 @@ namespace pcl{
          // bb allign
          int bb_align_count;
          std::vector<bool> aligned_flags;
-         std::vector<bounding_box> assigned_bbs;
+         std::vector<bounding_box, Eigen::aligned_allocator<bounding_box > > assigned_bbs;
 
          // stream statistics
          boost::shared_ptr<ofstream> res_p_ofstream;

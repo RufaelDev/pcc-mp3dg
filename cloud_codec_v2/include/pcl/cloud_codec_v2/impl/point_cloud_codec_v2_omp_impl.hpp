@@ -37,6 +37,11 @@
 #ifndef POINT_CLOUD_CODEC_V2_OMP_IMPL_HPP
 #define POINT_CLOUD_CODEC_V2_OMP_IMPL_HPP
 // point cloud compression from PCL, parallel version using OpenMP
+
+// STL Containers containing fixed-size vectorizable Eigen types need aligned_allocator<...>
+// see: http://eigen.tuxfamily.org/dox-devel/group__TopicStlContainers.html
+#include <Eigen/StdVector>
+
 #include <pcl/cloud_codec_v2/point_cloud_codec_v2.h>
 #include <pcl/cloud_codec_v2/point_cloud_codec_v2_omp.h>
 #include <pcl/common/transforms.h>
@@ -50,7 +55,7 @@ namespace pcl{
 
   namespace io{
     template<typename T> struct cloudInfoT { typename  pcl::octree::OctreeContainerPointIndices* i_leaf; octree::OctreeKey current_key; std::vector<int>* indices; };
-    template<typename T> struct cloudResultT { typename pcl::PointCloud<T>::Ptr in_cloud;; typename pcl::PointCloud<T>::Ptr out_cloud;  Eigen::Matrix4f rt; bool icp_success; char rgb_offsets[3]; bool leaf_found; };
+    template<typename T> struct cloudResultT { typename pcl::PointCloud<T>::Ptr in_cloud; typename pcl::PointCloud<T>::Ptr out_cloud; bool icp_success; char rgb_offsets[3]; bool leaf_found; };
 //  struct cloudInfoT { void* pred_cloud; octree::OctreeKey current_key; std::vector<int> &indices; };
 //  struct cloudResultT { void* in_cloud; void* out_cloud;  Eigen::Matrix4f rt; bool icp_success; int rgb_offsets[3]; bool leaf_found; };
     /** \brief routine to encode a delta frame (predictive coding)
@@ -97,6 +102,8 @@ namespace pcl{
 			octree::OctreeLeafNodeIterator<OctreeT> it_predictive_end = p_block_tree->leaf_end();
 			std::vector<cloudInfoT<PointT> > p_info_list;
 			std::vector<cloudResultT<PointT> > p_result_list;
+			std::vector<Eigen::Matrix4f, Eigen::aligned_allocator<Eigen::Matrix4f> > p_result_matrices;
+
 			// store the input arguments for 'do_icp_prediction'
 			for (; it_predictive != it_predictive_end; ++it_predictive) {
 				const octree::OctreeKey current_key = it_predictive.getCurrentOctreeKey();
@@ -113,6 +120,9 @@ namespace pcl{
 				}
 				p_info_list.push_back(ci);
 				p_result_list.push_back(cr);
+				Eigen::Matrix4f crm = Eigen::Matrix4f::Identity();
+				p_result_matrices.push_back(crm);
+
 				macro_block_count++;
 			}
 #if defined(_OPENMP)
@@ -131,7 +141,7 @@ namespace pcl{
 					do_icp_prediction(
 						(PointCloudPtr) p_result_list[i].in_cloud,
 						(PointCloudPtr) p_result_list[i].out_cloud,
-						p_result_list[i].rt,
+						p_result_matrices[i],
 						p_result_list[i].icp_success,
 						p_result_list[i].rgb_offsets
 					);
@@ -148,7 +158,7 @@ namespace pcl{
 					if (p_result_list[i].icp_success)
 					{
 						char rgb_offsets[3] ;
-						Eigen::Matrix4f rt = p_result_list[i].rt;
+						Eigen::Matrix4f rt = p_result_matrices[i];
 						for (int j=0; j < 3; j++) {
 						  rgb_offsets[j] = p_result_list[i].rgb_offsets[j];
 						}
@@ -177,7 +187,7 @@ namespace pcl{
 							p_coded_data.write((const char *)rgb_offsets, 3 * sizeof(char));
 
 						// following code is for generation of predicted frame
-						Eigen::Matrix4f mdec;
+						Eigen::Matrix4f mdec = Eigen::Matrix4f::Identity();
 						Eigen::Quaternion<float> l_quat_out_dec;
 						RigidTransformCoding<float>::deCompressRigidTransform(comp_dat, mdec, l_quat_out_dec);
 
