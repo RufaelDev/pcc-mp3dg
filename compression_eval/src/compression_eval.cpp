@@ -1186,7 +1186,7 @@ CompressionEval::run_eval()
                                     boost::shared_ptr<pcl::PointCloud<PointXYZRGB> > out_n(new pcl::PointCloud<PointXYZRGB>());
                                     l_codec_encoder->encodePointCloudDeltaFrame(icp_on_original ? fused_clouds[i] : l_codec_encoder->getOutputCloud(),
                                         fused_clouds[i + 1], out_n, p_frame_idat, p_frame_pdat, (int)icp_on_original, false);
-
+                                  
                                     pframe_quality.encoding_time_ms = tt.toc();
                                     pframe_quality.byte_count_octree_layer = p_frame_idat.tellp();
                                     pframe_quality.byte_count_centroid_layer = p_frame_pdat.tellp();
@@ -1199,8 +1199,10 @@ CompressionEval::run_eval()
                                     icp_convergence_percentage[i + 1] = l_codec_encoder->getMacroBlockConvergencePercentage();
 
                                     // decode the pframe
+                                    tt.tic();
                                     l_codec_decoder_base->decodePointCloudDeltaFrame(decoded_cloud_base, out_d, p_frame_idat, p_frame_pdat);
-
+                                    pframe_quality.decoding_time_ms = tt.toc();
+                                  
                                     // compute the quality of the resulting predictive frame
                                     computeQualityMetric<pcl::PointXYZRGB>(*fused_clouds[i + 1], *out_d, pframe_quality);
                                     pframe_quality.print_csv_line(compression_arg_ss.str(), *res_p_ofstream);
