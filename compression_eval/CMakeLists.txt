@@ -22,7 +22,7 @@ if(build)
         "include/pcl/${SUBSYS_NAME}/impl/compression_eval_impl.hpp"
 	    "include/pcl/${SUBSYS_NAME}/impl/reverie_mesh_impl.hpp"
         )
-
+	
 	if(WITH_JPEG)
 		include_directories(${LIBJPEG_INCLUDE_DIR})
 		link_directories(${LIBJPEG_STATIC_LIB})
@@ -34,7 +34,7 @@ if(build)
     PCL_ADD_LIBRARY("${LIB_NAME}" "${SUBSYS_NAME}" ${srcs} ${incs} ${impl_incs})
 	target_link_libraries(${LIB_NAME} pcl_common pcl_sample_consensus pcl_search pcl_kdtree pcl_octree pcl_io pcl_io_ply pcl_filters pcl_cloud_codec_v2 )
 	PCL_MAKE_PKGCONFIG("${LIB_NAME}" "${SUBSYS_NAME}" "${SUBSYS_DESC}" "${SUBSYS_DEPS}" "" "" "" "")
-
+ 
     # Install include files
     PCL_ADD_INCLUDES("${SUBSYS_NAME}" "${SUBSYS_NAME}" ${incs})
     PCL_ADD_INCLUDES("${SUBSYS_NAME}" "${SUBSYS_NAME}/impl" ${impl_incs})
