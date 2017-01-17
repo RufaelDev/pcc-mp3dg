@@ -46,5 +46,4 @@ using namespace pcl;
 using namespace io;
 
 template class PCL_EXPORTS OctreePointCloudCodecV2<PointXYZRGB>;
-//template class PCL_EXPORTS OctreePointCloudCodecV2OMP<PointXYZRGB>;
 //template class PCL_EXPORTS OctreePointCloudCompressionDeltaFrames<PointXYZ>;

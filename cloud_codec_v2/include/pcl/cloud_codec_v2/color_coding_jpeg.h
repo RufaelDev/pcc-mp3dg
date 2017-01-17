@@ -154,7 +154,7 @@ namespace pcl{
         switch(mapping_mode_)
         {
           case(SNAKE):
-            decodeJPEGSnake(pointAvgColorDataVector_, out_data);
+            decodeJPEGSnake(pointAvgColorDataVector_);
             pointAvgColorDataVector_Iterator_ = pointAvgColorDataVector_.begin();
           break;
           case(LINES):
@@ -222,10 +222,10 @@ namespace pcl{
       }
 
       void
-      decodeJPEGSnake(std::vector<char> &in_vec, std::vector<uint8_t> & out_data)
+      decodeJPEGSnake(std::vector<char> &in_vec)
       {
-        PCLImage im_out; //!
-        io::JPEGReader<char>::readJPEG(in_vec,im_out); //! 
+        PCLImage im_out;
+        io::JPEGReader<char>::readJPEG(in_vec,im_out);
 
         SnakeGridMapping<uint8_t,char> un_m(im_out.width,im_out.height);
         std::vector<char> res2 = un_m.undoSnakeGridMapping(im_out.data);

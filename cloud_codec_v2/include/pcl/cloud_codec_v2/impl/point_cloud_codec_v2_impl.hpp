@@ -36,7 +36,7 @@
 */
 #ifndef POINT_CLOUD_CODECV2_IMPL_HPP
 #define POINT_CLOUD_CODECV2_IMPL_HPP
-// STL Containers containing fixed-size vectorizable Eigen types need special allocator
+// STL Containers containing fixed-size vectorizable Eigen types need aligned_allocator<...>
 // see: http://eigen.tuxfamily.org/dox-devel/group__TopicStlContainers.html
 #include <Eigen/StdVector>
 
@@ -61,16 +61,16 @@ namespace pcl{
 
   namespace io{
 
-    /*!
-    * \brief  encoding routing based on overriding pcl octree codec written by Julius Kammerl
-    *        extra features include 
-    *        - centroid coding
-    *        - color coding based on jpeg
-    *        - scalable bitstream (not yet implemented)
-    * \author Rufael Mekuria rufael.mekuria@cwi.nl
-    * \param  cloud_arg
-    * \param  compressed_tree_data_out_arg
-    */
+    /**
+      * \brief  encoding routing based on overriding pcl octree codec written by Julius Kammerl
+      *        extra features include
+      *        - centroid coding
+      *        - color coding based on jpeg
+      *        - scalable bitstream (not yet implemented)
+      * \author Rufael Mekuria rufael.mekuria@cwi.nl
+      * \param  cloud_arg
+      * \param  compressed_tree_data_out_arg
+      */
     template<typename PointT, typename LeafT, typename BranchT, typename OctreeT> void OctreePointCloudCodecV2<
       PointT, LeafT, BranchT, OctreeT>::encodePointCloud (
       const PointCloudConstPtr &cloud_arg,
@@ -93,7 +93,7 @@ namespace pcl{
       addPointsFromInputCloud ();
 
       // make sure cloud contains points
-      if (leaf_count_> 0)
+      if (leaf_count_ > 0)
       {
         // color field analysis
         cloud_with_color_ = false;
@@ -206,15 +206,15 @@ namespace pcl{
       }
     }
 
-    /*!
-    * \brief  decoding routing based on overriding pcl octree codec written by Julius Kammerl
-    *        extra features include 
-    *        - centroid coding
-    *        - color coding based on jpeg
-    * \author Rufael Mekuria rufael.mekuria@cwi.nl
-    * \param  compressed_tree_data_in_arg
-    * \param  cloud_arg  decoded point cloud
-    */
+    /**
+      * \brief  decoding routing based on overriding pcl octree codec written by Julius Kammerl
+      *        extra features include
+      *        - centroid coding
+      *        - color coding based on jpeg
+      * \author Rufael Mekuria rufael.mekuria@cwi.nl
+      * \param  compressed_tree_data_in_arg
+      * \param  cloud_arg  decoded point cloud
+      */
     template<typename PointT, typename LeafT, typename BranchT, typename OctreeT> void
       OctreePointCloudCodecV2<PointT, LeafT, BranchT, OctreeT>::decodePointCloud (
       std::istream& compressed_tree_data_in_arg,
@@ -303,12 +303,12 @@ namespace pcl{
     }
   }
 
-    /*!
-    * \brief  helper function to compute the delta frames
-    * \author Rufael Mekuria rufael.mekuria@cwi.nl
-    * \param  pcloud_arg_in input point cloud to simplify
-    * \param  out_cloud  output simplified point cloud
-    */
+    /**
+      * \brief  helper function to compute the delta frames
+      * \author Rufael Mekuria rufael.mekuria@cwi.nl
+      * \param  pcloud_arg_in input point cloud to simplify
+      * \param  out_cloud  output simplified point cloud
+      */
     template<typename PointT, typename LeafT, typename BranchT, typename OctreeT> void
       OctreePointCloudCodecV2<PointT,LeafT,BranchT,OctreeT>::simplifyPCloud(const PointCloudConstPtr &pcloud_arg_in, 
       PointCloudPtr &out_cloud )
@@ -534,9 +534,9 @@ namespace pcl{
 
       icp.setMaximumIterations (icp_max_iterations_);
       // Set the transformation epsilon (criterion 2)
-      icp.setTransformationEpsilon (icp_max_iterations_);
+      icp.setTransformationEpsilon (transformationepsilon_);
       // Set the euclidean distance difference epsilon (criterion 3)
-      icp.setEuclideanFitnessEpsilon (transformationepsilon_);
+      icp.setEuclideanFitnessEpsilon (3 * transformationepsilon_);
 
       pcl::PointCloud<PointT> Final;
       icp.align(Final);
@@ -611,7 +611,7 @@ namespace pcl{
           shared_macroblock_count++;
           // shared block, do icp
           bool icp_success=false;
-          Eigen::Matrix4f rt;
+          Eigen::Matrix4f rt = Eigen::Matrix4f::Identity();
           char rgb_offsets[3]={0,0,0};
 
           do_icp_prediction(
@@ -647,7 +647,7 @@ namespace pcl{
               p_coded_data.write((const char *) &rgb_offsets[0] ,3*sizeof(char));
 
             // following code is for generation of the predicted frame
-            Eigen::Matrix4f mdec;
+            Eigen::Matrix4f mdec = Eigen::Matrix4f::Identity();
             Eigen::Quaternion<float> l_quat_out_dec;
             RigidTransformCoding<float>::deCompressRigidTransform(comp_dat, mdec,l_quat_out_dec);
 
@@ -751,7 +751,7 @@ namespace pcl{
     // Next data structures are used to store essential information to parallelize a CPU intensive loop
 	template<typename T> struct cloudInfoT { typename  pcl::octree::OctreeContainerPointIndices* i_leaf; octree::OctreeKey current_key; std::vector<int>* indices; };
 	template<typename T> struct cloudResultT { typename pcl::PointCloud<T>::Ptr in_cloud; typename pcl::PointCloud<T>::Ptr out_cloud; bool icp_success; char rgb_offsets[3]; bool leaf_found; };
-    /*! \brief routine to encode a delta frame (predictive coding)
+    /** \brief routine to encode a delta frame (predictive coding)
     * \author Rufael Mekuria rufael.mekuria@cwi.nl
     * \param icloud_arg  point cloud to be used a I frame
     * \param pcloud_arg  point cloud to be encoded as a pframe
@@ -852,7 +852,7 @@ namespace pcl{
 							p_coded_data.write((const char *)rgb_offsets, 3 * sizeof(char));
 
 						// following code is for generation of predicted frame
-						Eigen::Matrix4f mdec;
+						Eigen::Matrix4f mdec = Eigen::Matrix4f::Identity();
 						Eigen::Quaternion<float> l_quat_out_dec;
 						RigidTransformCoding<float>::deCompressRigidTransform(comp_dat, mdec, l_quat_out_dec);
 
@@ -1079,7 +1079,7 @@ namespace pcl{
 		delete i_block_tree;
 		delete p_block_tree;
 	}
-   /*! \brief routine to decode a delta frame (predictive coding)
+   /** \brief routine to decode a delta frame (predictive coding)
     * \author Rufael Mekuria rufael.mekuria@cwi.nl
     * \param icloud_arg  point cloud to be used a I frame
     * \param cloud_out_arg  decoded frame
@@ -1131,7 +1131,7 @@ namespace pcl{
             typename pcl::PointCloud<PointT>::Ptr cloud_in (new pcl::PointCloud<PointT>(*icloud_arg, i_leaf->getPointIndicesVector()));
 
             // following code is for generation of predicted frame
-            Eigen::Matrix4f mdec;
+            Eigen::Matrix4f mdec = Eigen::Matrix4f::Identity();
             Eigen::Quaternion<float> l_quat_out_dec;
             RigidTransformCoding<float>::deCompressRigidTransform(comp_dat_in, mdec,l_quat_out_dec);
 
@@ -1471,11 +1471,11 @@ namespace pcl{
       compressed_tree_data_in_arg.read (reinterpret_cast<char*> (&do_icp_color_offset_), sizeof (do_icp_color_offset_));
     };
 
-    /*! \brief Encode leaf node information during serialization, added jpeg color coding and voxel centroid coding
-    * \param leaf_arg: reference to new leaf node
-    * \param key_arg: octree key of new leaf node
-    * \brief added centroids encoding compared to the original codec of PCL
-    */
+    /** \brief Encode leaf node information during serialization, added jpeg color coding and voxel centroid coding
+     * \param leaf_arg: reference to new leaf node
+     * \param key_arg: octree key of new leaf node
+     * \brief added centroids encoding compared to the original codec of PCL
+     */
     template<typename PointT, typename LeafT, typename BranchT, typename OctreeT> void
       OctreePointCloudCodecV2<PointT, LeafT, BranchT, OctreeT>::serializeTreeCallback (LeafT &leaf_arg, const OctreeKey& key_arg)
     {
@@ -1547,10 +1547,10 @@ namespace pcl{
       }
     }
 
-    /*! \brief Decode leaf nodes information during deserialization, added jpeg and voxel centroid coding
-    * \param key_arg octree key of new leaf node
-    * \brief added centroids encoding compared to the original codec
-    */
+    /** \brief Decode leaf nodes information during deserialization, added jpeg and voxel centroid coding
+     * \param key_arg octree key of new leaf node
+     * \brief added centroids encoding compared to the original codec
+     */
     template<typename PointT, typename LeafT, typename BranchT, typename OctreeT> void
       OctreePointCloudCodecV2<PointT, LeafT, BranchT, OctreeT>::deserializeTreeCallback (LeafT&, const OctreeKey& key_arg)
     {
@@ -1622,10 +1622,10 @@ namespace pcl{
       }
     }
 
-    /*! \brief Synchronize to frame header
-    * \param compressed_tree_data_in_arg: binary input stream
-    * \brief use the new v2 header
-    */
+    /** \brief Synchronize to frame header
+      * \param compressed_tree_data_in_arg: binary input stream
+      * \brief use the new v2 header
+      */
     template<typename PointT, typename LeafT, typename BranchT, typename OctreeT> void
       OctreePointCloudCodecV2<PointT, LeafT, BranchT, OctreeT>::syncToHeader (std::istream& compressed_tree_data_in_arg)
     {
@@ -1642,10 +1642,10 @@ namespace pcl{
       OctreePointCloudCompression<PointT>::syncToHeader (compressed_tree_data_in_arg);
     };
 
-    /*! \brief Apply entropy encoding to encoded information and output to binary stream, added bitstream scalability and centroid encoding compared to  V1
-    * \param compressed_tree_data_out_arg1 binary voxel output stream
-    * \param compressed_tree_data_out_arg2 binary color output stream
-    */
+    /** \brief Apply entropy encoding to encoded information and output to binary stream, added bitstream scalability and centroid encoding compared to  V1
+      * \param compressed_tree_data_out_arg1 binary voxel output stream
+      * \param compressed_tree_data_out_arg2 binary color output stream
+      */
     template<typename PointT, typename LeafT, typename BranchT, typename OctreeT> void
       OctreePointCloudCodecV2<PointT, LeafT, BranchT, OctreeT>::entropyEncoding (std::ostream& compressed_tree_data_out_arg1, std::ostream& compressed_tree_data_out_arg2 )
     {
@@ -1726,10 +1726,10 @@ namespace pcl{
       compressed_tree_data_out_arg2.flush ();
     };
 
-    /*! \brief Entropy decoding of input binary stream and output to information vectors, added bitstream scalability and centroid encoding compared to  V1
-	  * \param compressed_tree_data_in_arg1 binary voxel input stream
-	  * \param compressed_tree_data_in_arg2 binary color enhancement input stream
-	  */
+    /** \brief Entropy decoding of input binary stream and output to information vectors, added bitstream scalability and centroid encoding compared to  V1
+	    * \param compressed_tree_data_in_arg1 binary voxel input stream
+	    * \param compressed_tree_data_in_arg2 binary color enhancement input stream
+	    */
     template<typename PointT, typename LeafT, typename BranchT, typename OctreeT> void
       OctreePointCloudCodecV2<PointT, LeafT, BranchT, OctreeT>::entropyDecoding (std::istream& compressed_tree_data_in_arg1, std::istream& compressed_tree_data_in_arg2)
     {
@@ -1800,10 +1800,10 @@ namespace pcl{
       }
       /* enhancement layer encoding/decoding EXP */
     };
-    /*! \brief
-    *  \param point_clouds: an array of pointers to point_clouds to be inspected and modified
-    * by \ref pcl_outlier_filter.
-    */
+    /** \brief
+      *  \param point_clouds: an array of pointers to point_clouds to be inspected and modified
+      * by \ref pcl_outlier_filter.
+      */
     template<typename PointT,  typename LeafT, typename BranchT, typename OctreeT> void OctreePointCloudCodecV2<PointT, LeafT, BranchT, OctreeT>::remove_outliers (vector<PointCloudPtr> &point_clouds, int min_points, double radius, unsigned int debug_level)
     {
       // apply a radius filter to remove outliers
@@ -1831,10 +1831,10 @@ namespace pcl{
         }
       }
     }
-    /*! \brief
-    *  \param point_clouds: an array of pointers to point_clouds to be inspected and modified
-    * to normalize their bouding boxes s.t. they effectivly can be used for interframe coding.
-    */
+    /** \brief
+      *  \param point_clouds: an array of pointers to point_clouds to be inspected and modified
+      * to normalize their bouding boxes s.t. they effectivly can be used for interframe coding.
+      */
     template<typename PointT, typename LeafT, typename BranchT, typename OctreeT> void OctreePointCloudCodecV2<PointT, LeafT, BranchT, OctreeT>::normalize_pointclouds(vector<PointCloudPtr> &point_clouds, vector<BoundingBox, Eigen::aligned_allocator<BoundingBox> > &bounding_boxes, double bb_expand_factor, unsigned int debug_level)
     {
       Eigen::Vector4f min_pt_bb;
