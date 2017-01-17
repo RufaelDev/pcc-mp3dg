@@ -69,8 +69,8 @@
 	double psnr_db;                              //! store psnr for the geometry
 	double psnr_yuv[3];                          //! store psnr for the colors
 
-	double encoding_time_ms;
-	double decoding_time_ms;
+    double encoding_time_ms;
+    double decoding_time_ms;
 
 	// print the header of a .csv file
 	static PCL_EXPORTS void print_csv_header(std::ostream &csv_ostream);

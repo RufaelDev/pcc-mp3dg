@@ -207,9 +207,9 @@ namespace pcl{
 		mse_colors_yuv[2] /= cloud_a.points.size ();
 
 		// compute PSNR for YUV colors
-		psnr_colors_yuv[0] = 10 * std::log10( (peak_yuv[0] * peak_yuv[0] )/mse_colors_yuv[0]);
-		psnr_colors_yuv[1] = 10 * std::log10( (peak_yuv[1] * peak_yuv[1] )/mse_colors_yuv[1]);
-		psnr_colors_yuv[2] = 10 * std::log10( (peak_yuv[2] * peak_yuv[2] )/mse_colors_yuv[2]);
+		psnr_colors_yuv[0] = 10 * std::log10( 1.0 / mse_colors_yuv[0]);
+		psnr_colors_yuv[1] = 10 * std::log10( 1.0 / mse_colors_yuv[1]);
+		psnr_colors_yuv[2] = 10 * std::log10( 1.0 / mse_colors_yuv[2]);
 
 		print_info ("[done, "); print_value ("%g", tt.toc ()); print_info (" ms \n");
 		//print_info ("A->B: "); print_value ("%f\n", max_dist_a);
