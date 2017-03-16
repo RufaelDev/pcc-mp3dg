@@ -45,6 +45,9 @@
 #ifndef evaluate_compression_hpp
 #define evaluate_compression_hpp
 
+#if defined(_OPENMP)
+#include <omp.h>
+#endif//defined(_OPENMP)
 // c++ standard library
 #include <fstream>
 #include <vector>
@@ -70,6 +73,7 @@ namespace po = boost::program_options;
 #ifdef  WITH_VTK
 #include <pcl/visualization/pcl_visualizer.h>
 #include <vtkRenderWindow.h>
+#include <vtkRect.h>
 #endif/*WITH_VTK*/
 #ifdef WIN32
 #include <direct.h>
@@ -98,9 +102,10 @@ class evaluate_compression_impl : evaluate_compression {
     void complete_initialization ();
 
 #ifdef  WITH_VTK
-    pcl::visualization::PCLVisualizer* viewer_decoded_;
-    pcl::visualization::PCLVisualizer* viewer_original_;
+    typedef pcl::visualization::PCLVisualizer* ViewerPtr;
+    ViewerPtr viewer_decoded_, viewer_delta_decoded_, viewer_original_;
     int viewer_decoded_window_position_[2];
+    int viewer_delta_decoded_window_position_[2];
 #endif//WITH_VTK
   
     void do_outlier_removal (std::vector<boost::shared_ptr<pcl::PointCloud<PointT> > >& pointcloud);
@@ -110,7 +115,7 @@ class evaluate_compression_impl : evaluate_compression {
     void do_delta_encoding (boost::shared_ptr<pcl::PointCloud<PointT> > i_cloud, boost::shared_ptr<pcl::PointCloud<PointT> > p_cloud, boost::shared_ptr<pcl::PointCloud<PointT> > out_cloud, stringstream* i_stream, stringstream* p__stream, QualityMetric & quality_metric);
     void do_delta_decoding (stringstream* i_stream, stringstream* p_stream, boost::shared_ptr<pcl::PointCloud<PointT> > i_cloud, boost::shared_ptr<pcl::PointCloud<PointT> > out_cloud, QualityMetric & qualityMetric);
     void do_quality_computation (boost::shared_ptr<pcl::PointCloud<PointT> > & pointcloud, boost::shared_ptr<pcl::PointCloud<PointT> > &reference_pointcloud, QualityMetric & quality_metric);
-    void do_outputs (std::string path, boost::shared_ptr<pcl::PointCloud<PointT> > pointcloud, QualityMetric & qualityMetric);
+    void do_output (std::string path, boost::shared_ptr<pcl::PointCloud<PointT> > pointcloud, QualityMetric & qualityMetric);
     // V1 (common) settings
     boost::shared_ptr<pcl::io::OctreePointCloudCompression<PointT> > encoder_V1_;
     boost::shared_ptr<pcl::io::OctreePointCloudCompression<PointT> > decoder_V1_;
@@ -119,7 +124,7 @@ class evaluate_compression_impl : evaluate_compression {
     boost::shared_ptr<pcl::io::OctreePointCloudCodecV2<PointT> > decoder_V2_;
   
     bool evaluate (); // TBD need catch exceptions
-    void do_visualization (boost::shared_ptr<pcl::PointCloud<PointT> > original_pointcloud, boost::shared_ptr<pcl::PointCloud<PointT> > decoded_pointcloud);
+    void do_visualization (std::string id, boost::shared_ptr<pcl::PointCloud<PointT> > pointcloud);
     int debug_level_;
 };
 
@@ -357,7 +362,7 @@ evaluate_compression_impl<PointT>::complete_initialization ()
                       color_bits_
                     )
                   );
-    decoder_V1_ = boost::shared_ptr<pcl::io::OctreePointCloudCompression<PointT> > (
+	decoder_V1_ = boost::shared_ptr<pcl::io::OctreePointCloudCompression<PointT> > (
                     new pcl::io::OctreePointCloudCompression<PointT> (
                       pcl::io::MANUAL_CONFIGURATION,
                       false,
@@ -395,7 +400,7 @@ evaluate_compression_impl<PointT>::complete_initialization ()
                              jpeg_quality_,
                              num_threads_
                     ));
-        decoder_V2_ = boost::shared_ptr<pcl::io::OctreePointCloudCodecV2<PointT> > (
+	  decoder_V2_ = boost::shared_ptr<pcl::io::OctreePointCloudCodecV2<PointT> > (
                              new pcl::io::OctreePointCloudCodecV2<PointT> (
                              pcl::io::MANUAL_CONFIGURATION,
                              false,
@@ -418,21 +423,6 @@ evaluate_compression_impl<PointT>::complete_initialization ()
       // icp offset coding
       encoder_V2_->setDoICPColorOffset (do_icp_color_offset_);
     }
-  }
-  if (visualization_) {
-#ifdef  WITH_VTK
-    viewer_decoded_ = new pcl::visualization::PCLVisualizer ("Decoded");
-    viewer_original_ = new pcl::visualization::PCLVisualizer ("Original");
-    viewer_original_->setBackgroundColor (.773, .78, .769); // RAL 7035 light grey
-    viewer_decoded_->setBackgroundColor (.773, .78, .769); // RAL 7035 light grey
-    vtkRenderWindow* vrwo = viewer_original_->getRenderWindow ();
-    int* original_window_position_p = vrwo->GetPosition ();
-    int* original_window_size_p = vrwo->GetSize ();
-    viewer_decoded_window_position_[0] = original_window_position_p[0]+original_window_size_p[0];
-    viewer_decoded_window_position_[1] = original_window_position_p[1];
-#else
-    cerr << "VTK not available, visulization ignored";
-#endif//WITH_VTK
   }
   if (output_directory_ != "")
   {
@@ -555,7 +545,7 @@ evaluate_compression_impl<PointT>::do_quality_computation (boost::shared_ptr<pcl
     
 template<typename PointT>
 void
-evaluate_compression_impl<PointT>::do_outputs (std::string path, boost::shared_ptr<pcl::PointCloud<PointT> > pointcloud, QualityMetric & qualityMetric)
+evaluate_compression_impl<PointT>::do_output (std::string path, boost::shared_ptr<pcl::PointCloud<PointT> > pointcloud, QualityMetric & qualityMetric)
 {
   // write the .ply file by converting to point cloud2 and then to polygon mesh
   pcl::PCLPointCloud2::Ptr cloud2(new pcl::PCLPointCloud2());
@@ -563,27 +553,64 @@ evaluate_compression_impl<PointT>::do_outputs (std::string path, boost::shared_p
   pcl::PLYWriter writer;
   writer.write(output_directory_+"/"+path, cloud2);
 }
-    
+
 template<typename PointT>
 void
-evaluate_compression_impl<PointT>::do_visualization (boost::shared_ptr<pcl::PointCloud<PointT> > opc,
-                                                   boost::shared_ptr<pcl::PointCloud<PointT> > dpc)
+evaluate_compression_impl<PointT>::do_visualization (std::string id, boost::shared_ptr<pcl::PointCloud<PointT> > pc)
 {
-  if (visualization_) {
-    // display both original and encoded/decoded PointClouds in their viewers
-    int loop_count = 100;
-    viewer_original_->removePointCloud ();
-    viewer_original_->addPointCloud<pcl::PointXYZRGB> (opc);
-    viewer_decoded_->removePointCloud ();
-    viewer_decoded_->addPointCloud<pcl::PointXYZRGB> (dpc);
-    viewer_decoded_->setPosition (viewer_decoded_window_position_[0], viewer_decoded_window_position_[1]);
-    while (loop_count--) {
-      viewer_original_->spinOnce (10); // millisec
-      viewer_decoded_->spinOnce (10);  // millisec
+  if ( ! visualization_) return;
+
+#ifdef WITH_VTK
+  static std::map <std::string, ViewerPtr> viewers;
+  static int viewer_index_ = 0;
+  static vector <vtkRect<int> > viewer_window_; // x,y,w,h
+  static int screen_size[2], *ss;
+  ViewerPtr viewer = viewers[id];
+
+  if ( ! viewer)
+  {
+    viewer = new pcl::visualization::PCLVisualizer (id);
+    viewers[id] = viewer;
+    vtkRenderWindow* vrwp = viewer->getRenderWindow ();
+    vtkRect<int> this_window;
+    // TBD Find better way for window positioning, this setting works only for Portrait Oriented Screen
+    if (viewer_index_ == 0)
+    {
+      int* window_position_p = vrwp->GetPosition ();
+      int* window_size_p = vrwp->GetSize ();
+      this_window = vtkRect<int> (0 /*window_position_p[0]*/, 800/*ss[1] - window_size_p[1] window_position_p[1]*/, window_size_p[0], window_size_p[1]);
     }
+    else
+    {
+      this_window = vtkRect<int> (viewer_window_[viewer_index_ -1].GetX()+viewer_window_[0].GetWidth()*(viewer_index_ % 2),
+                                  viewer_window_[viewer_index_ -1].GetY()-viewer_window_[0].GetHeight()*(viewer_index_ / 2),
+                                  viewer_window_[viewer_index_ -1].GetWidth(),
+                                  viewer_window_[viewer_index_ -1].GetHeight());
+    }
+    viewer_window_.push_back (this_window);
+    viewer->setBackgroundColor (.773, .78, .769); // RAL 7035 light grey
+    // we use the internal versions of thses SetXX methods to avoid unwanted side-effects
+    viewer->vrwp->SetPosition (this_window.GetX(), this_window.GetY());
+    viewer->vrwp->SetSize (this_window.GetWidth(), this_window.GetHeight());
+//  viewer->addCoordinateSystem (1.0);
+//  viewer->initCameraParameters ();
+    viewer_index_++;
   }
+  // show the PointCloud in its viewer
+  viewer->removePointCloud ();
+  viewer->addPointCloud<PointT> (pc);
+  viewer->setPointCloudRenderingProperties (pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 2);
+  viewer->spinOnce(1);
+#else //WITH_VTK
+    static bool warning_given = false;
+    if ( ! warning_given)
+    {
+      PCL_WARN("No visualiztion configured");
+      warning_given = true;
+    }
+#endif//WITH_VTK
 }
-  
+
 // aux. functions for file reading
 using namespace boost::filesystem;
 using namespace pcl;
@@ -593,7 +620,8 @@ load_pcd_file (std::string path, boost::shared_ptr<pcl::PointCloud<PointT> > pc)
 {
   int rv = 1;
   PCDReader pcd_reader;
-  if (pcd_reader.read (path, *pc) <= 0) {
+  if (pcd_reader.read (path, *pc) <= 0)
+  {
     rv = 0;
   }
   return rv;
@@ -624,14 +652,16 @@ int
 load_input_directory (std::string directory_name, std::string extension, std::vector<boost::shared_ptr<pcl::PointCloud<PointT> > > &clouds)
 {
   int rv = 0;
-  if ( ! boost::filesystem::is_directory (directory_name)) {
+  const char* dir_name = directory_name.c_str();
+  if ( ! boost::filesystem::is_directory (dir_name)) {
     std::cerr << "'" << directory_name << "' is not a directory.\n";
     return -1;
   }
-  // order of filenamed returned by directory_iterator is undefined
+  // order of filenames returned by directory_iterator is undefined
   vector<std::string> filenames;
   namespace fs = boost::filesystem;
   boost::shared_ptr<pcl::PointCloud<PointT> > pc (new PointCloud<PointT> ());
+//#pragma omp parallel for
   for (fs::directory_iterator itr (directory_name); itr != fs::directory_iterator (); itr++)
   {
     fs::directory_entry de = *itr;
@@ -730,11 +760,11 @@ evaluate_compression_impl<PointT>::evaluate ()
       
       if (group_size_ == 0 && count < point_clouds.size ()) continue;
       
-     // encode the group for each set of 'group_size' point_clouds, and the finaal set
-     if (count == point_clouds.size () || count % group_size_ == 0)
+      // encode the group for each set of 'group_size' point_clouds, and the final set
+      if (count == point_clouds.size () || count % group_size_ == 0)
       {
         if (K_outlier_filter_ > 0) do_outlier_removal (group);
-        if (bb_expand_factor_ >= 0.0) do_bounding_box_normalization (group);
+        if (bb_expand_factor_ > 0.0) do_bounding_box_normalization (group);
         if (group_size_ == 0) group_size_ = point_clouds.size();
         vector<float> icp_convergence_percentage (group_size_);
         vector<float> shared_macroblock_percentages (group_size_);
@@ -767,9 +797,10 @@ evaluate_compression_impl<PointT>::evaluate ()
           }
           if (output_directory_ != "")
           {
-            do_outputs ( "pointcloud_" + boost::lexical_cast<string> (i) + ".ply", output_pointcloud, achieved_quality);
+            do_output ( "pointcloud_" + boost::lexical_cast<string> (i) + ".ply", output_pointcloud, achieved_quality);
           }
-          do_visualization (opc, output_pointcloud);
+          do_visualization ("Original", opc);
+          do_visualization ("Decoded", output_pointcloud);
           // test and evaluation iterative closest point predictive coding
           if (algorithm_ == "V2" && do_delta_coding_ && bb_expand_factor_ >= 0  // bounding boxes were aligned
             && i > 0 && i+1 < group_size)
@@ -792,7 +823,12 @@ evaluate_compression_impl<PointT>::evaluate ()
             cout << " encoded a predictive frame: coded " << (i_strm_pos_cur - i_strm_pos_prev) << " bytes intra and " << (p_strm_pos_cur - p_strm_pos_prev) << " inter frame encoded " <<endl;
             // create a deep copy of original pointcloud, for comparison
             do_delta_decoding (&p_frame_idat, &p_frame_pdat, output_pointcloud, decoded_pc, predictive_quality);
-//      compute the quality of the resulting predictive frame
+//          compute the quality of the resulting predictive frame
+            if (output_directory_ != "")
+            {
+              do_output ("delta_decoded_pc_" + boost::lexical_cast<string> (i) + ".ply", decoded_pc, achieved_quality);
+            }
+            do_visualization ("Delta Decoded", decoded_pc);
             if (do_quality_computation_)
             {
               do_quality_computation (group[i+1], decoded_pc, predictive_quality);
@@ -804,6 +840,7 @@ evaluate_compression_impl<PointT>::evaluate ()
           }
           output_pointcloud->clear (); // clear output cloud
         }
+		complete_initialization();
         // start new groups
         original_group.clear ();
         group.clear ();
