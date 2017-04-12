@@ -186,7 +186,7 @@ namespace pcl{
         std::ostream& i_coded_data, std::ostream& p_coded_data, bool icp_on_original = false,bool write_out_cloud = false);
 
         virtual void
-        decodePointCloudDeltaFrame(const PointCloudConstPtr &icloud_arg, PointCloudPtr &out_cloud_arg, 
+        decodePointCloudDeltaFrame(const PointCloudConstPtr &icloud_arg, PointCloudPtr &out_cloud_arg,
         std::istream& i_coded_data, std::istream& p_coded_data);
       
         //! function to return performance metric
@@ -208,7 +208,6 @@ namespace pcl{
         getMacroBlockConvergencePercentage(){
           return shared_macroblock_convergence_percentage_;
         };
-
       /** \brief
        *  \param point_clouds: an array of pointers to point_clouds to be inspected and modified
        * by \ref pcl_outlier_filter. A point in a cloud is considered an outlier, if there are
@@ -219,10 +218,13 @@ namespace pcl{
       /** \brief
        *  \param point_clouds: an vector of suitably aligned pointers to point_clouds to be inspected and modified
        * to normalize their bouding boxes s.t. they effectivly can be used for interframe coding.
+       * \\returns the common bounding box for \\ref point clouds
        */
-	  //vector<pcl::io::BoundingBox, Eigen::aligned_allocator<pcl::io::BoundingBox> >  bounding_boxes (group.size ())
+      static BoundingBox
+      normalize_pointclouds (vector<PointCloudPtr> &point_clouds, vector<BoundingBox, Eigen::aligned_allocator<BoundingBox> > &bouding_boxes, double bb_expand_factor, vector<float> dyn_range, vector<float> offset, unsigned int debug_level=0);
+        
       static void
-      normalize_pointclouds (vector<PointCloudPtr> &point_clouds, vector<BoundingBox, Eigen::aligned_allocator<BoundingBox> > &bouding_boxes, double bb_expand_factor, unsigned int debug_level=0);
+      restore_scaling (PointCloudPtr &point_clouds, BoundingBox bb);
       
       //! function for coding an enhancement layer
       // virtual void

@@ -109,7 +109,7 @@ class evaluate_compression_impl : evaluate_compression {
 #endif//WITH_VTK
   
     void do_outlier_removal (std::vector<boost::shared_ptr<pcl::PointCloud<PointT> > >& pointcloud);
-    void do_bounding_box_normalization (std::vector<boost::shared_ptr<pcl::PointCloud<PointT> > >& pointcloud);
+    pcl::io::BoundingBox do_bounding_box_normalization (std::vector<boost::shared_ptr<pcl::PointCloud<PointT> > >& pointcloud);
     void do_encoding (boost::shared_ptr<pcl::PointCloud<PointT> > point_cloud, stringstream* coded_stream, QualityMetric & achieved_quality);
     void do_decoding (stringstream* coded_stream, boost::shared_ptr<pcl::PointCloud<PointT> > pointcloud, QualityMetric & achieved_quality);
     void do_delta_encoding (boost::shared_ptr<pcl::PointCloud<PointT> > i_cloud, boost::shared_ptr<pcl::PointCloud<PointT> > p_cloud, boost::shared_ptr<pcl::PointCloud<PointT> > out_cloud, stringstream* i_stream, stringstream* p__stream, QualityMetric & quality_metric);
@@ -442,11 +442,12 @@ evaluate_compression_impl<PointT>::do_outlier_removal (std::vector<boost::shared
 }
       
 template<typename PointT>
-void
+pcl::io::BoundingBox
 evaluate_compression_impl<PointT>::do_bounding_box_normalization (std::vector<boost::shared_ptr<pcl::PointCloud<PointT> > >& group)
 {
+  vector<float> dyn_range, offset;
   vector<pcl::io::BoundingBox, Eigen::aligned_allocator<pcl::io::BoundingBox> >  bounding_boxes (group.size ());
-  pcl::io::OctreePointCloudCodecV2 <PointT>::normalize_pointclouds (group, bounding_boxes, bb_expand_factor_, debug_level_);
+  return pcl::io::OctreePointCloudCodecV2 <PointT>::normalize_pointclouds (group, bounding_boxes, bb_expand_factor_,  dyn_range, offset, debug_level_);
  }
                                   
 template<typename PointT>
@@ -590,8 +591,8 @@ evaluate_compression_impl<PointT>::do_visualization (std::string id, boost::shar
     viewer_window_.push_back (this_window);
     viewer->setBackgroundColor (.773, .78, .769); // RAL 7035 light grey
     // we use the internal versions of thses SetXX methods to avoid unwanted side-effects
-    viewer->vrwp->SetPosition (this_window.GetX(), this_window.GetY());
-    viewer->vrwp->SetSize (this_window.GetWidth(), this_window.GetHeight());
+    vrwp->SetPosition (this_window.GetX(), this_window.GetY());
+    vrwp->SetSize (this_window.GetWidth(), this_window.GetHeight());
 //  viewer->addCoordinateSystem (1.0);
 //  viewer->initCameraParameters ();
     viewer_index_++;
@@ -761,10 +762,11 @@ evaluate_compression_impl<PointT>::evaluate ()
       if (group_size_ == 0 && count < point_clouds.size ()) continue;
       
       // encode the group for each set of 'group_size' point_clouds, and the final set
+      pcl::io::BoundingBox bb; // bounding box of this group
       if (count == point_clouds.size () || count % group_size_ == 0)
       {
         if (K_outlier_filter_ > 0) do_outlier_removal (group);
-        if (bb_expand_factor_ > 0.0) do_bounding_box_normalization (group);
+        if (bb_expand_factor_ > 0.0) bb = do_bounding_box_normalization (group);
         if (group_size_ == 0) group_size_ = point_clouds.size();
         vector<float> icp_convergence_percentage (group_size_);
         vector<float> shared_macroblock_percentages (group_size_);
@@ -787,6 +789,8 @@ evaluate_compression_impl<PointT>::evaluate ()
           boost::shared_ptr<pcl::PointCloud<PointT> > output_pointcloud (new pcl::PointCloud<PointT> ()), opc (new pcl::PointCloud<PointT> ());
           opc = original_group[i];
           do_decoding (&coded_stream, output_pointcloud, achieved_quality);
+            boost::shared_ptr<pcl::PointCloud<PointT> > original_output_pointcloud = output_pointcloud->makeShared ();
+          pcl::io::OctreePointCloudCodecV2 <PointT>::restore_scaling (output_pointcloud, bb);
           if (do_quality_computation_)
           {
             do_quality_computation (pc, output_pointcloud, achieved_quality);
@@ -822,7 +826,8 @@ evaluate_compression_impl<PointT>::evaluate ()
             i_strm_pos_cur = p_frame_idat.tellp ();
             cout << " encoded a predictive frame: coded " << (i_strm_pos_cur - i_strm_pos_prev) << " bytes intra and " << (p_strm_pos_cur - p_strm_pos_prev) << " inter frame encoded " <<endl;
             // create a deep copy of original pointcloud, for comparison
-            do_delta_decoding (&p_frame_idat, &p_frame_pdat, output_pointcloud, decoded_pc, predictive_quality);
+            do_delta_decoding (&p_frame_idat, &p_frame_pdat, original_output_pointcloud, decoded_pc, predictive_quality);
+            pcl::io::OctreePointCloudCodecV2 <PointT>::restore_scaling (decoded_pc, bb);
 //          compute the quality of the resulting predictive frame
             if (output_directory_ != "")
             {

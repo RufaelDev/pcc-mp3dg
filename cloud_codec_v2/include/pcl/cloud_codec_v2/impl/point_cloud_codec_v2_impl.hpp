@@ -1832,12 +1832,12 @@ namespace pcl{
       }
     }
     /** \brief
-      *  \param point_clouds: an array of pointers to point_clouds to be inspected and modified
+      *  \param point_clouds: a vector of pointers to point_clouds to be inspected and modified
       * to normalize their bouding boxes s.t. they effectivly can be used for interframe coding.
       */
-    template<typename PointT, typename LeafT, typename BranchT, typename OctreeT> void OctreePointCloudCodecV2<PointT, LeafT, BranchT, OctreeT>::normalize_pointclouds(vector<PointCloudPtr> &point_clouds, vector<BoundingBox, Eigen::aligned_allocator<BoundingBox> > &bounding_boxes, double bb_expand_factor, unsigned int debug_level)
+      template<typename PointT, typename LeafT, typename BranchT, typename OctreeT> BoundingBox OctreePointCloudCodecV2<PointT, LeafT, BranchT, OctreeT>::normalize_pointclouds(vector<PointCloudPtr> &point_clouds, vector<BoundingBox, Eigen::aligned_allocator<BoundingBox> > &bounding_boxes, double bb_expand_factor, vector<float> dynamic_range, vector<float> offset, unsigned int debug_level)
     {
-      Eigen::Vector4f min_pt_bb;
+      Eigen::Vector4f min_pt_bb(0,0,0,0);
       Eigen::Vector4f max_pt_bb;
       bool is_bb_init = false;
       int bb_align_count=0;
@@ -1853,12 +1853,12 @@ namespace pcl{
       max_pt_bb[2]= -1000;
       
       for(int k=0;k<point_clouds.size();k++){
-	      Eigen::Vector4f min_pt;
+	    Eigen::Vector4f min_pt;
         Eigen::Vector4f max_pt;
         
         pcl::getMinMax3D<pcl::PointXYZRGB>(*point_clouds[k],min_pt,max_pt);
-        
-//        bb_out << "[ " << min_pt.x() << "," << min_pt.y() << "," << min_pt.z() << "]    [" << max_pt.x() << "," << max_pt.y() << "," << max_pt.z() <<"]" << endl;
+          
+        if (debug_level > 3) cerr << "[ " << min_pt.x() << "," << min_pt.y() << "," << min_pt.z() << "]    [" << max_pt.x() << "," << max_pt.y() << "," << max_pt.z() <<"]" << endl;
         
         // check if min fits bounding box, otherwise adapt the bounding box
         if( !( (min_pt.x() > min_pt_bb.x()) && (min_pt.y() > min_pt_bb.y()) && (min_pt.z() > min_pt_bb.z())))
@@ -1924,7 +1924,32 @@ namespace pcl{
         assert(max_pt_res[0] <= 1);
         assert(max_pt_res[1] <= 1);
         assert(max_pt_res[2] <= 1);
-      }
+     
+      pcl::io::BoundingBox bb;
+      bb.min_xyz = min_pt_bb;
+      bb.max_xyz = max_pt_bb;
+        
+      return bb;
+    }
+ }
+      
+    template<typename PointT, typename LeafT, typename BranchT, typename OctreeT> void OctreePointCloudCodecV2<PointT, LeafT, BranchT, OctreeT>::restore_scaling (PointCloudPtr &point_cloud, BoundingBox bb)
+    {
+      Eigen::Vector4f  dyn_range = bb.max_xyz - bb.min_xyz;
+        
+      if (point_cloud->size() > 0)
+        for (int l = 0; l < point_cloud->size(); l++)
+        {
+          // dynamic range
+          point_cloud->at(l).x *= dyn_range[0];
+          point_cloud->at(l).y *= dyn_range[1];
+          point_cloud->at(l).z *= dyn_range[2];
+                
+          // offset the minimum value
+          point_cloud->at(l).x += bb.min_xyz[0];
+          point_cloud->at(l).y += bb.min_xyz[1];
+          point_cloud->at(l).z += bb.min_xyz[2];
+        }
     }
   }
 }
