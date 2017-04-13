@@ -54,19 +54,19 @@ namespace pcl{
     template<typename PointT, typename LeafT = OctreeContainerPointIndices,
       typename BranchT = OctreeContainerEmpty,
       typename OctreeT = Octree2BufBase<LeafT, BranchT> >
-    class OctreePointCloudCodecV2OMP : public OctreePointCloudCodecV2<PointT,LeafT,BranchT,OctreeT>
+    class OctreePointCloudCodecV2OMP : public ::pcl::io::OctreePointCloudCodecV2<PointT,LeafT,BranchT,OctreeT>
     {
       public:
 
         // public typedefs, copied from original implementation by Julius Kammerl
-       typedef typename OctreePointCloudCodecV2<PointT, LeafT, BranchT, OctreeT>::PointCloud PointCloud;
-       typedef typename OctreePointCloudCodecV2<PointT, LeafT, BranchT, OctreeT>::PointCloudPtr PointCloudPtr;
-       typedef typename OctreePointCloudCodecV2<PointT, LeafT, BranchT, OctreeT>::PointCloudConstPtr PointCloudConstPtr;
-       typedef OctreePointCloudCompression<PointT,LeafT,BranchT,OctreeT> MacroBlockTree;
+       typedef typename ::pcl::io::OctreePointCloudCodecV2<PointT, LeafT, BranchT, OctreeT>::PointCloud PointCloud;
+       typedef typename ::pcl::io::OctreePointCloudCodecV2<PointT, LeafT, BranchT, OctreeT>::PointCloudPtr PointCloudPtr;
+       typedef typename ::pcl::io::OctreePointCloudCodecV2<PointT, LeafT, BranchT, OctreeT>::PointCloudConstPtr PointCloudConstPtr;
+       typedef ::pcl::io::OctreePointCloudCompression<PointT,LeafT,BranchT,OctreeT> MacroBlockTree;
 
         // Boost shared pointers
-        typedef boost::shared_ptr<OctreePointCloudCodecV2<PointT, LeafT, BranchT, OctreeT> > Ptr;
-        typedef boost::shared_ptr<const OctreePointCloudCodecV2<PointT, LeafT, BranchT, OctreeT> > ConstPtr;
+        typedef boost::shared_ptr< ::pcl::io::OctreePointCloudCodecV2<PointT, LeafT, BranchT, OctreeT> > Ptr;
+        typedef boost::shared_ptr<const ::pcl::io::OctreePointCloudCodecV2<PointT, LeafT, BranchT, OctreeT> > ConstPtr;
 
         typedef typename OctreeT::LeafNode LeafNode;
         typedef typename OctreeT::BranchNode BranchNode;
@@ -89,7 +89,7 @@ namespace pcl{
         * \param codeConnectivity_arg:  connectivity coding (not yet implemented)
         * \param jpeg_quality_arg:  quality of the jpeg encoder (jpeg quality)
         */
-        OctreePointCloudCodecV2OMP (compression_Profiles_e compressionProfile_arg = MED_RES_ONLINE_COMPRESSION_WITH_COLOR,
+        OctreePointCloudCodecV2OMP (::pcl::io::compression_Profiles_e compressionProfile_arg = ::pcl::io::MED_RES_ONLINE_COMPRESSION_WITHOUT_COLOR,
           bool showStatistics_arg = false,
           const double pointResolution_arg = 0.001,
           const double octreeResolution_arg = 0.01,
@@ -103,7 +103,7 @@ namespace pcl{
           bool codeConnectivity_arg = false,
           int jpeg_quality_arg = 75, 
           int num_threads=1) :
-        OctreePointCloudCodecV2<PointT,LeafT,BranchT,OctreeT>(
+        ::pcl::io::OctreePointCloudCodecV2<PointT,LeafT,BranchT,OctreeT>(
           compressionProfile_arg,
           showStatistics_arg,
           pointResolution_arg,
@@ -142,17 +142,17 @@ namespace pcl{
 //      decodePointCloudDeltaFrame(const PointCloudConstPtr &icloud_arg, PointCloudPtr &out_cloud_arg, 
 //          std::istream& i_coded_data, std::istream& p_coded_data);
 // inherited protected members needed
-        using pcl::io:: OctreePointCloudCodecV2<PointT, LeafT, BranchT, OctreeT>::do_icp_color_offset_;
-        using pcl::io:: OctreePointCloudCodecV2<PointT, LeafT, BranchT, OctreeT>::point_resolution_;
-        using pcl::io:: OctreePointCloudCodecV2<PointT, LeafT, BranchT, OctreeT>::octree_resolution_;
-        using pcl::io:: OctreePointCloudCodecV2<PointT, LeafT, BranchT, OctreeT>::color_bit_resolution_;
-        using pcl::io:: OctreePointCloudCodecV2<PointT, LeafT, BranchT, OctreeT>::color_coding_type_;
-        using pcl::io:: OctreePointCloudCodecV2<PointT, LeafT, BranchT, OctreeT>::do_voxel_centroid_enDecoding_;
-        using pcl::io:: OctreePointCloudCodecV2<PointT, LeafT, BranchT, OctreeT>::shared_macroblock_percentage_;
-        using pcl::io:: OctreePointCloudCodecV2<PointT, LeafT, BranchT, OctreeT>::shared_macroblock_convergence_percentage_;
-        using pcl::io:: OctreePointCloudCodecV2<PointT, LeafT, BranchT, OctreeT>::simplifyPCloud;
-        using pcl::io:: OctreePointCloudCodecV2<PointT, LeafT, BranchT, OctreeT>::generate_macroblock_tree;
-        using pcl::io:: OctreePointCloudCodecV2<PointT, LeafT, BranchT, OctreeT>::do_icp_prediction;
+        using ::pcl::io::OctreePointCloudCodecV2<PointT, LeafT, BranchT, OctreeT>::do_icp_color_offset_;
+        using ::pcl::io::OctreePointCloudCodecV2<PointT, LeafT, BranchT, OctreeT>::point_resolution_;
+        using ::pcl::io::OctreePointCloudCodecV2<PointT, LeafT, BranchT, OctreeT>::octree_resolution_;
+        using ::pcl::io::OctreePointCloudCodecV2<PointT, LeafT, BranchT, OctreeT>::color_bit_resolution_;
+        using ::pcl::io::OctreePointCloudCodecV2<PointT, LeafT, BranchT, OctreeT>::color_coding_type_;
+        using ::pcl::io::OctreePointCloudCodecV2<PointT, LeafT, BranchT, OctreeT>::do_voxel_centroid_enDecoding_;
+        using ::pcl::io::OctreePointCloudCodecV2<PointT, LeafT, BranchT, OctreeT>::shared_macroblock_percentage_;
+        using ::pcl::io::OctreePointCloudCodecV2<PointT, LeafT, BranchT, OctreeT>::shared_macroblock_convergence_percentage_;
+        using ::pcl::io::OctreePointCloudCodecV2<PointT, LeafT, BranchT, OctreeT>::simplifyPCloud;
+        using ::pcl::io::OctreePointCloudCodecV2<PointT, LeafT, BranchT, OctreeT>::generate_macroblock_tree;
+        using ::pcl::io::OctreePointCloudCodecV2<PointT, LeafT, BranchT, OctreeT>::do_icp_prediction;
 //      using pcl::io:: OctreePointCloudCodecV2<PointT, LeafT, BranchT, OctreeT>::;
 /*
         using pcl::octree::Octree2BufBase<LeafT, BranchT>::deleteCurrentBuffer;

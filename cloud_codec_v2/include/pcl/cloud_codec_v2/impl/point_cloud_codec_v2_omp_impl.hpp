@@ -72,7 +72,7 @@ namespace pcl
       )
     {
       // intra coded points storage (points that cannot be predicted)
-      typename pcl::PointCloud<PointT>::Ptr intra_coded_points(new pcl::PointCloud<PointT>());
+      typename ::pcl::PointCloud<PointT>::Ptr intra_coded_points(new ::pcl::PointCloud<PointT>());
 
       // keep track of the prediction statistics
       long macro_block_count = 0;
@@ -98,16 +98,16 @@ namespace pcl
       //////////// iterate the predictive frame and find common macro blocks /////////////
       octree::OctreeLeafNodeIterator<OctreeT> it_predictive = p_block_tree->leaf_begin();
       octree::OctreeLeafNodeIterator<OctreeT> it_predictive_end = p_block_tree->leaf_end();
-      std::vector<cloudInfoT<PointT> > p_info_list;
-      std::vector<cloudResultT<PointT> > p_result_list;
+      std::vector< ::pcl::io::cloudInfoT<PointT> > p_info_list;
+      std::vector< ::pcl::io::cloudResultT<PointT> > p_result_list;
       std::vector<Eigen::Matrix4f, Eigen::aligned_allocator<Eigen::Matrix4f> > p_result_matrices;
       // store the input arguments for 'do_icp_prediction'
       for (; it_predictive != it_predictive_end; ++it_predictive)
       {
         const octree::OctreeKey current_key = it_predictive.getCurrentOctreeKey();
-        pcl::octree::OctreeContainerPointIndices* i_leaf = i_block_tree->findLeaf(current_key.x, current_key.y, current_key.z);
-        cloudInfoT<PointT> ci;
-        cloudResultT<PointT> cr;
+        octree::OctreeContainerPointIndices* i_leaf = i_block_tree->findLeaf(current_key.x, current_key.y, current_key.z);
+        ::pcl::io::cloudInfoT<PointT> ci;
+        ::pcl::io::cloudResultT<PointT> cr;
 
         ci.i_leaf = i_leaf;
         ci.current_key = current_key;
@@ -131,12 +131,12 @@ namespace pcl
 #pragma omp parallel for shared(p_info_list,p_result_list)
       for (int i = 0; i < p_info_list.size(); i++)
       {
-        pcl::octree::OctreeContainerPointIndices* i_leaf = p_info_list[i].i_leaf;
-        typename pcl::PointCloud<PointT>::Ptr cloud_out (new pcl::PointCloud<PointT>(icp_on_original ? *pcloud_arg : *simp_pcloud , *p_info_list[i].indices));
+        octree::OctreeContainerPointIndices* i_leaf = p_info_list[i].i_leaf;
+        typename ::pcl::PointCloud<PointT>::Ptr cloud_out (new ::pcl::PointCloud<PointT>(icp_on_original ? *pcloud_arg : *simp_pcloud , *p_info_list[i].indices));
         p_result_list[i].out_cloud = cloud_out;
         if (i_leaf != NULL) {
           const octree::OctreeKey current_key = p_info_list[i].current_key;
-          p_result_list[i].in_cloud =  (PointCloudPtr) new pcl::PointCloud<PointT>(*icloud_arg, i_leaf->getPointIndicesVector());
+          p_result_list[i].in_cloud =  (PointCloudPtr) new ::pcl::PointCloud<PointT>(*icloud_arg, i_leaf->getPointIndicesVector());
           do_icp_prediction
           (
             &p_result_matrices[i],
@@ -150,11 +150,11 @@ namespace pcl
 #pragma omp barrier // wait until all threads finished
       for (int i = 0; i < p_result_list.size(); i++)
       {
-        typename pcl::PointCloud<PointT>::Ptr cloud_out = p_result_list[i].out_cloud;
+        typename ::pcl::PointCloud<PointT>::Ptr cloud_out = p_result_list[i].out_cloud;
         if (p_result_list[i].leaf_found)
         {
           shared_macroblock_count++;
-          typename pcl::PointCloud<PointT>::Ptr cloud_in = p_result_list[i].in_cloud;
+          typename ::pcl::PointCloud<PointT>::Ptr cloud_in = p_result_list[i].in_cloud;
           if (p_result_list[i].icp_success)
           {
             char rgb_offsets[3] ;
@@ -169,7 +169,7 @@ namespace pcl
             // icp success, encode the rigid transform
             std::vector<int16_t> comp_dat;
             Eigen::Quaternion<float> l_quat_out;
-            RigidTransformCoding<float>::compressRigidTransform(rt, comp_dat, l_quat_out);
+            ::pcl::io::RigidTransformCoding<float>::compressRigidTransform(rt, comp_dat, l_quat_out);
 
             // write octree key, write rigid transform
             int16_t l_key_dat[3] = { 0, 0, 0 };
@@ -191,10 +191,10 @@ namespace pcl
             // following code is for generation of predicted frame
             Eigen::Matrix4f mdec;
             Eigen::Quaternion<float> l_quat_out_dec;
-            RigidTransformCoding<float>::deCompressRigidTransform(comp_dat, mdec, l_quat_out_dec);
+            ::pcl::io::RigidTransformCoding<float>::deCompressRigidTransform(comp_dat, mdec, l_quat_out_dec);
 
             // predicted point cloud
-            pcl::PointCloud<PointT> manual_final;
+            ::pcl::PointCloud<PointT> manual_final;
             if (write_out_cloud)
             {
               transformPointCloud<PointT, float>
@@ -252,9 +252,9 @@ namespace pcl
       } // for each in p_result_list
       // encode all the points that could not be predicted from
       // the previous coded frame in i frame manner with cloud_codec_v2
-      OctreePointCloudCodecV2<PointT, LeafT, BranchT, OctreeT> intra_coder
+      ::pcl::io::OctreePointCloudCodecV2<PointT, LeafT, BranchT, OctreeT> intra_coder
       (
-        MANUAL_CONFIGURATION,
+        ::pcl::io::MANUAL_CONFIGURATION,
         false,
         point_resolution_,
         octree_resolution_,
