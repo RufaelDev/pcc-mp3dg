@@ -1,4 +1,4 @@
-           /*
+/*
 * Software License Agreement (BSD License)
 *
 *  Point Cloud Library (PCL) - www.pointclouds.org
@@ -1835,7 +1835,7 @@ namespace pcl{
       *  \param point_clouds: a vector of pointers to point_clouds to be inspected and modified
       * to normalize their bouding boxes s.t. they effectivly can be used for interframe coding.
       */
-      template<typename PointT, typename LeafT, typename BranchT, typename OctreeT> BoundingBox OctreePointCloudCodecV2<PointT, LeafT, BranchT, OctreeT>::normalize_pointclouds(vector<PointCloudPtr> &point_clouds, vector<BoundingBox, Eigen::aligned_allocator<BoundingBox> > &bounding_boxes, double bb_expand_factor, vector<float> dynamic_range, vector<float> offset, unsigned int debug_level)
+    template<typename PointT, typename LeafT, typename BranchT, typename OctreeT> BoundingBox OctreePointCloudCodecV2<PointT, LeafT, BranchT, OctreeT>::normalize_pointclouds(vector<PointCloudPtr> &point_clouds, vector<BoundingBox, Eigen::aligned_allocator<BoundingBox> > &bounding_boxes, double bb_expand_factor, vector<float> dynamic_range, vector<float> offset, unsigned int debug_level)
     {
       Eigen::Vector4f min_pt_bb(0,0,0,0);
       Eigen::Vector4f max_pt_bb;
@@ -1933,23 +1933,22 @@ namespace pcl{
     }
  }
       
-    template<typename PointT, typename LeafT, typename BranchT, typename OctreeT> void OctreePointCloudCodecV2<PointT, LeafT, BranchT, OctreeT>::restore_scaling (PointCloudPtr &point_cloud, BoundingBox bb)
+    template<typename PointT, typename LeafT, typename BranchT, typename OctreeT> void OctreePointCloudCodecV2<PointT, LeafT, BranchT, OctreeT>::restore_scaling (PointCloudPtr &point_cloud, const BoundingBox& bb)
     {
       Eigen::Vector4f  dyn_range = bb.max_xyz - bb.min_xyz;
         
       if (point_cloud->size() > 0)
         for (int l = 0; l < point_cloud->size(); l++)
         {
-          // dynamic range
-          point_cloud->at(l).x *= dyn_range[0];
-          point_cloud->at(l).y *= dyn_range[1];
-          point_cloud->at(l).z *= dyn_range[2];
-                
-          // offset the minimum value
+		  // dynamic range
+		  point_cloud->at(l).x *= dyn_range[0];
+		  point_cloud->at(l).y *= dyn_range[1];
+		  point_cloud->at(l).z *= dyn_range[2];
+		  // offset the minimum value
           point_cloud->at(l).x += bb.min_xyz[0];
           point_cloud->at(l).y += bb.min_xyz[1];
           point_cloud->at(l).z += bb.min_xyz[2];
-        }
+         }
     }
   }
 }

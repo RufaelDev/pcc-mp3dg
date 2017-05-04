@@ -224,7 +224,7 @@ namespace pcl{
       normalize_pointclouds (vector<PointCloudPtr> &point_clouds, vector<BoundingBox, Eigen::aligned_allocator<BoundingBox> > &bouding_boxes, double bb_expand_factor, vector<float> dyn_range, vector<float> offset, unsigned int debug_level=0);
         
       static void
-      restore_scaling (PointCloudPtr &point_clouds, BoundingBox bb);
+      restore_scaling (PointCloudPtr &point_clouds, const BoundingBox& bb);
       
       //! function for coding an enhancement layer
       // virtual void

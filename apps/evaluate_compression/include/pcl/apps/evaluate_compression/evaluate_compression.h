@@ -99,7 +99,7 @@ protected:
     int color_bits_;        // color resolution
     int color_coding_type_;
     bool keep_centroid_;
-     int icp_on_original_;
+    int icp_on_original_;
     int macroblock_size_;
     bool do_icp_color_offset_;
     bool do_delta_coding_;
