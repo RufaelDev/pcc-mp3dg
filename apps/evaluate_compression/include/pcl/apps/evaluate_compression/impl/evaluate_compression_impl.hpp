@@ -64,7 +64,6 @@ namespace po = boost::program_options;
 #include <pcl/point_cloud.h>
 #include <pcl/io/pcd_io.h>
 #include <pcl/io/ply_io.h>
-#include <pcl/io/ply_io.h>
 #include <pcl/compression/octree_pointcloud_compression.h>
 #include <pcl/cloud_codec_v2/point_cloud_codec_v2.h>
 #include <pcl/filters/radius_outlier_removal.h>
@@ -88,6 +87,7 @@ class evaluate_compression_impl : evaluate_compression {
   // using boost::exception on errors
   public:
     evaluate_compression_impl (int argc, char** argv) : evaluate_compression (argc, argv), debug_level_ (3) {};
+    bool evaluate_group(std::vector<boost::shared_ptr<pcl::PointCloud<PointT> > >& group, stringstream& compression_settings, std::ofstream& intra_frame_quality_csv, std::ofstream& predictive_quality_csv);
 
     // options handling
     void initialize_options_description ();
@@ -565,7 +565,7 @@ evaluate_compression_impl<PointT>::do_visualization (std::string id, boost::shar
   static std::map <std::string, ViewerPtr> viewers;
   static int viewer_index_ = 0;
   static vector <vtkRect<int> > viewer_window_; // x,y,w,h
-  static int screen_size[2], *ss;
+    static int screen_size[2];
   ViewerPtr viewer = viewers[id];
 
   if ( ! viewer)
@@ -577,7 +577,6 @@ evaluate_compression_impl<PointT>::do_visualization (std::string id, boost::shar
     // TBD Find better way for window positioning, this setting works only for Portrait Oriented Screen
     if (viewer_index_ == 0)
     {
-      int* window_position_p = vrwp->GetPosition ();
       int* window_size_p = vrwp->GetSize ();
       this_window = vtkRect<int> (0 /*window_position_p[0]*/, 800/*ss[1] - window_size_p[1] window_position_p[1]*/, window_size_p[0], window_size_p[1]);
     }
@@ -593,8 +592,8 @@ evaluate_compression_impl<PointT>::do_visualization (std::string id, boost::shar
     // we use the internal versions of thses SetXX methods to avoid unwanted side-effects
     vrwp->SetPosition (this_window.GetX(), this_window.GetY());
     vrwp->SetSize (this_window.GetWidth(), this_window.GetHeight());
-//  viewer->addCoordinateSystem (1.0);
-//  viewer->initCameraParameters ();
+//X  viewer->addCoordinateSystem (1.0);
+//X  viewer->initCameraParameters ();
     viewer_index_++;
   }
   // show the PointCloud in its viewer
@@ -634,11 +633,14 @@ load_ply_file (std::string path, boost::shared_ptr<pcl::PointCloud<PointT> > pc)
 {
   int rv = 1;
   PLYReader ply_reader;
-/* next straighforward code crashes, work around via PolygonMesh
-   if (rv && ply_reader.read (path, pc) < 0) {
-      rv = 0;
-    }
- */
+/* next straighforward code crashes, work around via PolygonMesh *
+   PCLPointCloud2 pc2;
+   if (rv && ply_reader.read (path, pc2) < 0)
+   {
+     fromPCLPointCloud2 (pc2, *pc);
+     rv = 0;
+   }
+*/
   PolygonMesh mesh;
   if (rv && ply_reader.read (path, mesh) >= 0) {
     pcl::fromPCLPointCloud2 (mesh.cloud, *pc);
@@ -648,76 +650,76 @@ load_ply_file (std::string path, boost::shared_ptr<pcl::PointCloud<PointT> > pc)
   return rv;
 }
 
-template<typename PointT>
 int
-load_input_directory (std::string directory_name, std::string extension, std::vector<boost::shared_ptr<pcl::PointCloud<PointT> > > &clouds)
+get_filenames_from_dir (std::string directory, vector<std::string>& filenames)
 {
-  int rv = 0;
-  const char* dir_name = directory_name.c_str();
-  if ( ! boost::filesystem::is_directory (dir_name)) {
-    std::cerr << "'" << directory_name << "' is not a directory.\n";
-    return -1;
-  }
-  // order of filenames returned by directory_iterator is undefined
-  vector<std::string> filenames;
-  namespace fs = boost::filesystem;
-  boost::shared_ptr<pcl::PointCloud<PointT> > pc (new PointCloud<PointT> ());
-//#pragma omp parallel for
-  for (fs::directory_iterator itr (directory_name); itr != fs::directory_iterator (); itr++)
-  {
-    fs::directory_entry de = *itr;
-    filenames.push_back (de.path ().string ());
-  }
-  std::sort (filenames.begin (), filenames.end ());
-  for (vector<string>::const_iterator i = filenames.begin(); i != filenames.end(); ++i)
-  {
-    std::string filename = *i;
-    boost::shared_ptr<pcl::PointCloud<PointT> > pc (new PointCloud<PointT> ());
-    if (boost::ends_with (filename, ".ply"))
-    {
-      if (load_ply_file (filename, pc))
-      {
-        rv++;
-      }
+    int rv = 0;
+    const char* dir_name = directory.c_str();
+    if ( ! boost::filesystem::is_directory (dir_name)) {
+        std::cerr << "'" << directory << "' is not a directory.\n";
+        return -1;
     }
-    else
+    // order of filenames returned by directory_iterator is undefined
+    namespace fs = boost::filesystem;
+    //#pragma omp parallel for
+    for (fs::directory_iterator itr (directory); itr != fs::directory_iterator (); itr++)
     {
-      if (boost::ends_with (filename, ".pcd"))
-      {
-        if (load_pcd_file (filename, pc))
-        {
-          rv++;
-        }
-      }
+        fs::directory_entry de = *itr;
+        filenames.push_back (de.path ().string ());
     }
-    if (pc->size () > 0)
-    { // pointcloud was loaded
-      clouds.push_back (pc);
+    std::sort (filenames.begin (), filenames.end ());
+    return rv;
+}
+
+template<typename PointT>
+bool
+load_input_cloud (std::string filename, boost::shared_ptr<pcl::PointCloud<PointT> > &cloud)
+{
+  bool rv = false;
+  if (boost::ends_with (filename, ".ply"))
+  {
+    if (load_ply_file (filename, cloud))
+    {
+      rv = true;
+    }
+  }
+  else
+  {
+    if (boost::ends_with (filename, ".pcd"))
+    {
+      if (load_pcd_file (filename, cloud))
+      {
+        rv = true;
+      }
     }
   }
   return rv;
 }
-    
+
 template<typename PointT>
 bool
 evaluate_compression_impl<PointT>::evaluate ()
 {
   bool return_value = true;
   
-  try {
+  try
+  {
     initialize_options_description ();
-    if ( ! get_options (argc_, argv_)) {
+    if ( ! get_options (argc_, argv_))
+    {
       return false;
     }
     debug_level_ = vm_["debug_level"].template as<int> ();
-    if (debug_level_ > 0) {
+    if (debug_level_ > 0)
+    {
       std::cout << "debug_level=" << debug_level_ << "\n";
       print_options (vm_);
     }
 #ifdef WITH_VTK
     std::cout << "WITH_VTK='" << WITH_VTK << "'\n";
 #endif/*WITH_VTK*/
-    if (vm_.count ("help")) {
+    if (vm_.count ("help"))
+    {
       std::cout << desc_ << "\n";
       return return_value;
     }
@@ -728,11 +730,7 @@ evaluate_compression_impl<PointT>::evaluate ()
       cout << "Fusing multiple directories not implemented.\n";
       return (false);
     }
-    std::vector<boost::shared_ptr<pcl::PointCloud<PointT> > > point_clouds, group, original_group, encoder_output_clouds;
-    for (std::vector<std::string>::iterator itr = input_directories_.begin (); itr != input_directories_.end (); itr++) {
-      std::string input_directory = *itr;
-      load_input_directory (input_directory, ".ply", point_clouds);
-    }
+    std::vector<boost::shared_ptr<pcl::PointCloud<PointT> > > point_clouds, group, encoder_output_clouds;
     int count = 0;
     std::ofstream intra_frame_quality_csv;
     stringstream compression_settings;
@@ -749,112 +747,150 @@ evaluate_compression_impl<PointT>::evaluate ()
       predictive_quality_csv.open(predictive_quality_csv_.c_str());
       QualityMetric::print_csv_header(predictive_quality_csv);
     }
-    for (typename std::vector<boost::shared_ptr<pcl::PointCloud<PointT> > >::iterator itr = point_clouds.begin (); itr != point_clouds.end (); itr++)
+    vector<std::string> filenames;
+    if (get_filenames_from_dir (*input_directories_.begin(), filenames) != 0) return false;
+    for (std::vector<std::string>::iterator itr = filenames.begin (); itr != filenames.end (); itr++)
     {
-      boost::shared_ptr<pcl::PointCloud<PointT> > point_cloud = *itr;
-      // a deep copy is needed because the point_cloud is potentially modified
-      // and the original is needed to compare results
-      group.push_back (point_cloud->makeShared ());
-      original_group.push_back (point_cloud);
-      
+      std::string filename = *itr;
+      boost::shared_ptr<pcl::PointCloud<PointT> > pc (new PointCloud<PointT> ());
+      if ( ! load_input_cloud(filename, pc))
+      {
+        return false;
+      }
+      group.push_back(pc->makeShared());
       count++;
-      
-      if (group_size_ == 0 && count < point_clouds.size ()) continue;
-      
+      if (group_size_ == 0 && count < point_clouds.size ())
+      {
+        continue;
+      }
       // encode the group for each set of 'group_size' point_clouds, and the final set
-      pcl::io::BoundingBox bb; // bounding box of this group
       if (count == point_clouds.size () || count % group_size_ == 0)
       {
-        if (K_outlier_filter_ > 0) do_outlier_removal (group);
-        if (bb_expand_factor_ > 0.0) bb = do_bounding_box_normalization (group);
-        if (group_size_ == 0) group_size_ = point_clouds.size();
-        vector<float> icp_convergence_percentage (group_size_);
-        vector<float> shared_macroblock_percentages (group_size_);
-
-        for (int i = 0; i < group.size (); i++)
-        {
-          boost::shared_ptr<pcl::PointCloud<PointT> > pc = group[i];
-          boost::shared_ptr<pcl::PointCloud<PointT> > original_pc = original_group[i]->makeShared ();
-          stringstream ss;
-          QualityMetric achieved_quality;
-          int i_strm_pos_cur = 0, i_strm_pos_prev = 0; // current end previous position in i-code stream
-          int p_strm_pos_cur = 0, p_strm_pos_prev = 0; // current end previous position in p-code stream
-
-          // encode pointclout to string stream
-          do_encoding (pc, &ss, achieved_quality);
-          // decode the string stream
-          string s = ss.str ();
-          std::stringstream coded_stream (s);//ss.str ());
-          int group_size = original_group.size ();
-          boost::shared_ptr<pcl::PointCloud<PointT> > output_pointcloud (new pcl::PointCloud<PointT> ()), opc (new pcl::PointCloud<PointT> ());
-          opc = original_group[i];
-          do_decoding (&coded_stream, output_pointcloud, achieved_quality);
-            boost::shared_ptr<pcl::PointCloud<PointT> > original_output_pointcloud = output_pointcloud->makeShared ();
-          pcl::io::OctreePointCloudCodecV2 <PointT>::restore_scaling (output_pointcloud, bb);
-          if (do_quality_computation_)
-          {
-            do_quality_computation (pc, output_pointcloud, achieved_quality);
-            if (intra_frame_quality_csv_ != "")
-            {
-              achieved_quality.print_csv_line(compression_settings.str(), intra_frame_quality_csv);
-            }
-          }
-          if (output_directory_ != "")
-          {
-            do_output ( "pointcloud_" + boost::lexical_cast<string> (i) + ".ply", output_pointcloud, achieved_quality);
-          }
-          do_visualization ("Original", opc);
-          do_visualization ("Decoded", output_pointcloud);
-          // test and evaluation iterative closest point predictive coding
-          if (algorithm_ == "V2" && do_delta_coding_ && bb_expand_factor_ >= 0  // bounding boxes were aligned
-            && i > 0 && i+1 < group_size)
-          {
-            boost::shared_ptr<pcl::PointCloud<PointT> > decoded_pc (new pcl::PointCloud<PointT> ());
-            boost::shared_ptr<pcl::PointCloud<PointT> > predicted_pc (new pcl::PointCloud<PointT> ());
-            cout << " delta coding frame nr " << i+1 << endl;
-            stringstream p_frame_pdat, p_frame_idat;
-            QualityMetric predictive_quality;
-
-            do_delta_encoding (icp_on_original_ ? pc : encoder_V2_->getOutputCloud (), group[i+1], predicted_pc, &p_frame_idat, &p_frame_pdat, predictive_quality);
-            // quality
-            shared_macroblock_percentages[i] = encoder_V2_->getMacroBlockPercentage ();
-            icp_convergence_percentage[i] =  encoder_V2_->getMacroBlockConvergencePercentage ();
-            
-            p_strm_pos_prev = p_strm_pos_cur;
-            p_strm_pos_cur = p_frame_pdat.tellp ();
-            i_strm_pos_prev = i_strm_pos_cur;
-            i_strm_pos_cur = p_frame_idat.tellp ();
-            cout << " encoded a predictive frame: coded " << (i_strm_pos_cur - i_strm_pos_prev) << " bytes intra and " << (p_strm_pos_cur - p_strm_pos_prev) << " inter frame encoded " <<endl;
-            // create a deep copy of original pointcloud, for comparison
-            do_delta_decoding (&p_frame_idat, &p_frame_pdat, original_output_pointcloud, decoded_pc, predictive_quality);
-            pcl::io::OctreePointCloudCodecV2 <PointT>::restore_scaling (decoded_pc, bb);
-//          compute the quality of the resulting predictive frame
-            if (output_directory_ != "")
-            {
-              do_output ("delta_decoded_pc_" + boost::lexical_cast<string> (i) + ".ply", decoded_pc, achieved_quality);
-            }
-            do_visualization ("Delta Decoded", decoded_pc);
-            if (do_quality_computation_)
-            {
-              do_quality_computation (group[i+1], decoded_pc, predictive_quality);
-              if (predictive_quality_csv_ != "")
-              {
-                predictive_quality.print_csv_line(compression_settings.str(), predictive_quality_csv);
-              }
-            }
-          }
-          output_pointcloud->clear (); // clear output cloud
-        }
-		complete_initialization();
-        // start new groups
-        original_group.clear ();
+        evaluate_group (group, compression_settings, intra_frame_quality_csv, predictive_quality_csv);
+        complete_initialization();
+        // start new group
         group.clear ();
+        count = 0;
       }
     }
-  } catch (boost::exception &e) {
+ /* for (typename std::vector<boost::shared_ptr<pcl::PointCloud<PointT> > >::iterator itr = point_clouds.begin (); itr != point_clouds.end (); itr++)
+    {
+      boost::shared_ptr<pcl::PointCloud<PointT> > point_cloud = *itr;
+      group.push_back(point_cloud->makeShared());
+      count++;
+      if (group_size_ == 0 && count < point_clouds.size ())
+      {
+        continue;
+      }
+      // encode the group for each set of 'group_size' point_clouds, and the final set
+      if (count == point_clouds.size () || count % group_size_ == 0)
+      {
+        evaluate_group (group, compression_settings, intra_frame_quality_csv, predictive_quality_csv);
+        complete_initialization();
+        // start new group
+        group.clear ();
+        count = 0;
+      }
+  }
+*/} catch (boost::exception &e) {
     std::cerr << boost::diagnostic_information (e) << "\n";
     return_value = false;
   }
   return return_value;
+}
+
+template<typename PointT>
+bool
+evaluate_compression_impl<PointT>::evaluate_group(std::vector<boost::shared_ptr<pcl::PointCloud<PointT> > >& group,
+            stringstream& compression_settings, std::ofstream& intra_frame_quality_csv, std::ofstream& predictive_quality_csv)
+{
+  bool rv = true; // return value
+  // create a deep copy of the group, as the pointclouds may be modified and the original is needed to compare results
+  std::vector<boost::shared_ptr<pcl::PointCloud<PointT> > > working_group;
+  for (typename std::vector<boost::shared_ptr<pcl::PointCloud<PointT> > >::iterator itr = group.begin (); itr != group.end (); itr++)
+  {
+    boost::shared_ptr<pcl::PointCloud<PointT> > point_cloud = *itr;
+    working_group.push_back (point_cloud->makeShared ());
+  }
+  if (K_outlier_filter_ > 0) do_outlier_removal (working_group);
+  pcl::io::BoundingBox bb; // bounding box of this working_group
+  if (bb_expand_factor_ > 0.0) bb = do_bounding_box_normalization (working_group);
+  int working_group_size = working_group.size();
+  vector<float> icp_convergence_percentage (working_group_size);
+  vector<float> shared_macroblock_percentages (working_group_size);
+  boost::shared_ptr<pcl::PointCloud<PointT> > dpc; // decoded point cloud
+  for (int i = 0; i < working_group.size (); i++)
+  {
+    boost::shared_ptr<pcl::PointCloud<PointT> > pc = working_group[i];
+    boost::shared_ptr<pcl::PointCloud<PointT> > original_pc = group[i]->makeShared ();
+    stringstream ss;
+    QualityMetric achieved_quality;
+    int i_strm_pos_cur = 0, i_strm_pos_prev = 0; // current and previous position in i-code stream
+    int p_strm_pos_cur = 0, p_strm_pos_prev = 0; // current and previous position in p-code stream
+              
+    // encode pointcloud to string stream
+    do_encoding (pc, &ss, achieved_quality);
+    // decode the string stream
+    string s = ss.str ();
+    std::stringstream coded_stream (s);//ss.str ());
+    int group_size = group.size ();
+    boost::shared_ptr<pcl::PointCloud<PointT> > output_pointcloud (new pcl::PointCloud<PointT> ()), opc (new pcl::PointCloud<PointT> ());
+    opc = group[i];
+    do_decoding (&coded_stream, output_pointcloud, achieved_quality);
+    pcl::io::OctreePointCloudCodecV2 <PointT>::restore_scaling (output_pointcloud, bb);
+    dpc = output_pointcloud->makeShared ();
+    if (do_quality_computation_)
+    {
+      do_quality_computation (pc, output_pointcloud, achieved_quality);
+      if (intra_frame_quality_csv_ != "")
+      {
+        achieved_quality.print_csv_line(compression_settings.str(), intra_frame_quality_csv);
+      }
+    }
+    if (output_directory_ != "")
+    {
+      do_output ( "pointcloud_" + boost::lexical_cast<string> (i) + ".ply", output_pointcloud, achieved_quality);
+    }
+    do_visualization ("Original", opc);
+    do_visualization ("Decoded", dpc);
+    // test and evaluation iterative closest point predictive coding
+    if (algorithm_ == "V2" && do_delta_coding_ && bb_expand_factor_ >= 0  // bounding boxes were aligned
+        && i > 0 && i+1 < group_size)
+    {
+      boost::shared_ptr<pcl::PointCloud<PointT> > predicted_pc (new pcl::PointCloud<PointT> ());
+      cout << " delta coding frame nr " << i+1 << endl;
+      stringstream p_frame_pdat, p_frame_idat;
+      QualityMetric predictive_quality;
+                  
+      do_delta_encoding (icp_on_original_ ? pc : encoder_V2_->getOutputCloud (), working_group[i+1], predicted_pc, &p_frame_idat, &p_frame_pdat, predictive_quality);
+      // quality
+      shared_macroblock_percentages[i] = encoder_V2_->getMacroBlockPercentage ();
+      icp_convergence_percentage[i] =  encoder_V2_->getMacroBlockConvergencePercentage ();
+                  
+      p_strm_pos_prev = p_strm_pos_cur;
+      p_strm_pos_cur = p_frame_pdat.tellp ();
+      i_strm_pos_prev = i_strm_pos_cur;
+      i_strm_pos_cur = p_frame_idat.tellp ();
+      cout << " encoded a predictive frame: coded " << (i_strm_pos_cur - i_strm_pos_prev) << " bytes intra and " << (p_strm_pos_cur - p_strm_pos_prev) << " inter frame encoded " <<endl;
+      // create a deep copy of original pointcloud, for comparison
+      do_delta_decoding (&p_frame_idat, &p_frame_pdat, output_pointcloud, predicted_pc, predictive_quality);
+//    compute the quality of the resulting predictive frame
+      if (output_directory_ != "")
+      {
+        do_output ("delta_decoded_pc_" + boost::lexical_cast<string> (i) + ".ply", predicted_pc, achieved_quality);
+      }
+      do_visualization ("Delta Decoded", predicted_pc);
+      if (do_quality_computation_)
+      {
+        do_quality_computation (working_group[i+1], predicted_pc, predictive_quality);
+        if (predictive_quality_csv_ != "")
+        {
+          predictive_quality.print_csv_line(compression_settings.str(), predictive_quality_csv);
+        }
+      }
+    }
+    output_pointcloud->clear (); // clear output cloud
+  }
+  return rv;
 }
 #endif /* evaluate_compression_hpp */
