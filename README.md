@@ -9,3 +9,5 @@ This specific fork includes a benchmarking tool (compression_eval), a quality me
 Cloud_codec_v2 includes both novel color coding schemes and predictive algorithms.
 Aim is to further develop the point cloud compression in MPEG and contribute it back to the pcl library. 
 For further information contact rufael mekuria rufael.mekuria@cwi.nl
+
+NOTE: this point cloud codec is maintained by CWI under https://github.com/cwi-dis/cwi-pcl-codec please fo there to find the latest and most up-to-date version! I am no longer maintaining this repository!
